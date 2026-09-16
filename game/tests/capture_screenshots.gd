@@ -2,38 +2,54 @@ extends SceneTree
 ## Capture portrait screenshots for Project store media.
 
 const OUT := "/cursor/stores/bc-71787b67-91e4-456d-b541-da2778721eaf/media/playable-chapter"
-const SHOTS := [
-	{"scene": "res://scenes/shell/title_screen.tscn", "file": "01-title.png", "wait": 0.5},
-	{"scene": "res://scenes/lobby/lobby.tscn", "file": "02-lobby.png", "wait": 0.4},
-	{"scene": "res://scenes/td/td_battle.tscn", "file": "03-td-chapter.png", "wait": 0.6},
-	{"scene": "res://scenes/explore/explore_run.tscn", "file": "04-explore.png", "wait": 0.5},
-	{"scene": "res://scenes/knowledge/knowledge_hub.tscn", "file": "05-knowledge.png", "wait": 0.4},
-]
-var _i := 0
-var _node: Node = null
 
 
 func _initialize() -> void:
 	DisplayServer.window_set_size(Vector2i(405, 720))
-	call_deferred("_step")
+	call_deferred("_run")
 
 
-func _step() -> void:
-	if _node:
-		_node.queue_free()
-		_node = null
-	if _i >= SHOTS.size():
-		print("SCREENSHOTS_OK ", OUT)
-		quit(0)
-		return
-	var job: Dictionary = SHOTS[_i]
-	_i += 1
-	var packed = load(str(job.scene))
-	_node = packed.instantiate()
-	root.add_child(_node)
-	await create_timer(float(job.wait)).timeout
+func _run() -> void:
+	await _shot("res://scenes/shell/title_screen.tscn", "01-title.png", 0.5)
+	await _shot("res://scenes/lobby/lobby.tscn", "02-lobby.png", 0.4)
+	await _shot_td()
+	await _shot("res://scenes/explore/explore_run.tscn", "04-explore.png", 0.55)
+	await _shot("res://scenes/knowledge/knowledge_hub.tscn", "05-knowledge.png", 0.4)
+	print("SCREENSHOTS_OK ", OUT)
+	quit(0)
+
+
+func _shot(scene_path: String, file: String, wait: float) -> void:
+	var packed = load(scene_path)
+	var node: Node = packed.instantiate()
+	root.add_child(node)
+	await create_timer(wait).timeout
+	_save(file)
+	node.queue_free()
+	await create_timer(0.1).timeout
+
+
+func _shot_td() -> void:
+	var packed = load("res://scenes/td/td_battle.tscn")
+	var td = packed.instantiate()
+	root.add_child(td)
+	await create_timer(0.5).timeout
+	td.selected_unit_id = "unit_tiebi"
+	td._on_slot_pressed(0)
+	td.selected_unit_id = "unit_feidao"
+	td._on_slot_pressed(1)
+	td.selected_unit_id = "unit_qinggong"
+	td._on_slot_pressed(2)
+	await create_timer(0.2).timeout
+	td._on_start_wave()
+	await create_timer(1.2).timeout
+	_save("03-td-chapter.png")
+	td.queue_free()
+	await create_timer(0.1).timeout
+
+
+func _save(file: String) -> void:
 	var img := root.get_viewport().get_texture().get_image()
-	var path := "%s/%s" % [OUT, job.file]
+	var path := "%s/%s" % [OUT, file]
 	img.save_png(path)
 	print("saved ", path)
-	_step()

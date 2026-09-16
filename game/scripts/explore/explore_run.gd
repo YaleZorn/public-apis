@@ -189,20 +189,30 @@ func _rebuild_room_strip() -> void:
 	for c in room_strip.get_children():
 		c.queue_free()
 	for i in rooms.size():
+		var wrap := VBoxContainer.new()
+		wrap.custom_minimum_size = Vector2(36, 28)
 		var dot := ColorRect.new()
-		dot.custom_minimum_size = Vector2(28, 10)
+		dot.custom_minimum_size = Vector2(36, 10)
 		var room: Dictionary = rooms[i]
-		var col := Color(0.35, 0.38, 0.34)
+		var rtype := str(room.get("type", "combat"))
+		var col := Color(0.28, 0.32, 0.3)
 		if i < room_index:
-			col = Color(0.45, 0.62, 0.48)
+			col = Color(0.4, 0.58, 0.45)
 		elif i == room_index:
-			col = Color(0.85, 0.72, 0.38)
-		match str(room.get("type", "")):
-			"event": col = col.lerp(Color(0.5, 0.65, 0.85), 0.35)
-			"train": col = col.lerp(Color(0.55, 0.78, 0.55), 0.35)
-			"supply", "loot": col = col.lerp(Color(0.85, 0.7, 0.35), 0.35)
+			col = Color(0.9, 0.75, 0.35)
+		else:
+			match rtype:
+				"event": col = Color(0.3, 0.4, 0.55)
+				"train": col = Color(0.3, 0.45, 0.35)
+				"supply", "loot": col = Color(0.5, 0.42, 0.28)
 		dot.color = col
-		room_strip.add_child(dot)
+		var tip := Label.new()
+		tip.text = _room_type_name(rtype)
+		tip.add_theme_font_size_override("font_size", 10)
+		tip.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		wrap.add_child(dot)
+		wrap.add_child(tip)
+		room_strip.add_child(wrap)
 
 
 func _spawn_room_enemies(ids: Array) -> void:

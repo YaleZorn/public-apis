@@ -124,8 +124,18 @@ func _build_decor(w: float, h: float) -> void:
 		patch.position = p[0]
 		decor_layer.add_child(patch)
 	var gate := VF.gate_marker()
-	gate.position = path_points[path_points.size() - 1] - Vector2(36, 44)
+	gate.position = path_points[path_points.size() - 1] - Vector2(42, 50)
 	decor_layer.add_child(gate)
+	var spawn := ColorRect.new()
+	spawn.size = Vector2(36, 36)
+	spawn.position = path_points[0] - Vector2(18, 18)
+	spawn.color = Color(0.75, 0.35, 0.25, 0.9)
+	decor_layer.add_child(spawn)
+	var spawn_lbl := Label.new()
+	spawn_lbl.text = "敌"
+	spawn_lbl.add_theme_font_size_override("font_size", 12)
+	spawn_lbl.position = spawn.position + Vector2(6, 8)
+	decor_layer.add_child(spawn_lbl)
 
 
 func _build_slots() -> void:
@@ -139,18 +149,19 @@ func _build_slots() -> void:
 	]
 	for i in SLOT_COUNT:
 		var btn := Button.new()
-		btn.text = "·"
+		btn.text = "槽%d" % (i + 1)
 		btn.focus_mode = Control.FOCUS_NONE
-		btn.custom_minimum_size = Vector2(96, 96)
+		btn.custom_minimum_size = Vector2(88, 88)
 		btn.set_anchors_preset(Control.PRESET_TOP_LEFT)
 		btn.anchor_left = anchors[i].x
 		btn.anchor_right = anchors[i].x
 		btn.anchor_top = anchors[i].y
 		btn.anchor_bottom = anchors[i].y
-		btn.offset_left = -48
-		btn.offset_right = 48
-		btn.offset_top = -48
-		btn.offset_bottom = 48
+		btn.offset_left = -44
+		btn.offset_right = 44
+		btn.offset_top = -44
+		btn.offset_bottom = 44
+		btn.modulate = Color(0.85, 0.9, 0.8, 0.85)
 		btn.pressed.connect(_on_slot_pressed.bind(i))
 		slots_layer.add_child(btn)
 		_slot_buttons.append(btn)
@@ -239,6 +250,8 @@ func _spawn_unit_visual(slot: int, unit_id: String) -> void:
 		"node": node,
 		"pos": center,
 	}
+	_slot_buttons[slot].modulate = Color(1, 1, 1, 0.15)
+	_slot_buttons[slot].text = ""
 
 
 func _on_recall() -> void:
@@ -255,6 +268,8 @@ func _on_recall() -> void:
 	silver += refund
 	info.node.queue_free()
 	deployed.erase(selected_slot)
+	_slot_buttons[selected_slot].modulate = Color(0.85, 0.9, 0.8, 0.85)
+	_slot_buttons[selected_slot].text = "槽%d" % (selected_slot + 1)
 	status_label.text = "回收 +%d 银两" % refund
 	Juice.play_sfx("recall")
 	Juice.float_number(_slot_center(selected_slot), "+%d" % refund, Color(0.75, 0.9, 0.65))
@@ -541,6 +556,8 @@ func _load_checkpoint(cp: Dictionary) -> void:
 			deployed[int(item.slot)].hp = float(item.get("hp", deployed[int(item.slot)].hp))
 	status_label.text = "已从波次前存档续关。"
 	_update_wave_preview()
+	_refresh_hud()
+	# Fix silver display after load — already set above.
 
 
 func _save_and_lobby() -> void:
