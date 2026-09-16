@@ -1,0 +1,16 @@
+{
+  "content_pack": "core",
+  "run_id": "mountain_path_v0",
+  "display_name": "栈道夜行",
+  "default_hero": "unit_feidao",
+  "rooms": [
+    { "id": "r1", "type": "combat", "enemies": ["enemy_bandit", "enemy_bandit"], "label": "山口流寇" },
+    { "id": "r2", "type": "event", "knowledge_card": "k_carbs_timing", "label": "茶棚歇脚" },
+    { "id": "r3", "type": "combat", "enemies": ["enemy_runner", "enemy_bandit"], "label": "窄桥快刀" },
+    { "id": "r4", "type": "train", "heal": 25, "label": "崖边吐纳" },
+    { "id": "r5", "type": "combat", "enemies": ["enemy_shield", "enemy_bandit"], "label": "关前铁盾" },
+    { "id": "r6", "type": "event", "knowledge_card": "k_form", "label": "石碑心法" },
+    { "id": "r7", "type": "supply", "heal": 40, "silver": 30, "label": "驿站补给" },
+    { "id": "r8", "type": "combat", "enemies": ["enemy_runner", "enemy_shield", "enemy_bandit"], "label": "剑阁前哨" }
+  ]
+}
