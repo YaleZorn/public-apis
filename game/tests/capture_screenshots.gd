@@ -11,6 +11,10 @@ func _initialize() -> void:
 
 
 func _run() -> void:
+	# Wipe user save so title brand shot stays clean (no 续关).
+	var save_path := "user://kongfu_save_v0.json"
+	if FileAccess.file_exists(save_path):
+		DirAccess.remove_absolute(save_path)
 	await _shot("res://scenes/shell/title_screen.tscn", "01-title.png", 0.9)
 	await _shot("res://scenes/lobby/lobby.tscn", "02-lobby.png", 0.6)
 	await _shot_td()

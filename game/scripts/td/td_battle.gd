@@ -143,10 +143,10 @@ func _build_decor(w: float, h: float) -> void:
 		c.queue_free()
 	if path_points.size() > 0:
 		var gate := Atmo._gate_node()
-		gate.position = path_points[path_points.size() - 1] - Vector2(48, 58)
+		gate.position = path_points[path_points.size() - 1] - Vector2(36, 44)
 		decor_layer.add_child(gate)
 		var spawn := Atmo._spawn_marker()
-		spawn.position = path_points[0] - Vector2(20, 20)
+		spawn.position = path_points[0] - Vector2(14, 14)
 		decor_layer.add_child(spawn)
 	var mist := ColorRect.new()
 	mist.size = Vector2(w, 48)

@@ -216,46 +216,46 @@ static func build_td_terrain(layer: Node2D, w: float, h: float, path: PackedVect
 
 static func _gate_node() -> Control:
 	var root := Control.new()
-	root.custom_minimum_size = Vector2(96, 64)
-	root.size = Vector2(96, 64)
+	root.custom_minimum_size = Vector2(72, 48)
+	root.size = Vector2(72, 48)
 	var base := ColorRect.new()
-	base.size = Vector2(96, 64)
-	base.color = AP.GATE_WOOD
+	base.size = Vector2(72, 48)
+	base.color = Color(AP.GATE_WOOD.r, AP.GATE_WOOD.g, AP.GATE_WOOD.b, 0.72)
 	root.add_child(base)
 	var roof := ColorRect.new()
-	roof.size = Vector2(108, 14)
-	roof.position = Vector2(-6, -8)
-	roof.color = Color(0.55, 0.28, 0.18, 0.95)
+	roof.size = Vector2(82, 10)
+	roof.position = Vector2(-5, -6)
+	roof.color = Color(0.55, 0.28, 0.18, 0.85)
 	root.add_child(roof)
 	var arch := ColorRect.new()
-	arch.size = Vector2(44, 42)
-	arch.position = Vector2(26, 10)
-	arch.color = AP.GATE_SHADOW
+	arch.size = Vector2(32, 30)
+	arch.position = Vector2(20, 10)
+	arch.color = Color(AP.GATE_SHADOW.r, AP.GATE_SHADOW.g, AP.GATE_SHADOW.b, 0.75)
 	root.add_child(arch)
 	var title := Label.new()
-	title.text = "剑阁"
-	AP.apply_label(title, 15, AP.LANTERN_GOLD)
-	title.position = Vector2(22, 40)
+	title.text = "据点"
+	AP.apply_label(title, 13, AP.LANTERN_GOLD)
+	title.position = Vector2(18, 28)
 	root.add_child(title)
 	return root
 
 
 static func _spawn_marker() -> Control:
 	var root := Control.new()
-	root.size = Vector2(40, 40)
+	root.size = Vector2(28, 28)
 	var outer := ColorRect.new()
-	outer.size = Vector2(40, 40)
-	outer.color = Color(AP.DANGER.r, AP.DANGER.g, AP.DANGER.b, 0.85)
+	outer.size = Vector2(28, 28)
+	outer.color = Color(AP.DANGER.r, AP.DANGER.g, AP.DANGER.b, 0.7)
 	root.add_child(outer)
 	var inner := ColorRect.new()
-	inner.size = Vector2(22, 22)
-	inner.position = Vector2(9, 9)
-	inner.color = Color(0.08, 0.08, 0.08, 0.85)
+	inner.size = Vector2(14, 14)
+	inner.position = Vector2(7, 7)
+	inner.color = Color(0.08, 0.08, 0.08, 0.8)
 	root.add_child(inner)
 	var lbl := Label.new()
 	lbl.text = "敌"
-	AP.apply_label(lbl, 12, AP.PAPER_INK)
-	lbl.position = Vector2(10, 10)
+	AP.apply_label(lbl, 10, AP.PAPER_INK)
+	lbl.position = Vector2(6, 6)
 	root.add_child(lbl)
 	return root
 
