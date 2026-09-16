@@ -1,0 +1,38 @@
+{
+  "content_pack": "core",
+  "enemies": [
+    {
+      "id": "enemy_bandit",
+      "name": "流寇",
+      "hp": 80,
+      "speed": 55,
+      "armor": 0,
+      "reward": 12,
+      "leak_damage": 1,
+      "color": "#a0522d",
+      "tags": ["melee", "swarm"]
+    },
+    {
+      "id": "enemy_shield",
+      "name": "铁盾兵",
+      "hp": 180,
+      "speed": 32,
+      "armor": 8,
+      "reward": 22,
+      "leak_damage": 2,
+      "color": "#5d6d7e",
+      "tags": ["armored", "slow"]
+    },
+    {
+      "id": "enemy_runner",
+      "name": "快刀手",
+      "hp": 55,
+      "speed": 95,
+      "armor": 0,
+      "reward": 16,
+      "leak_damage": 1,
+      "color": "#e74c3c",
+      "tags": ["fast", "priority"]
+    }
+  ]
+}
