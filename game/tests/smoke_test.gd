@@ -27,6 +27,9 @@ func _check_files() -> bool:
 		"res://data/content_pack_core/waves.json",
 		"res://data/content_pack_core/rooms.json",
 		"res://data/content_pack_core/knowledge.json",
+		"res://data/content_pack_core/gear.json",
+		"res://scenes/shell/title_screen.tscn",
+		"res://resources/kongfu_theme.tres",
 	]
 	for p in paths:
 		if not ResourceLoader.exists(p) and not FileAccess.file_exists(p):

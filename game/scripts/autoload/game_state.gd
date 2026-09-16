@@ -21,6 +21,8 @@ var morning_buff_active: bool = false
 var total_td_clears: int = 0
 var total_explore_clears: int = 0
 var silver_bank: int = 0
+var gear_unlocked: Array = [] ## gear ids earned from clears
+var gear_equipped: Array = ["", "", ""] ## 3 slots: 器/衣/饰
 
 # --- Active checkpoints ---
 var td_checkpoint: Dictionary = {}
@@ -38,6 +40,7 @@ func _bootstrap_from_disk() -> void:
 		persist_lobby()
 		return
 	_apply_meta(data.get("meta", {}))
+	SettingsManager.load_from_meta(data.get("meta", {}))
 	td_checkpoint = data.get("td_checkpoint", {})
 	explore_checkpoint = data.get("explore_checkpoint", {})
 	checkpoint_changed.emit()
@@ -64,6 +67,11 @@ func _apply_meta(meta: Dictionary) -> void:
 	total_td_clears = int(meta.get("total_td_clears", 0))
 	total_explore_clears = int(meta.get("total_explore_clears", 0))
 	silver_bank = int(meta.get("silver_bank", 0))
+	gear_unlocked = meta.get("gear_unlocked", gear_unlocked)
+	gear_equipped = meta.get("gear_equipped", gear_equipped)
+	if gear_equipped.size() < 3:
+		gear_equipped.resize(3)
+	SettingsManager.load_from_meta(meta)
 	meta_changed.emit()
 
 
@@ -81,6 +89,9 @@ func export_meta() -> Dictionary:
 		"total_td_clears": total_td_clears,
 		"total_explore_clears": total_explore_clears,
 		"silver_bank": silver_bank,
+		"gear_unlocked": gear_unlocked.duplicate(),
+		"gear_equipped": gear_equipped.duplicate(),
+		"settings": SettingsManager.export_settings(),
 		"content_pack": ContentDB.manifest.get("content_pack", "core"),
 	}
 
@@ -189,7 +200,23 @@ func complete_morning_quiz(score: int) -> void:
 	morning_quiz_done_day = today_key()
 	morning_buff_active = score >= 2
 	meta_changed.emit()
-	persist_lobby()
+	persist_meta_keep_checkpoints()
+
+
+func unlock_gear(gid: String) -> void:
+	if gid != "" and gid not in gear_unlocked:
+		gear_unlocked.append(gid)
+		meta_changed.emit()
+
+
+func equip_gear(slot: int, gid: String) -> void:
+	if slot < 0 or slot >= 3:
+		return
+	if gid != "" and gid not in gear_unlocked:
+		return
+	gear_equipped[slot] = gid
+	meta_changed.emit()
+	persist_meta_keep_checkpoints()
 
 
 func go_lobby() -> void:

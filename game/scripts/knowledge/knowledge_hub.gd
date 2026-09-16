@@ -28,10 +28,15 @@ func _refresh_book() -> void:
 	for entry in ContentDB.knowledge_list:
 		var seen: bool = entry["id"] in GameState.knowledge_seen
 		var mark := "✓" if seen else "○"
-		book.append_text("%s [b]%s[/b] · %s\n%s\n因果：%s\n\n" % [
-			mark, entry.get("title", ""), entry.get("topic", ""),
-			entry.get("correct", ""), entry.get("why", "")
-		])
+		if seen:
+			book.append_text("%s [b]%s[/b] · %s\n建议：%s\n因果：%s\n\n" % [
+				mark, entry.get("title", ""), entry.get("topic", ""),
+				entry.get("correct", ""), entry.get("why", "")
+			])
+		else:
+			book.append_text("%s [b]%s[/b] · %s\n[i]局内遇见后解锁详情[/i]\n\n" % [
+				mark, entry.get("title", ""), entry.get("topic", "")
+			])
 
 
 func _refresh_quiz_state() -> void:

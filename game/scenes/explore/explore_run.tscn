@@ -16,29 +16,50 @@ layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-color = Color(0.1, 0.11, 0.14, 1)
+color = Color(0.08, 0.1, 0.12, 1)
 
 [node name="Top" type="VBoxContainer" parent="."]
 layout_mode = 1
 anchors_preset = 10
 anchor_right = 1.0
 offset_left = 20.0
-offset_top = 20.0
+offset_top = 16.0
 offset_right = -20.0
-offset_bottom = 120.0
+offset_bottom = 130.0
 theme_override_constants/separation = 6
 
 [node name="RoomLabel" type="Label" parent="Top"]
 unique_name_in_owner = true
 layout_mode = 2
+theme_override_colors/font_color = Color(0.88, 0.78, 0.52, 1)
 theme_override_font_sizes/font_size = 24
 text = "房间"
+
+[node name="RoomStrip" type="HBoxContainer" parent="Top"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 4
 
 [node name="HpLabel" type="Label" parent="Top"]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_font_sizes/font_size = 20
+theme_override_font_sizes/font_size = 18
 text = "HP"
+
+[node name="HpBar" type="ProgressBar" parent="Top"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 14)
+layout_mode = 2
+max_value = 120.0
+value = 120.0
+show_percentage = false
+
+[node name="LootLabel" type="Label" parent="Top"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "战利品"
 
 [node name="Arena" type="Control" parent="."]
 unique_name_in_owner = true
@@ -48,31 +69,32 @@ anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 offset_left = 20.0
-offset_top = 130.0
+offset_top = 140.0
 offset_right = -20.0
-offset_bottom = -240.0
+offset_bottom = -250.0
 
 [node name="ArenaBg" type="ColorRect" parent="Arena"]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-color = Color(0.14, 0.16, 0.2, 1)
+color = Color(0.12, 0.14, 0.18, 1)
 
-[node name="Hero" type="ColorRect" parent="Arena"]
+[node name="ArenaAccent" type="ColorRect" parent="Arena"]
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -80.0
+color = Color(0.08, 0.1, 0.12, 0.5)
+
+[node name="Hero" type="Control" parent="Arena"]
 unique_name_in_owner = true
-offset_left = 80.0
-offset_top = 260.0
-offset_right = 140.0
-offset_bottom = 320.0
-color = Color(0.77, 0.36, 0.15, 1)
-
-[node name="HeroLabel" type="Label" parent="Arena/Hero"]
-layout_mode = 0
-offset_right = 60.0
-offset_bottom = 24.0
-text = "侠"
-horizontal_alignment = 1
+offset_left = 72.0
+offset_top = 250.0
+offset_right = 136.0
+offset_bottom = 314.0
 
 [node name="EnemiesLayer" type="Node2D" parent="Arena"]
 unique_name_in_owner = true
@@ -84,7 +106,7 @@ anchor_top = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
 offset_left = 20.0
-offset_top = -228.0
+offset_top = -238.0
 offset_right = -20.0
 offset_bottom = -16.0
 theme_override_constants/separation = 10
@@ -93,7 +115,7 @@ theme_override_constants/separation = 10
 unique_name_in_owner = true
 layout_mode = 2
 autowrap_mode = 3
-theme_override_font_sizes/font_size = 16
+theme_override_font_sizes/font_size = 15
 text = "状态"
 
 [node name="SkillBtn" type="Button" parent="Bottom"]

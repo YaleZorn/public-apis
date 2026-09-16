@@ -23,8 +23,8 @@ func present(entry_id: String) -> void:
 	title.text = "功法笺 · %s" % entry.get("title", entry_id)
 	var scen: Dictionary = entry.get("scenario", {})
 	body.clear()
-	body.append_text("%s\n\n" % scen.get("prompt", entry.get("correct", "")))
-	body.append_text("[i]%s[/i]" % entry.get("why", ""))
+	body.append_text("%s" % scen.get("prompt", entry.get("misconception", "选最合理的做法：")))
+	Juice.play_sfx("card")
 	for c in choices.get_children():
 		c.queue_free()
 	var opts: Array = scen.get("choices", [])
@@ -48,9 +48,11 @@ func _pick(correct: bool) -> void:
 		return
 	_answered = true
 	GameState.mark_knowledge_delivered(_entry_id, correct)
-	body.append_text("\n\n[b]%s[/b]\n%s" % [
+	var entry: Dictionary = ContentDB.get_knowledge(_entry_id)
+	body.append_text("\n\n[b]%s[/b]\n建议：%s\n[i]%s[/i]" % [
 		"答对了" if correct else "再想想",
-		ContentDB.get_knowledge(_entry_id).get("correct", "")
+		entry.get("correct", ""),
+		entry.get("why", ""),
 	])
 	await get_tree().create_timer(0.85).timeout
 	_finish(correct)

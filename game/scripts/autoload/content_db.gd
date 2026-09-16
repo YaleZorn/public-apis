@@ -12,6 +12,8 @@ var rooms_cfg: Dictionary = {}
 var knowledge: Dictionary = {} ## id -> entry
 var knowledge_list: Array = []
 var knowledge_disclaimer: String = ""
+var gear: Dictionary = {} ## id -> gear dict
+var gear_list: Array = []
 
 
 func _ready() -> void:
@@ -39,6 +41,12 @@ func reload() -> void:
 	for entry in k_data.get("entries", []):
 		knowledge[entry["id"]] = entry
 		knowledge_list.append(entry)
+	gear.clear()
+	gear_list.clear()
+	var g_data: Dictionary = _load_json("%s/gear.json" % PACK_ROOT)
+	for item in g_data.get("gear", []):
+		gear[item["id"]] = item
+		gear_list.append(item)
 
 
 func get_unit(id: String) -> Dictionary:
@@ -51,6 +59,10 @@ func get_enemy(id: String) -> Dictionary:
 
 func get_knowledge(id: String) -> Dictionary:
 	return knowledge.get(id, {})
+
+
+func get_gear(id: String) -> Dictionary:
+	return gear.get(id, {})
 
 
 func owned_pack() -> bool:

@@ -1,6 +1,6 @@
-# Kongfu Roguelike — v0 Vertical Slice
+# Kongfu Roguelike — 可玩第一章（v0.2）
 
-竖屏、离线武侠健身题材原型。主线「守卫剑阁」式塔防 + 支线轻操作探索 + 真健身知识环。
+竖屏、离线武侠健身题材。**第一章「栈道夜雨」** — 塔防主线 + 探索支线 + 真健身知识环，从 graybox 提升到可对外试玩品质。
 
 设计依据（Project store）：
 - `docs/gameplay-design.md`
@@ -8,39 +8,50 @@
 
 ## 要求
 
-- [Godot 4.3+](https://godotengine.org/)（推荐 4.3 / 4.4）
+- [Godot 4.3+](https://godotengine.org/)
 - 竖屏 720×1280（项目已配置）
 
 ## 本地运行
 
 ```bash
 cd game
-godot4 --path .          # 或 Godot 编辑器 Open Project → game/
-# 无编辑器时：
+godot4 --path .
+# 无 GPU / CI：
 godot --path . --rendering-driver opengl3
 ```
 
-## v0 包含
+## 本版包含（vs v0.1 graybox）
 
 | 模块 | 内容 |
 | --- | --- |
-| TD | 1 图（剑阁栈道）、6 槽、最多同时 4 单位、3 敌种、10 波、放置/回收、波间存档 + 知识卡 |
-| 探索 | 8 房链、1 英雄、自动普攻 + 1 主动技、房界存档 |
-| Meta | 6 角色卡数据、碎片解锁、探索熟练度、共享大厅 |
-| 知识 | 15 条可用建议；波间/事件卡；大厅 3 题晨课 + 复习队列 |
-| 其他 | 离线、无 IAP、`content_pack` 数据目录、本地单槽存档 |
+| **产品壳** | 标题页、设置（主音量/音效）、续关/新局、场景淡入淡出 |
+| **TD 第一章** | 10 波具名节奏（前哨→终守）、波次提示/横幅、剑阁门/地形、形状语言单位、飘字/震屏/程序化音效、胜败结算屏 |
+| **探索** | 9 房链（战/事件/修炼/宝箱/补给）、房间进度条、HP 条、战利品反馈、撤离/战败/通关屏 |
+| **Meta** | 阵容碎片进度、3 槽装备（通关/知识解锁）、探索主角切换 |
+| **知识** | 15 条；局内卡片不剧透；知识本未解锁隐藏答案；晨课 3 题 + buff |
+| **Juice** | 程序化 SFX、飘字伤害、轻震屏、按钮脉冲、场景过渡 |
+| **美术** | 统一主题色（武侠绿金）、角色定位形状、敌人标签形状 |
 
-## v0 不做
+## v0.2 仍属占位
 
-招式对抗/弹反、联机/抽卡 IAP、深度锻造、开放大世界、医疗级处方。
+- 无最终美术/配音/音乐轨
+- 装备仅 3 件演示词条，无深度锻造
+- TD 单章单图；探索单条路线
+- 知识科学审核流程待产品签收
 
 ## 内容扩展
 
-新单位/敌人/知识放入 `data/content_pack_core/*.json`（或未来新建 `content_pack_*` 并在 `ContentDB` 挂载）。资源与存档带 `content_pack` 标记，便于日后 DLC。
+JSON 驱动：`data/content_pack_core/*.json`。新 pack 目录 + `ContentDB.PACK_ROOT` 挂载即 DLC 接缝。
 
 ## 冒烟
 
 ```bash
 cd game
 godot --headless --path . --script res://tests/smoke_test.gd
+godot --headless --path . --script res://tests/boot_scenes.gd
+godot --headless --path . --script res://tests/gameplay_smoke.gd
 ```
+
+## 截图
+
+Chapter 截图由 agent 写入 Project store：`media/playable-chapter/`。

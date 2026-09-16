@@ -18,14 +18,28 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 color = Color(0.12, 0.16, 0.12, 1)
 
+[node name="ChapterLabel" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = 16.0
+offset_top = 8.0
+offset_right = -16.0
+offset_bottom = 36.0
+theme_override_colors/font_color = Color(0.82, 0.76, 0.52, 1)
+theme_override_font_sizes/font_size = 16
+text = "第一章"
+horizontal_alignment = 1
+
 [node name="TopHud" type="HBoxContainer" parent="."]
 layout_mode = 1
 anchors_preset = 10
 anchor_right = 1.0
 offset_left = 16.0
-offset_top = 12.0
+offset_top = 38.0
 offset_right = -16.0
-offset_bottom = 56.0
+offset_bottom = 78.0
 theme_override_constants/separation = 16
 
 [node name="SilverLabel" type="Label" parent="TopHud"]
@@ -59,16 +73,41 @@ anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 offset_left = 16.0
-offset_top = 64.0
+offset_top = 84.0
 offset_right = -16.0
 offset_bottom = -280.0
+
+[node name="WaveBanner" type="Label" parent="Field"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -200.0
+offset_top = 12.0
+offset_right = 200.0
+offset_bottom = 52.0
+grow_horizontal = 2
+theme_override_colors/font_color = Color(0.95, 0.82, 0.45, 1)
+theme_override_font_sizes/font_size = 26
+text = "— 波次 —"
+horizontal_alignment = 1
 
 [node name="FieldBg" type="ColorRect" parent="Field"]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-color = Color(0.16, 0.22, 0.17, 1)
+color = Color(0.14, 0.2, 0.16, 1)
+
+[node name="DecorLayer" type="Node2D" parent="Field"]
+unique_name_in_owner = true
+
+[node name="PathOutline" type="Line2D" parent="Field"]
+unique_name_in_owner = true
+width = 36.0
+default_color = Color(0.22, 0.2, 0.14, 0.55)
 
 [node name="PathLine" type="Line2D" parent="Field"]
 unique_name_in_owner = true

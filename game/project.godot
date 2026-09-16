@@ -6,8 +6,8 @@ config_version=5
 
 config/name="Kongfu Roguelike"
 config/description="竖屏武侠：塔防主线 + 探索支线 + 健身知识"
-config/version="0.1.0"
-run/main_scene="res://scenes/lobby/lobby.tscn"
+config/version="0.2.0"
+run/main_scene="res://scenes/shell/title_screen.tscn"
 config/features=PackedStringArray("4.3", "Forward Plus")
 config/icon="res://icon.svg"
 
@@ -16,6 +16,8 @@ config/icon="res://icon.svg"
 ContentDB="*res://scripts/autoload/content_db.gd"
 SaveManager="*res://scripts/autoload/save_manager.gd"
 GameState="*res://scripts/autoload/game_state.gd"
+SettingsManager="*res://scripts/autoload/settings_manager.gd"
+Juice="*res://scripts/autoload/juice.gd"
 
 [display]
 
@@ -41,6 +43,10 @@ active_skill={
 , Object(InputEventMouseButton,"resource_local_to_scene":false,"resource_name":"","device":-1,"window_id":0,"alt_pressed":false,"shift_pressed":false,"ctrl_pressed":false,"meta_pressed":false,"button_mask":0,"position":Vector2(0, 0),"global_position":Vector2(0, 0),"factor":1.0,"button_index":1,"canceled":false,"pressed":true,"double_click":false,"script":null)
 ]
 }
+
+[gui]
+
+theme/custom="res://resources/kongfu_theme.tres"
 
 [rendering]
 
