@@ -107,11 +107,24 @@ func _build_slots() -> void:
 	for i in SLOT_COUNT:
 		var btn := Button.new()
 		btn.text = "槽%d" % (i + 1)
-		btn.custom_minimum_size = Vector2(88, 88)
-		btn.position = Vector2(field.size.x * anchors[i].x - 44, field.size.y * anchors[i].y - 44) if field.size.x > 10 \
-			else Vector2(648 * anchors[i].x - 44, 720 * anchors[i].y - 44)
+		btn.focus_mode = Control.FOCUS_NONE
+		btn.custom_minimum_size = Vector2(96, 96)
+		btn.set_anchors_preset(Control.PRESET_TOP_LEFT)
+		btn.anchor_left = anchors[i].x
+		btn.anchor_right = anchors[i].x
+		btn.anchor_top = anchors[i].y
+		btn.anchor_bottom = anchors[i].y
+		btn.offset_left = -48
+		btn.offset_right = 48
+		btn.offset_top = -48
+		btn.offset_bottom = 48
 		btn.pressed.connect(_on_slot_pressed.bind(i))
 		slots_layer.add_child(btn)
+
+
+func _slot_center(slot: int) -> Vector2:
+	var slot_btn: Control = slots_layer.get_child(slot)
+	return slot_btn.get_rect().get_center()
 
 
 func _build_roster_bar() -> void:
@@ -163,11 +176,13 @@ func _on_slot_pressed(slot: int) -> void:
 func _spawn_unit_visual(slot: int, unit_id: String) -> void:
 	var u: Dictionary = ContentDB.get_unit(unit_id)
 	var node := ColorRect.new()
+	node.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	node.size = Vector2(56, 56)
 	node.color = Color(u.get("color", "#888888"))
-	var slot_btn: Button = slots_layer.get_child(slot)
-	node.position = slot_btn.position + Vector2(16, 16)
+	var center := _slot_center(slot)
+	node.position = center - Vector2(28, 28)
 	var label := Label.new()
+	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	label.text = str(u.get("name", "?")).substr(0, 2)
 	label.add_theme_font_size_override("font_size", 14)
 	node.add_child(label)
@@ -178,7 +193,7 @@ func _spawn_unit_visual(slot: int, unit_id: String) -> void:
 		"max_hp": float(u.get("td", {}).get("hp", 100)),
 		"cooldown": 0.0,
 		"node": node,
-		"pos": node.position + Vector2(28, 28),
+		"pos": center,
 	}
 
 
