@@ -4,6 +4,8 @@ extends Control
 const KnowledgeCardScene := preload("res://scenes/knowledge/knowledge_card.tscn")
 const ResultOverlayScene := preload("res://scenes/ui/result_overlay.tscn")
 const VF := preload("res://scripts/util/visual_factory.gd")
+const Atmo := preload("res://scripts/util/atmosphere.gd")
+const AP := preload("res://scripts/util/art_palette.gd")
 
 @onready var arena: Control = %Arena
 @onready var hero_node: Control = %Hero
@@ -42,6 +44,14 @@ var _hero_visual: Control
 
 
 func _ready() -> void:
+	Atmo.attach_full_bg(self, "night")
+	var old_bg := get_node_or_null("Bg")
+	if old_bg:
+		old_bg.visible = false
+	AP.apply_label(room_label, 24, AP.LANTERN_GOLD)
+	AP.apply_label(hp_label, 16, AP.PAPER_DIM)
+	AP.apply_label(status_label, 15, AP.PAPER_DIM)
+	AP.apply_label(loot_label, 16, AP.LANTERN_GOLD)
 	knowledge_layer = KnowledgeCardScene.instantiate()
 	add_child(knowledge_layer)
 	knowledge_layer.resolved.connect(_on_knowledge_resolved)
@@ -78,10 +88,11 @@ func _init_hero_stats() -> void:
 	skill = ex.get("active", {}).duplicate(true)
 	if _hero_visual:
 		_hero_visual.queue_free()
-	_hero_visual = VF.unit_node(u, Vector2(64, 64))
+	_hero_visual = VF.unit_node(u, Vector2(84, 96))
 	_hero_visual.position = hero_node.position
 	hero_node.visible = false
 	arena.add_child(_hero_visual)
+	VF.idle_bob(_hero_visual, 4.0, 2.6)
 
 
 func _process(delta: float) -> void:
@@ -116,6 +127,7 @@ func _enter_room() -> void:
 	var rtype := str(room.get("type", "combat"))
 	var type_name := _room_type_name(rtype)
 	room_label.text = "%d/%d · %s" % [room_index + 1, rooms.size(), room.get("label", type_name)]
+	_apply_room_atmosphere(rtype)
 	next_btn.visible = false
 	loot_label.visible = false
 	match rtype:
@@ -175,6 +187,25 @@ func _enter_room() -> void:
 	_refresh()
 
 
+func _apply_room_atmosphere(rtype: String) -> void:
+	var arena_bg := get_node_or_null("Arena/ArenaBg")
+	if arena_bg:
+		arena_bg.color = AP.room_tint(rtype)
+	var accent := get_node_or_null("Arena/ArenaAccent")
+	if accent:
+		match rtype:
+			"combat":
+				accent.color = Color(0.35, 0.18, 0.14, 0.35)
+			"event":
+				accent.color = Color(0.18, 0.28, 0.4, 0.4)
+			"train":
+				accent.color = Color(0.16, 0.32, 0.24, 0.4)
+			"loot", "supply":
+				accent.color = Color(0.4, 0.32, 0.14, 0.4)
+			_:
+				accent.color = Color(0.08, 0.1, 0.12, 0.5)
+
+
 func _room_type_name(t: String) -> String:
 	match t:
 		"combat": return "战"
@@ -197,9 +228,9 @@ func _rebuild_room_strip() -> void:
 		var rtype := str(room.get("type", "combat"))
 		var col := Color(0.28, 0.32, 0.3)
 		if i < room_index:
-			col = Color(0.4, 0.58, 0.45)
+			col = Color(0.35, 0.62, 0.5)
 		elif i == room_index:
-			col = Color(0.9, 0.75, 0.35)
+			col = AP.LANTERN_GOLD
 		else:
 			match rtype:
 				"event": col = Color(0.3, 0.4, 0.55)
@@ -219,7 +250,7 @@ func _spawn_room_enemies(ids: Array) -> void:
 	var i := 0
 	for eid in ids:
 		var e: Dictionary = ContentDB.get_enemy(str(eid))
-		var node := VF.enemy_node(e, Vector2(44, 44))
+		var node := VF.enemy_node(e, Vector2(64, 76))
 		node.position = Vector2(380 + (i % 2) * 80, 160 + i * 95)
 		enemies_layer.add_child(node)
 		enemies.append({
@@ -239,6 +270,7 @@ func _hero_auto_attack() -> void:
 	target.hp -= atk
 	var pos: Vector2 = target.node.position + target.node.custom_minimum_size * 0.5
 	Juice.float_number(pos, str(int(atk)), Color(1, 0.88, 0.5))
+	VF.hit_flash(enemies_layer, pos)
 	Juice.play_sfx("hit")
 	_pulse(_hero_visual)
 	if target.hp <= 0:
@@ -301,6 +333,10 @@ func _cast_skill() -> void:
 					enemy.node.queue_free()
 					enemies.erase(enemy)
 	skill_cd = float(skill.get("cooldown", 8.0))
+	var burst_at: Vector2 = arena.size * 0.5
+	if _hero_visual:
+		burst_at = _hero_visual.position + _hero_visual.custom_minimum_size * 0.5
+	VF.skill_burst(arena, burst_at, Color(0.7, 0.88, 0.75, 0.75))
 	Juice.play_sfx("skill")
 	Juice.screen_shake(arena, 4.0)
 	_refresh_skill_btn()

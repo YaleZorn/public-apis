@@ -1,5 +1,8 @@
 extends Control
-## Main hub: mode select, roster/gear meta, continue shortcut.
+## Main hub: mode select, roster/gear meta, continue shortcut — ink-mist atmosphere.
+
+const AP := preload("res://scripts/util/art_palette.gd")
+const Atmo := preload("res://scripts/util/atmosphere.gd")
 
 @onready var title_label: Label = %TitleLabel
 @onready var subtitle: Label = %Subtitle
@@ -13,18 +16,35 @@ extends Control
 @onready var hero_bar: HBoxContainer = %HeroBar
 @onready var settings_btn: Button = %SettingsBtn
 @onready var settings_panel: PanelContainer = %SettingsPanel
+@onready var decor: Control = %Decor
 
 
 func _ready() -> void:
+	Atmo.attach_full_bg(self, "night")
+	var old_bg := get_node_or_null("Bg")
+	if old_bg:
+		old_bg.visible = false
+	var accent := get_node_or_null("Accent")
+	if accent:
+		accent.visible = false
 	title_label.text = "剑阁大厅"
+	AP.apply_label(title_label, 40, AP.LANTERN_GOLD)
 	subtitle.text = ContentDB.waves_cfg.get("chapter_title", "守卫剑阁 · 栈道夜行")
+	AP.apply_label(subtitle, 16, AP.MIST_TEAL.lightened(0.2))
+	AP.apply_richtext(roster_panel, 15)
+	AP.apply_richtext(gear_panel, 14)
+	AP.apply_label(status_label, 13, Color(0.65, 0.72, 0.64, 1))
 	continue_btn.pressed.connect(_on_continue)
 	new_td_btn.pressed.connect(func(): _start_mode("td"))
 	new_explore_btn.pressed.connect(func(): _start_mode("explore"))
-	knowledge_btn.pressed.connect(func(): GameState.go_knowledge())
+	knowledge_btn.pressed.connect(func():
+		Juice.play_sfx("tap")
+		Juice.fade_transition(func(): GameState.go_knowledge())
+	)
 	settings_btn.pressed.connect(_toggle_settings)
 	settings_panel.visible = false
 	_build_settings()
+	Atmo.build_lobby_decor(decor)
 	_refresh()
 	GameState.meta_changed.connect(_refresh)
 	GameState.checkpoint_changed.connect(_refresh)
@@ -47,7 +67,7 @@ func _refresh() -> void:
 		var mastery := int(GameState.hero_mastery.get(uid, 0))
 		var mark := "★" if uid == GameState.explore_hero_id else "·"
 		var bar := _frag_bar(frags)
-		roster_panel.append_text("%s [color=#d4c48a]%s[/color] %s  熟练%d  %s\n" % [
+		roster_panel.append_text("%s [color=#e6c15a]%s[/color] %s  熟练%d  %s\n" % [
 			mark, u.get("name", uid), u.get("role", "?"), mastery, bar
 		])
 	gear_panel.clear()
@@ -58,11 +78,9 @@ func _refresh() -> void:
 		var label := "空"
 		if gid != "":
 			label = ContentDB.get_gear(gid).get("name", gid)
-		elif i < GameState.gear_unlocked.size():
-			pass
 		gear_panel.append_text("%s：%s\n" % [slot_names[i], label])
 	if not GameState.gear_unlocked.is_empty():
-		gear_panel.append_text("\n[color=#8ab88a]可装备：[/color]\n")
+		gear_panel.append_text("\n[color=#5a9a90]可装备：[/color]\n")
 		for gid in GameState.gear_unlocked:
 			var g: Dictionary = ContentDB.get_gear(gid)
 			var equipped: bool = gid in GameState.gear_equipped
@@ -126,18 +144,22 @@ func _rebuild_gear_buttons() -> void:
 
 func _on_continue() -> void:
 	Juice.play_sfx("tap")
-	if GameState.resume_target() == "td":
-		GameState.go_td(true)
-	elif GameState.resume_target() == "explore":
-		GameState.go_explore(true)
+	Juice.fade_transition(func():
+		if GameState.resume_target() == "td":
+			GameState.go_td(true)
+		elif GameState.resume_target() == "explore":
+			GameState.go_explore(true)
+	)
 
 
 func _start_mode(mode: String) -> void:
 	Juice.play_sfx("tap")
-	if mode == "td":
-		GameState.go_td(false)
-	else:
-		GameState.go_explore(false)
+	Juice.fade_transition(func():
+		if mode == "td":
+			GameState.go_td(false)
+		else:
+			GameState.go_explore(false)
+	)
 
 
 func _toggle_settings() -> void:

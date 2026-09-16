@@ -6,6 +6,8 @@ const MAX_DEPLOYED := 4
 const KnowledgeCardScene := preload("res://scenes/knowledge/knowledge_card.tscn")
 const ResultOverlayScene := preload("res://scenes/ui/result_overlay.tscn")
 const VF := preload("res://scripts/util/visual_factory.gd")
+const Atmo := preload("res://scripts/util/atmosphere.gd")
+const AP := preload("res://scripts/util/art_palette.gd")
 
 @onready var field: Control = %Field
 @onready var path_line: Line2D = %PathLine
@@ -46,6 +48,15 @@ var _slot_buttons: Array[Button] = []
 
 
 func _ready() -> void:
+	var old_bg := get_node_or_null("Bg")
+	if old_bg:
+		old_bg.color = AP.INK_NIGHT
+	var field_bg := get_node_or_null("Field/FieldBg")
+	if field_bg:
+		field_bg.color = Color(0.10, 0.16, 0.13, 1)
+		Atmo.attach_field_art(field_bg)
+	AP.apply_label(chapter_label, 16, AP.LANTERN_GOLD)
+	AP.apply_label(wave_banner, 26, AP.LANTERN_GOLD)
 	knowledge_layer = KnowledgeCardScene.instantiate()
 	add_child(knowledge_layer)
 	knowledge_layer.resolved.connect(_on_knowledge_resolved)
@@ -103,39 +114,31 @@ func _build_path() -> void:
 		Vector2(w * 0.5, h * 0.98),
 	])
 	path_outline.points = path_points
-	path_outline.width = 36
-	path_outline.default_color = Color(0.22, 0.2, 0.14, 0.55)
+	path_outline.width = 40
+	path_outline.default_color = AP.PATH_RIM
 	path_line.points = path_points
-	path_line.width = 24
-	path_line.default_color = Color(0.48, 0.42, 0.28, 0.92)
+	path_line.width = 26
+	path_line.default_color = AP.PATH_EARTH
 	_build_decor(w, h)
 
 
 func _build_decor(w: float, h: float) -> void:
+	# Gate + spawn markers only — painted field carries terrain mood
 	for c in decor_layer.get_children():
 		c.queue_free()
-	var patches := [
-		[Vector2(w * 0.12, h * 0.08), Vector2(120, 80), Color(0.18, 0.26, 0.19, 0.5)],
-		[Vector2(w * 0.55, h * 0.52), Vector2(140, 90), Color(0.14, 0.2, 0.16, 0.45)],
-		[Vector2(w * 0.05, h * 0.72), Vector2(100, 70), Color(0.16, 0.22, 0.18, 0.4)],
-	]
-	for p in patches:
-		var patch := VF.terrain_patch(p[2], p[1])
-		patch.position = p[0]
-		decor_layer.add_child(patch)
-	var gate := VF.gate_marker()
-	gate.position = path_points[path_points.size() - 1] - Vector2(42, 50)
-	decor_layer.add_child(gate)
-	var spawn := ColorRect.new()
-	spawn.size = Vector2(36, 36)
-	spawn.position = path_points[0] - Vector2(18, 18)
-	spawn.color = Color(0.75, 0.35, 0.25, 0.9)
-	decor_layer.add_child(spawn)
-	var spawn_lbl := Label.new()
-	spawn_lbl.text = "敌"
-	spawn_lbl.add_theme_font_size_override("font_size", 12)
-	spawn_lbl.position = spawn.position + Vector2(6, 8)
-	decor_layer.add_child(spawn_lbl)
+	if path_points.size() > 0:
+		var gate := Atmo._gate_node()
+		gate.position = path_points[path_points.size() - 1] - Vector2(48, 58)
+		decor_layer.add_child(gate)
+		var spawn := Atmo._spawn_marker()
+		spawn.position = path_points[0] - Vector2(20, 20)
+		decor_layer.add_child(spawn)
+	var mist := ColorRect.new()
+	mist.size = Vector2(w, 48)
+	mist.position = Vector2(0, h * 0.4)
+	mist.color = Color(0.66, 0.77, 0.72, 0.07)
+	mist.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	decor_layer.add_child(mist)
 
 
 func _build_slots() -> void:
@@ -161,7 +164,8 @@ func _build_slots() -> void:
 		btn.offset_right = 44
 		btn.offset_top = -44
 		btn.offset_bottom = 44
-		btn.modulate = Color(0.85, 0.9, 0.8, 0.85)
+		btn.modulate = Color(0.75, 0.88, 0.78, 0.7)
+		btn.add_theme_font_size_override("font_size", 14)
 		btn.pressed.connect(_on_slot_pressed.bind(i))
 		slots_layer.add_child(btn)
 		_slot_buttons.append(btn)
@@ -252,6 +256,7 @@ func _spawn_unit_visual(slot: int, unit_id: String) -> void:
 	}
 	_slot_buttons[slot].modulate = Color(1, 1, 1, 0.15)
 	_slot_buttons[slot].text = ""
+	VF.idle_bob(node, 2.5, 2.2 + randf() * 0.6)
 
 
 func _on_recall() -> void:
@@ -389,6 +394,7 @@ func _tick_combat(delta: float) -> void:
 		deployed[slot] = info
 		var hit_pos: Vector2 = target.position + target.custom_minimum_size * 0.5
 		Juice.float_number(hit_pos, str(int(dmg)), Color(1, 0.85, 0.45))
+		VF.hit_flash(enemies_layer, hit_pos)
 		Juice.play_sfx("hit")
 		if float(target.get_meta("hp")) <= 0:
 			_kill_enemy(target)

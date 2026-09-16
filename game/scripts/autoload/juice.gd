@@ -69,7 +69,7 @@ func screen_shake(target: Node, strength: float = 6.0) -> void:
 	_shake_strength = maxf(_shake_strength, strength)
 
 
-func fade_transition(callback: Callable, color: Color = Color(0.05, 0.08, 0.07, 1.0), duration: float = 0.28) -> void:
+func fade_transition(callback: Callable, color: Color = Color(0.03, 0.09, 0.08, 1.0), duration: float = 0.32) -> void:
 	if _fade_rect == null:
 		callback.call()
 		return
@@ -98,7 +98,7 @@ func _setup_fade() -> void:
 	_fade_rect = ColorRect.new()
 	_fade_rect.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_fade_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_fade_rect.color = Color(0.05, 0.08, 0.07, 0.0)
+	_fade_rect.color = Color(0.03, 0.09, 0.08, 0.0)
 	_fade_layer.add_child(_fade_rect)
 
 
@@ -145,3 +145,15 @@ func _make_beep(hz: float, dur: float, vol: float) -> AudioStreamWAV:
 		data[i * 2 + 1] = (v >> 8) & 0xFF
 	wav.data = data
 	return wav
+
+
+func slide_in(node: Control, from_y: float = 24.0, duration: float = 0.28) -> void:
+	if node == null:
+		return
+	var target := node.modulate
+	node.modulate.a = 0.0
+	var base := node.position
+	node.position = base + Vector2(0, from_y)
+	var tw := create_tween()
+	tw.tween_property(node, "modulate:a", target.a, duration)
+	tw.parallel().tween_property(node, "position", base, duration).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)

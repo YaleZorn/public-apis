@@ -1,12 +1,12 @@
 ; Engine configuration file.
-; Kongfu Roguelike v0 — portrait mobile vertical slice
+; Kongfu Roguelike v0.3 — ink-mist art pass
 config_version=5
 
 [application]
 
 config/name="Kongfu Roguelike"
 config/description="竖屏武侠：塔防主线 + 探索支线 + 健身知识"
-config/version="0.2.0"
+config/version="0.3.0"
 run/main_scene="res://scenes/shell/title_screen.tscn"
 config/features=PackedStringArray("4.3", "Forward Plus")
 config/icon="res://icon.svg"

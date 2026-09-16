@@ -18,14 +18,15 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-color = Color(0.07, 0.11, 0.09, 1)
+color = Color(0.03, 0.09, 0.08, 1)
 
-[node name="Accent" type="ColorRect" parent="."]
+[node name="Decor" type="Control" parent="."]
+unique_name_in_owner = true
 layout_mode = 1
-anchors_preset = 10
+anchors_preset = 15
 anchor_right = 1.0
-offset_bottom = 160.0
-color = Color(0.12, 0.19, 0.15, 0.6)
+anchor_bottom = 1.0
+mouse_filter = 2
 
 [node name="VBox" type="VBoxContainer" parent="."]
 layout_mode = 1
@@ -33,25 +34,25 @@ anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 offset_left = 32.0
-offset_top = 40.0
+offset_top = 48.0
 offset_right = -32.0
 offset_bottom = -28.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_constants/separation = 10
+theme_override_constants/separation = 12
 
 [node name="TitleLabel" type="Label" parent="VBox"]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_colors/font_color = Color(0.91, 0.82, 0.55, 1)
-theme_override_font_sizes/font_size = 38
+theme_override_colors/font_color = Color(0.9, 0.76, 0.36, 1)
+theme_override_font_sizes/font_size = 40
 text = "剑阁大厅"
 horizontal_alignment = 1
 
 [node name="Subtitle" type="Label" parent="VBox"]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_colors/font_color = Color(0.72, 0.82, 0.74, 1)
+theme_override_colors/font_color = Color(0.55, 0.78, 0.72, 1)
 theme_override_font_sizes/font_size = 16
 text = "第一章"
 horizontal_alignment = 1
@@ -65,11 +66,11 @@ text = "续关"
 
 [node name="ModeRow" type="HBoxContainer" parent="VBox"]
 layout_mode = 2
-theme_override_constants/separation = 8
+theme_override_constants/separation = 10
 
 [node name="NewTdBtn" type="Button" parent="VBox/ModeRow"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 64)
+custom_minimum_size = Vector2(0, 72)
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 20
@@ -77,7 +78,7 @@ text = "新局 · 塔防"
 
 [node name="NewExploreBtn" type="Button" parent="VBox/ModeRow"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 64)
+custom_minimum_size = Vector2(0, 72)
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 20
@@ -93,30 +94,39 @@ text = "知识本 / 晨课"
 [node name="MetaRow" type="HBoxContainer" parent="VBox"]
 layout_mode = 2
 size_flags_vertical = 3
-theme_override_constants/separation = 10
+theme_override_constants/separation = 12
 
-[node name="RosterPanel" type="RichTextLabel" parent="VBox/MetaRow"]
+[node name="RosterWrap" type="PanelContainer" parent="VBox/MetaRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="RosterPanel" type="RichTextLabel" parent="VBox/MetaRow/RosterWrap"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 180)
 layout_mode = 2
 size_flags_horizontal = 3
 bbcode_enabled = true
 scroll_active = true
-theme_override_font_sizes/normal_font_size = 16
+theme_override_font_sizes/normal_font_size = 15
 
-[node name="GearVBox" type="VBoxContainer" parent="VBox/MetaRow"]
+[node name="GearWrap" type="PanelContainer" parent="VBox/MetaRow"]
 layout_mode = 2
 size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="GearVBox" type="VBoxContainer" parent="VBox/MetaRow/GearWrap"]
+layout_mode = 2
 theme_override_constants/separation = 6
 
-[node name="GearPanel" type="RichTextLabel" parent="VBox/MetaRow/GearVBox"]
+[node name="GearPanel" type="RichTextLabel" parent="VBox/MetaRow/GearWrap/GearVBox"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 120)
 layout_mode = 2
 bbcode_enabled = true
-theme_override_font_sizes/normal_font_size = 15
+theme_override_font_sizes/normal_font_size = 14
 
-[node name="GearBar" type="HBoxContainer" parent="VBox/MetaRow/GearVBox"]
+[node name="GearBar" type="HBoxContainer" parent="VBox/MetaRow/GearWrap/GearVBox"]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_constants/separation = 4

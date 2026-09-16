@@ -1,6 +1,6 @@
-# Kongfu Roguelike — 可玩第一章（v0.2）
+# Kongfu Roguelike — 可玩第一章 · 画面篇（v0.3）
 
-竖屏、离线武侠健身题材。**第一章「栈道夜雨」** — 塔防主线 + 探索支线 + 真健身知识环，从 graybox 提升到可对外试玩品质。
+竖屏、离线武侠健身题材。**第一章「栈道夜雨」** — 塔防主线 + 探索支线 + 真健身知识环，墨雾青玉夜色视觉身份；竖屏可对外截图试玩。
 
 设计依据（Project store）：
 - `docs/gameplay-design.md`
@@ -20,6 +20,14 @@ godot4 --path .
 godot --path . --rendering-driver opengl3
 ```
 
+## 画面（v0.3）
+
+- 统一主题：墨夜青绿 + 灯笼金；霞鹜文楷字体
+- 标题/大厅氛围层（山影、薄雾漂移动画、灯笼闪烁）
+- TD：栈道地形、剑阁门、角色剪影、命中闪白
+- 探索：房间氛围色、英雄 idle、技能爆发环
+- 知识本：可扫读条目 + 面板容器
+
 ## 本版包含（vs v0.1 graybox）
 
 | 模块 | 内容 |
@@ -32,9 +40,9 @@ godot --path . --rendering-driver opengl3
 | **Juice** | 程序化 SFX、飘字伤害、轻震屏、按钮脉冲、场景过渡 |
 | **美术** | 统一主题色（武侠绿金）、角色定位形状、敌人标签形状 |
 
-## v0.2 仍属占位
+## 仍属占位
 
-- 无最终美术/配音/音乐轨
+- 无最终手绘角色立绘/配音/音乐轨（当前为引擎内可维护剪影语言）
 - 装备仅 3 件演示词条，无深度锻造
 - TD 单章单图；探索单条路线
 - 知识科学审核流程待产品签收
@@ -54,4 +62,4 @@ godot --headless --path . --script res://tests/gameplay_smoke.gd
 
 ## 截图
 
-Chapter 截图由 agent 写入 Project store：`media/playable-chapter/`。
+截图：Project store `media/art-pass/`。

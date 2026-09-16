@@ -1,5 +1,8 @@
 extends Control
-## Entry title: tap-through to lobby, settings, optional continue shortcut.
+## Entry title: brand-first portrait hero, mist atmosphere, tap-through to lobby.
+
+const AP := preload("res://scripts/util/art_palette.gd")
+const Atmo := preload("res://scripts/util/atmosphere.gd")
 
 @onready var title: Label = %Title
 @onready var tagline: Label = %Tagline
@@ -14,55 +17,40 @@ var _pulse_t: float = 0.0
 
 
 func _ready() -> void:
+	Atmo.attach_full_bg(self, "night")
+	# Hide flat ColorRect backgrounds if present
+	var old_bg := get_node_or_null("Bg")
+	if old_bg:
+		old_bg.visible = false
+	var at := get_node_or_null("AccentTop")
+	if at:
+		at.visible = false
+	var ab := get_node_or_null("AccentBottom")
+	if ab:
+		ab.visible = false
 	title.text = "剑阁·健身"
+	AP.apply_label(title, 58, AP.LANTERN_GOLD)
 	tagline.text = "守卫剑阁 · 栈道夜行 · 真知识"
-	version_label.text = "v0.2 可玩第一章"
+	AP.apply_label(tagline, 20, AP.MIST_TEAL.lightened(0.25))
+	AP.apply_label(version_label, 14, Color(0.55, 0.62, 0.56, 1))
+	version_label.text = "v0.3 画面篇"
 	continue_btn.visible = GameState.has_resume()
 	continue_btn.pressed.connect(_on_continue)
 	start_btn.pressed.connect(_on_start)
 	settings_btn.pressed.connect(_toggle_settings)
 	settings_panel.visible = false
 	_build_settings_sliders()
-	_build_decor()
+	Atmo.build_title_decor(decor)
+	await get_tree().process_frame
+	title.pivot_offset = title.size * 0.5
+	Juice.slide_in(start_btn, 18, 0.35)
 	Juice.play_sfx("tap")
 
 
 func _process(delta: float) -> void:
 	_pulse_t += delta
 	title.modulate = Color(1, 1, 1, 0.88 + 0.12 * sin(_pulse_t * 2.2))
-
-
-func _build_decor() -> void:
-	for c in decor.get_children():
-		c.queue_free()
-	# Stylized mountain / gate silhouette — temporary art language.
-	var peaks := [
-		[Vector2(40, 280), Vector2(220, 220), Color(0.1, 0.16, 0.13, 0.85)],
-		[Vector2(180, 300), Vector2(280, 260), Color(0.12, 0.18, 0.14, 0.8)],
-		[Vector2(420, 270), Vector2(240, 240), Color(0.09, 0.15, 0.12, 0.9)],
-	]
-	for p in peaks:
-		var tri := ColorRect.new()
-		tri.position = p[0]
-		tri.size = p[1]
-		tri.color = p[2]
-		tri.rotation = deg_to_rad(-12)
-		decor.add_child(tri)
-	var gate := ColorRect.new()
-	gate.position = Vector2(280, 380)
-	gate.size = Vector2(160, 120)
-	gate.color = Color(0.42, 0.34, 0.2, 0.75)
-	decor.add_child(gate)
-	var arch := ColorRect.new()
-	arch.position = Vector2(320, 400)
-	arch.size = Vector2(80, 90)
-	arch.color = Color(0.05, 0.08, 0.07, 0.9)
-	decor.add_child(arch)
-	var moon := ColorRect.new()
-	moon.position = Vector2(520, 90)
-	moon.size = Vector2(48, 48)
-	moon.color = Color(0.9, 0.82, 0.55, 0.55)
-	decor.add_child(moon)
+	title.scale = Vector2.ONE * (1.0 + 0.012 * sin(_pulse_t * 1.4))
 
 
 func _on_continue() -> void:
@@ -106,6 +94,7 @@ func _add_slider(parent: VBoxContainer, label: String, initial: float, cb: Calla
 	row.name = "Row_" + label
 	var lbl := Label.new()
 	lbl.text = label
+	AP.apply_label(lbl, 16, AP.PAPER_DIM)
 	lbl.custom_minimum_size = Vector2(100, 0)
 	var slider := HSlider.new()
 	slider.min_value = 0.0
