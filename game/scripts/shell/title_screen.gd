@@ -29,12 +29,14 @@ func _ready() -> void:
 	if ab:
 		ab.visible = false
 	title.text = "剑阁·健身"
-	AP.apply_label(title, 58, AP.LANTERN_GOLD)
+	AP.apply_label(title, 64, AP.LANTERN_GOLD)
 	tagline.text = "守卫剑阁 · 栈道夜行 · 真知识"
-	AP.apply_label(tagline, 20, AP.MIST_TEAL.lightened(0.25))
-	AP.apply_label(version_label, 14, Color(0.55, 0.62, 0.56, 1))
-	version_label.text = "v0.3 画面篇"
+	AP.apply_label(tagline, 18, AP.MIST_TEAL.lightened(0.28))
+	AP.apply_label(version_label, 13, Color(0.55, 0.62, 0.56, 1))
+	version_label.text = "v0.3.1 画面精修"
 	continue_btn.visible = GameState.has_resume()
+	continue_btn.theme_type_variation = &"ButtonPrimary"
+	start_btn.theme_type_variation = &"ButtonPrimary"
 	continue_btn.pressed.connect(_on_continue)
 	start_btn.pressed.connect(_on_start)
 	settings_btn.pressed.connect(_toggle_settings)
@@ -44,13 +46,14 @@ func _ready() -> void:
 	await get_tree().process_frame
 	title.pivot_offset = title.size * 0.5
 	Juice.slide_in(start_btn, 18, 0.35)
+	Juice.start_ambient()
 	Juice.play_sfx("tap")
 
 
 func _process(delta: float) -> void:
 	_pulse_t += delta
-	title.modulate = Color(1, 1, 1, 0.88 + 0.12 * sin(_pulse_t * 2.2))
-	title.scale = Vector2.ONE * (1.0 + 0.012 * sin(_pulse_t * 1.4))
+	title.modulate = Color(1, 1, 1, 0.90 + 0.10 * sin(_pulse_t * 2.0))
+	title.scale = Vector2.ONE * (1.0 + 0.016 * sin(_pulse_t * 1.3))
 
 
 func _on_continue() -> void:
@@ -82,6 +85,7 @@ func _build_settings_sliders() -> void:
 			c.queue_free()
 	_add_slider(box, "主音量", SettingsManager.master_volume, func(v): SettingsManager.set_master(v))
 	_add_slider(box, "音效", SettingsManager.sfx_volume, func(v): SettingsManager.set_sfx(v))
+	_add_slider(box, "氛围", SettingsManager.music_volume, func(v): SettingsManager.set_music(v))
 	var sfx_toggle := CheckButton.new()
 	sfx_toggle.text = "音效开关"
 	sfx_toggle.button_pressed = SettingsManager.sfx_on

@@ -10,6 +10,17 @@ const ATLAS_W := 1280.0
 const ATLAS_H := 720.0
 const COLS := 7
 
+# Per-index crop insets (L,T,R,B) as fractions of cell — tighter silhouettes.
+const CROP_INSETS := [
+	Vector4(0.10, 0.06, 0.10, 0.08), # 0 tank
+	Vector4(0.12, 0.08, 0.10, 0.10), # 1 dps
+	Vector4(0.10, 0.05, 0.10, 0.08), # 2 control
+	Vector4(0.11, 0.06, 0.11, 0.08), # 3 support
+	Vector4(0.12, 0.10, 0.12, 0.10), # 4 bandit
+	Vector4(0.10, 0.07, 0.10, 0.08), # 5 armored
+	Vector4(0.14, 0.10, 0.10, 0.12), # 6 fast
+]
+
 static var _atlas_tex: Texture2D
 
 
@@ -24,11 +35,15 @@ static func _region(index: int) -> AtlasTexture:
 	if src == null:
 		return null
 	var cell_w := ATLAS_W / float(COLS)
+	var inset: Vector4 = CROP_INSETS[clampi(index, 0, CROP_INSETS.size() - 1)]
 	var at := AtlasTexture.new()
 	at.atlas = src
-	# Trim margins inside each cell for tighter crop
-	var pad := cell_w * 0.06
-	at.region = Rect2(index * cell_w + pad, ATLAS_H * 0.08, cell_w - pad * 2.0, ATLAS_H * 0.84)
+	at.region = Rect2(
+		index * cell_w + cell_w * inset.x,
+		ATLAS_H * inset.y,
+		cell_w * (1.0 - inset.x - inset.z),
+		ATLAS_H * (1.0 - inset.y - inset.w)
+	)
 	return at
 
 
@@ -59,8 +74,16 @@ static func unit_node(unit: Dictionary, size: Vector2 = Vector2(64, 72)) -> Cont
 	var plate := ColorRect.new()
 	plate.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	plate.size = size
-	plate.color = Color(0.04, 0.07, 0.06, 0.55)
+	plate.color = Color(0.03, 0.06, 0.05, 0.42)
 	root.add_child(plate)
+	# Soft gold rim for silhouette pop on busy terrain
+	var rim := ColorRect.new()
+	rim.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	rim.size = size + Vector2(4, 4)
+	rim.position = Vector2(-2, -2)
+	rim.color = Color(AP.LANTERN_GOLD.r, AP.LANTERN_GOLD.g, AP.LANTERN_GOLD.b, 0.16)
+	root.add_child(rim)
+	root.move_child(rim, 0)
 	var tex := _region(_role_index(role))
 	if tex:
 		var spr := TextureRect.new()
@@ -68,8 +91,10 @@ static func unit_node(unit: Dictionary, size: Vector2 = Vector2(64, 72)) -> Cont
 		spr.texture = tex
 		spr.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		spr.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		spr.size = size - Vector2(4, 10)
-		spr.position = Vector2(2, 2)
+		spr.size = size - Vector2(2, 8)
+		spr.position = Vector2(1, 1)
+		if role == "summon":
+			spr.modulate = Color(1.05, 0.95, 0.75, 1.0)
 		root.add_child(spr)
 	else:
 		_draw_unit_body(root, role, Color(str(unit.get("color", "#6a8f71"))), size)
@@ -113,6 +138,12 @@ static func enemy_node(enemy: Dictionary, size: Vector2 = Vector2(40, 48)) -> Co
 	root.custom_minimum_size = size
 	root.size = size
 	root.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var shadow := ColorRect.new()
+	shadow.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	shadow.size = size + Vector2(4, 4)
+	shadow.position = Vector2(-2, -2)
+	shadow.color = Color(0.02, 0.02, 0.02, 0.45)
+	root.add_child(shadow)
 	var tex := _region(_enemy_index(tags))
 	if tex:
 		var spr := TextureRect.new()

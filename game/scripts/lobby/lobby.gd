@@ -27,13 +27,16 @@ func _ready() -> void:
 	var accent := get_node_or_null("Accent")
 	if accent:
 		accent.visible = false
-	title_label.text = "剑阁大厅"
-	AP.apply_label(title_label, 40, AP.LANTERN_GOLD)
+	title_label.text = "剑阁·大厅"
+	AP.apply_label(title_label, 44, AP.LANTERN_GOLD)
 	subtitle.text = ContentDB.waves_cfg.get("chapter_title", "守卫剑阁 · 栈道夜行")
-	AP.apply_label(subtitle, 16, AP.MIST_TEAL.lightened(0.2))
+	AP.apply_label(subtitle, 15, AP.MIST_TEAL.lightened(0.22))
 	AP.apply_richtext(roster_panel, 15)
 	AP.apply_richtext(gear_panel, 14)
 	AP.apply_label(status_label, 13, Color(0.65, 0.72, 0.64, 1))
+	continue_btn.theme_type_variation = &"ButtonPrimary"
+	new_td_btn.theme_type_variation = &"ButtonPrimary"
+	new_explore_btn.theme_type_variation = &"ButtonPrimary"
 	continue_btn.pressed.connect(_on_continue)
 	new_td_btn.pressed.connect(func(): _start_mode("td"))
 	new_explore_btn.pressed.connect(func(): _start_mode("explore"))
@@ -45,6 +48,7 @@ func _ready() -> void:
 	settings_panel.visible = false
 	_build_settings()
 	Atmo.build_lobby_decor(decor)
+	Juice.start_ambient()
 	_refresh()
 	GameState.meta_changed.connect(_refresh)
 	GameState.checkpoint_changed.connect(_refresh)
@@ -177,6 +181,10 @@ func _build_settings() -> void:
 	)
 	_add_slider(box, "音效", SettingsManager.sfx_volume, func(v):
 		SettingsManager.set_sfx(v)
+		GameState.persist_meta_keep_checkpoints()
+	)
+	_add_slider(box, "氛围", SettingsManager.music_volume, func(v):
+		SettingsManager.set_music(v)
 		GameState.persist_meta_keep_checkpoints()
 	)
 

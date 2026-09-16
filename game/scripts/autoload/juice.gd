@@ -1,5 +1,5 @@
 extends Node
-## Lightweight juice: procedural SFX, float numbers, screen shake, scene fades.
+## Lightweight juice: procedural SFX, ambient stub, float numbers, screen shake, fades.
 
 const FloatingNumberScene := preload("res://scenes/ui/floating_number.tscn")
 
@@ -12,6 +12,8 @@ var _shake_decay: float = 8.0
 var _shake_offset: Vector2 = Vector2.ZERO
 var _fade_layer: CanvasLayer
 var _fade_rect: ColorRect
+var _ambient_player: AudioStreamPlayer
+var _ambient_on: bool = false
 
 
 func _ready() -> void:
@@ -20,6 +22,16 @@ func _ready() -> void:
 	add_child(_sfx_root)
 	_build_streams()
 	_setup_fade()
+	_setup_ambient()
+	SettingsManager.settings_changed.connect(_sync_ambient_volume)
+	_upgrade_theme()
+
+
+func _upgrade_theme() -> void:
+	var ThemeBuilderScr := preload("res://scripts/util/theme_builder.gd")
+	var theme := ThemeDB.get_project_theme()
+	if theme:
+		ThemeBuilderScr.apply_ornate(theme)
 
 
 func _process(delta: float) -> void:
@@ -47,6 +59,21 @@ func play_sfx(kind: String) -> void:
 	player.stream = stream
 	player.volume_db = linear_to_db(SettingsManager.sfx_volume)
 	player.play()
+
+
+func start_ambient() -> void:
+	if _ambient_player == null:
+		return
+	_ambient_on = true
+	_sync_ambient_volume()
+	if not _ambient_player.playing:
+		_ambient_player.play()
+
+
+func stop_ambient() -> void:
+	_ambient_on = false
+	if _ambient_player and _ambient_player.playing:
+		_ambient_player.stop()
 
 
 func float_number(at: Vector2, text: String, color: Color = Color(1, 0.92, 0.55)) -> void:
@@ -102,6 +129,25 @@ func _setup_fade() -> void:
 	_fade_layer.add_child(_fade_rect)
 
 
+func _setup_ambient() -> void:
+	_ambient_player = AudioStreamPlayer.new()
+	_ambient_player.name = "Ambient"
+	_ambient_player.bus = "Master"
+	_ambient_player.stream = _make_ambient_loop()
+	add_child(_ambient_player)
+
+
+func _sync_ambient_volume() -> void:
+	if _ambient_player == null:
+		return
+	var vol := SettingsManager.music_volume * SettingsManager.master_volume
+	_ambient_player.volume_db = linear_to_db(maxf(vol * 0.35, 0.0001))
+	if _ambient_on and vol <= 0.01 and _ambient_player.playing:
+		_ambient_player.stop()
+	elif _ambient_on and vol > 0.01 and not _ambient_player.playing:
+		_ambient_player.play()
+
+
 func _borrow_player() -> AudioStreamPlayer:
 	for p in _players:
 		if not p.playing:
@@ -141,6 +187,36 @@ func _make_beep(hz: float, dur: float, vol: float) -> AudioStreamWAV:
 		var env := 1.0 - t / dur
 		var s := sin(TAU * hz * t) * vol * env
 		var v := int(clamp(s * 32767.0, -32768.0, 32767.0))
+		data[i * 2] = v & 0xFF
+		data[i * 2 + 1] = (v >> 8) & 0xFF
+	wav.data = data
+	return wav
+
+
+func _make_ambient_loop() -> AudioStreamWAV:
+	## Soft ink-mist drone stub (loopable). Not a full soundtrack.
+	var wav := AudioStreamWAV.new()
+	wav.format = AudioStreamWAV.FORMAT_16_BITS
+	wav.mix_rate = 22050
+	wav.stereo = false
+	wav.loop_mode = AudioStreamWAV.LOOP_FORWARD
+	wav.loop_begin = 0
+	var dur := 4.0
+	var count := int(wav.mix_rate * dur)
+	wav.loop_end = count
+	var data := PackedByteArray()
+	data.resize(count * 2)
+	for i in count:
+		var t := float(i) / float(wav.mix_rate)
+		var s := (
+			sin(TAU * 55.0 * t) * 0.11
+			+ sin(TAU * 82.5 * t) * 0.07
+			+ sin(TAU * 110.0 * t + 0.4) * 0.04
+			+ sin(TAU * 0.35 * t) * 0.02
+		)
+		var edge := minf(t, dur - t)
+		var env := clampf(edge / 0.35, 0.0, 1.0)
+		var v := int(clamp(s * env * 32767.0, -32768.0, 32767.0))
 		data[i * 2] = v & 0xFF
 		data[i * 2 + 1] = (v >> 8) & 0xFF
 	wav.data = data

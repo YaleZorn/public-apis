@@ -56,6 +56,8 @@ static func attach_full_bg(parent: Control, kind: String = "night") -> TextureRe
 
 
 static func attach_field_art(field_bg: Control) -> void:
+	## Prefer full-bleed scene BG via attach_full_bg(..., "td").
+	## Field-local art uses aspect-covered mapping so the painted road is not skewed.
 	if field_bg == null:
 		return
 	if field_bg is TextureRect:
@@ -63,23 +65,21 @@ static func attach_field_art(field_bg: Control) -> void:
 		if ResourceLoader.exists(TD_FIELD):
 			tr.texture = load(TD_FIELD)
 			tr.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-			tr.stretch_mode = TextureRect.STRETCH_SCALE
+			tr.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 		return
-	# Replace ColorRect with TextureRect sibling
 	var parent := field_bg.get_parent()
 	if parent == null or not ResourceLoader.exists(TD_FIELD):
 		return
-	var art := TextureRect.new()
-	art.name = "FieldArt"
-	art.set_anchors_preset(Control.PRESET_FULL_RECT)
-	art.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	art.stretch_mode = TextureRect.STRETCH_SCALE
-	art.texture = load(TD_FIELD)
-	art.modulate = Color(1, 1, 1, 0.92)
-	parent.add_child(art)
-	parent.move_child(art, field_bg.get_index() + 1)
-	field_bg.modulate = Color(1, 1, 1, 0.35)
+	# Full-bleed art lives on the scene root; keep FieldBg as a soft veil only.
+	field_bg.modulate = Color(0.06, 0.12, 0.10, 0.28)
+	field_bg.visible = true
+
+
+static func viewport_uv_to_field(field: Control, uv: Vector2) -> Vector2:
+	## Map painted 720×1280 UV into Field-local pixels (full-bleed TD bg).
+	var vp := Vector2(720.0, 1280.0)
+	var global := Vector2(uv.x * vp.x, uv.y * vp.y)
+	return global - field.position
 
 
 static func mist_band(parent: Control, y_ratio: float, h: float, alpha: float = 0.14) -> ColorRect:
@@ -166,11 +166,20 @@ static func build_title_decor(decor: Control) -> void:
 static func build_lobby_decor(decor: Control) -> void:
 	for c in decor.get_children():
 		c.queue_free()
+	# Soft top veil so brand reads over mist bg
+	var veil := ColorRect.new()
+	veil.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	veil.set_anchors_preset(Control.PRESET_TOP_WIDE)
+	veil.offset_bottom = 200
+	veil.color = Color(0.02, 0.06, 0.06, 0.38)
+	decor.add_child(veil)
 	mountain_plane(decor, Rect2(Vector2(-20, 980), Vector2(760, 320)), Color(0.08, 0.14, 0.12, 0.75), -0.04)
 	var mist := mist_band(decor, 0.78, 60, 0.1)
 	drift_loop(mist, Vector2(12, 0), 7.0)
 	var lantern := lantern_orb(decor, Vector2(580, 70), 14)
 	flicker_loop(lantern, 0.7, 1.0, 2.0)
+	var lantern2 := lantern_orb(decor, Vector2(90, 110), 11)
+	flicker_loop(lantern2, 0.65, 0.95, 2.4)
 
 
 static func build_td_terrain(layer: Node2D, w: float, h: float, path: PackedVector2Array) -> void:

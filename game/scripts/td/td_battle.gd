@@ -48,12 +48,13 @@ var _slot_buttons: Array[Button] = []
 
 
 func _ready() -> void:
+	# Full-bleed painted 栈道 (correct AR) so path UV matches the illustration.
+	Atmo.attach_full_bg(self, "td")
 	var old_bg := get_node_or_null("Bg")
 	if old_bg:
-		old_bg.color = AP.INK_NIGHT
+		old_bg.visible = false
 	var field_bg := get_node_or_null("Field/FieldBg")
 	if field_bg:
-		field_bg.color = Color(0.10, 0.16, 0.13, 1)
 		Atmo.attach_field_art(field_bg)
 	AP.apply_label(chapter_label, 16, AP.LANTERN_GOLD)
 	AP.apply_label(wave_banner, 26, AP.LANTERN_GOLD)
@@ -100,25 +101,39 @@ func _build_path() -> void:
 	var w := field.size.x
 	var h := field.size.y
 	if w < 10:
-		w = 648
-		h = 720
-	path_points = PackedVector2Array([
-		Vector2(w * 0.85, 20),
-		Vector2(w * 0.85, h * 0.22),
-		Vector2(w * 0.2, h * 0.22),
-		Vector2(w * 0.2, h * 0.45),
-		Vector2(w * 0.8, h * 0.45),
-		Vector2(w * 0.8, h * 0.68),
-		Vector2(w * 0.35, h * 0.68),
-		Vector2(w * 0.35, h * 0.92),
-		Vector2(w * 0.5, h * 0.98),
-	])
+		w = 688
+		h = 916
+	# Painted trail centerline in 720×1280 UV (spawn platform → gate approach).
+	# Sampled from td-jiange-field.jpg wooden walkway; clipped to Field viewport.
+	var path_uv := [
+		Vector2(0.492, 0.090),
+		Vector2(0.500, 0.145),
+		Vector2(0.557, 0.200),
+		Vector2(0.539, 0.245),
+		Vector2(0.436, 0.300),
+		Vector2(0.411, 0.340),
+		Vector2(0.451, 0.380),
+		Vector2(0.565, 0.430),
+		Vector2(0.553, 0.490),
+		Vector2(0.436, 0.545),
+		Vector2(0.419, 0.600),
+		Vector2(0.494, 0.655),
+		Vector2(0.575, 0.720),
+		Vector2(0.532, 0.770),
+	]
+	path_points = PackedVector2Array()
+	for uv in path_uv:
+		var local := Atmo.viewport_uv_to_field(field, uv)
+		local.x = clampf(local.x, 12.0, w - 12.0)
+		local.y = clampf(local.y, 8.0, h - 8.0)
+		path_points.append(local)
+	# Soft guide over painted planks — road art carries the bulk of the look.
 	path_outline.points = path_points
-	path_outline.width = 40
-	path_outline.default_color = AP.PATH_RIM
+	path_outline.width = 28
+	path_outline.default_color = Color(AP.PATH_RIM.r, AP.PATH_RIM.g, AP.PATH_RIM.b, 0.38)
 	path_line.points = path_points
-	path_line.width = 26
-	path_line.default_color = AP.PATH_EARTH
+	path_line.width = 14
+	path_line.default_color = Color(AP.LANTERN_GOLD.r, AP.LANTERN_GOLD.g, AP.LANTERN_GOLD.b, 0.22)
 	_build_decor(w, h)
 
 
@@ -145,27 +160,33 @@ func _build_slots() -> void:
 	for c in slots_layer.get_children():
 		c.queue_free()
 	_slot_buttons.clear()
-	var anchors := [
-		Vector2(0.68, 0.18), Vector2(0.32, 0.18),
-		Vector2(0.32, 0.40), Vector2(0.68, 0.40),
-		Vector2(0.68, 0.62), Vector2(0.42, 0.62),
+	# Off-path clearings beside the painted S-curve (viewport UV → field anchors).
+	var slot_uv := [
+		Vector2(0.72, 0.18), Vector2(0.28, 0.22),
+		Vector2(0.26, 0.42), Vector2(0.74, 0.44),
+		Vector2(0.28, 0.64), Vector2(0.72, 0.66),
 	]
+	var w := maxf(field.size.x, 1.0)
+	var h := maxf(field.size.y, 1.0)
 	for i in SLOT_COUNT:
+		var local := Atmo.viewport_uv_to_field(field, slot_uv[i])
+		var ax := clampf(local.x / w, 0.08, 0.92)
+		var ay := clampf(local.y / h, 0.08, 0.92)
 		var btn := Button.new()
 		btn.text = "槽%d" % (i + 1)
 		btn.focus_mode = Control.FOCUS_NONE
-		btn.custom_minimum_size = Vector2(88, 88)
+		btn.custom_minimum_size = Vector2(84, 84)
 		btn.set_anchors_preset(Control.PRESET_TOP_LEFT)
-		btn.anchor_left = anchors[i].x
-		btn.anchor_right = anchors[i].x
-		btn.anchor_top = anchors[i].y
-		btn.anchor_bottom = anchors[i].y
-		btn.offset_left = -44
-		btn.offset_right = 44
-		btn.offset_top = -44
-		btn.offset_bottom = 44
-		btn.modulate = Color(0.75, 0.88, 0.78, 0.7)
-		btn.add_theme_font_size_override("font_size", 14)
+		btn.anchor_left = ax
+		btn.anchor_right = ax
+		btn.anchor_top = ay
+		btn.anchor_bottom = ay
+		btn.offset_left = -42
+		btn.offset_right = 42
+		btn.offset_top = -42
+		btn.offset_bottom = 42
+		btn.modulate = Color(0.82, 0.92, 0.84, 0.78)
+		btn.add_theme_font_size_override("font_size", 13)
 		btn.pressed.connect(_on_slot_pressed.bind(i))
 		slots_layer.add_child(btn)
 		_slot_buttons.append(btn)
