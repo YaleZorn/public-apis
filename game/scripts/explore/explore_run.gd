@@ -89,7 +89,7 @@ func _init_hero_stats() -> void:
 	skill = ex.get("active", {}).duplicate(true)
 	if _hero_visual:
 		_hero_visual.queue_free()
-	_hero_visual = VF.unit_node(u, Vector2(84, 96))
+	_hero_visual = VF.unit_node(u, Vector2(96, 112))
 	_hero_visual.position = hero_node.position
 	hero_node.visible = false
 	arena.add_child(_hero_visual)
@@ -191,22 +191,30 @@ func _enter_room() -> void:
 
 
 func _apply_room_atmosphere(rtype: String) -> void:
-	var arena_bg := get_node_or_null("Arena/ArenaBg")
-	if arena_bg:
-		arena_bg.color = AP.room_tint(rtype)
+	Atmo.apply_explore_room(arena, rtype)
 	var accent := get_node_or_null("Arena/ArenaAccent")
 	if accent:
 		match rtype:
 			"combat":
-				accent.color = Color(0.35, 0.18, 0.14, 0.35)
+				accent.color = Color(0.35, 0.18, 0.14, 0.42)
 			"event":
-				accent.color = Color(0.18, 0.28, 0.4, 0.4)
+				accent.color = Color(0.14, 0.24, 0.38, 0.45)
 			"train":
-				accent.color = Color(0.16, 0.32, 0.24, 0.4)
+				accent.color = Color(0.14, 0.34, 0.24, 0.42)
 			"loot", "supply":
-				accent.color = Color(0.4, 0.32, 0.14, 0.4)
+				accent.color = Color(0.42, 0.34, 0.14, 0.45)
 			_:
 				accent.color = Color(0.08, 0.1, 0.12, 0.5)
+	# Soft full-scene mist to bind room plate with title night BG
+	var edge := get_node_or_null("ExploreMist")
+	if edge == null:
+		edge = ColorRect.new()
+		edge.name = "ExploreMist"
+		edge.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		edge.set_anchors_preset(Control.PRESET_FULL_RECT)
+		add_child(edge)
+		move_child(edge, 1)
+	(edge as ColorRect).color = Color(0.04, 0.10, 0.09, 0.18)
 
 
 func _room_type_name(t: String) -> String:
@@ -253,8 +261,8 @@ func _spawn_room_enemies(ids: Array) -> void:
 	var i := 0
 	for eid in ids:
 		var e: Dictionary = ContentDB.get_enemy(str(eid))
-		var node := VF.enemy_node(e, Vector2(64, 76))
-		node.position = Vector2(380 + (i % 2) * 80, 160 + i * 95)
+		var node := VF.enemy_node(e, Vector2(72, 88))
+		node.position = Vector2(360 + (i % 2) * 90, 140 + i * 100)
 		node.modulate.a = 0.0
 		enemies_layer.add_child(node)
 		var tw := node.create_tween()

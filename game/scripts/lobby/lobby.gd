@@ -119,7 +119,7 @@ func _rebuild_hero_bar() -> void:
 		wrap.clip_contents = true
 		wrap.text = ""
 		wrap.disabled = selected
-		var card := VF.portrait_card(u, Vector2(96, 120), selected)
+		var card := VF.portrait_card(u, Vector2(104, 128), selected)
 		card.position = Vector2(2, 2)
 		card.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		wrap.add_child(card)

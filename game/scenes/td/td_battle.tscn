@@ -75,7 +75,7 @@ anchor_bottom = 1.0
 offset_left = 8.0
 offset_top = 64.0
 offset_right = -8.0
-offset_bottom = -164.0
+offset_bottom = -176.0
 
 [node name="WaveBanner" type="Label" parent="Field"]
 unique_name_in_owner = true
@@ -136,20 +136,20 @@ anchor_top = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
 offset_left = 12.0
-offset_top = -152.0
+offset_top = -148.0
 offset_right = -12.0
-offset_bottom = -6.0
-theme_override_constants/separation = 4
+offset_bottom = -4.0
+theme_override_constants/separation = 3
 
 [node name="StatusLabel" type="Label" parent="Bottom"]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_font_sizes/font_size = 12
+theme_override_font_sizes/font_size = 11
 autowrap_mode = 3
 text = "状态"
 
 [node name="RosterScroll" type="ScrollContainer" parent="Bottom"]
-custom_minimum_size = Vector2(0, 58)
+custom_minimum_size = Vector2(0, 54)
 layout_mode = 2
 horizontal_scroll_mode = 1
 vertical_scroll_mode = 0
@@ -165,26 +165,26 @@ theme_override_constants/separation = 6
 
 [node name="StartWaveBtn" type="Button" parent="Bottom/Actions"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 40)
+custom_minimum_size = Vector2(0, 36)
 layout_mode = 2
 size_flags_horizontal = 3
 text = "开始波次"
 
 [node name="RecallBtn" type="Button" parent="Bottom/Actions"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 40)
+custom_minimum_size = Vector2(0, 36)
 layout_mode = 2
 size_flags_horizontal = 3
 text = "回收"
 
 [node name="SpeedBtn" type="Button" parent="Bottom/Actions"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 40)
+custom_minimum_size = Vector2(0, 36)
 layout_mode = 2
 text = "速度 x1"
 
 [node name="LobbyBtn" type="Button" parent="Bottom"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 36)
+custom_minimum_size = Vector2(0, 32)
 layout_mode = 2
 text = "存档并回大厅"

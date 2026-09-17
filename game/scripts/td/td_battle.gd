@@ -117,10 +117,10 @@ func _build_path() -> void:
 		Vector2(0.565, 0.430),
 		Vector2(0.553, 0.490),
 		Vector2(0.436, 0.545),
-		Vector2(0.419, 0.600),
-		Vector2(0.494, 0.640),
-		Vector2(0.545, 0.675),
-		Vector2(0.510, 0.705),
+		Vector2(0.419, 0.585),
+		Vector2(0.494, 0.620),
+		Vector2(0.545, 0.650),
+		Vector2(0.510, 0.675),
 	]
 	path_points = PackedVector2Array()
 	for uv in path_uv:
@@ -144,9 +144,9 @@ func _build_decor(w: float, h: float) -> void:
 		c.queue_free()
 	if path_points.size() > 0:
 		var gate := Atmo._gate_node()
-		var gate_pos: Vector2 = path_points[path_points.size() - 1] - Vector2(48, 58)
-		# Keep full gatehouse clear of compact bottom HUD
-		gate_pos.y = minf(gate_pos.y, h - 88.0)
+		var gate_pos: Vector2 = path_points[path_points.size() - 1] - Vector2(44, 50)
+		# Keep full gatehouse clear of compact bottom HUD (safe band ≥112px)
+		gate_pos.y = minf(gate_pos.y, h - 112.0)
 		gate.position = gate_pos
 		decor_layer.add_child(gate)
 		var spawn := Atmo._spawn_marker()
@@ -210,7 +210,7 @@ func _build_roster_bar() -> void:
 		wrap.focus_mode = Control.FOCUS_NONE
 		wrap.clip_contents = true
 		wrap.text = ""
-		var card := VF.portrait_card(u, Vector2(68, 52), false)
+		var card := VF.portrait_card(u, Vector2(72, 56), false)
 		card.position = Vector2(2, 2)
 		card.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		wrap.add_child(card)
