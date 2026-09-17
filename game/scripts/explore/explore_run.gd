@@ -52,7 +52,7 @@ func _ready() -> void:
 	AP.apply_label(hp_label, 16, AP.PAPER_DIM)
 	AP.apply_label(status_label, 15, AP.PAPER_DIM)
 	AP.apply_label(loot_label, 16, AP.LANTERN_GOLD)
-	Juice.start_battle_music()
+	Juice.start_explore_music()
 	knowledge_layer = KnowledgeCardScene.instantiate()
 	add_child(knowledge_layer)
 	knowledge_layer.resolved.connect(_on_knowledge_resolved)
@@ -131,6 +131,7 @@ func _enter_room() -> void:
 	room_label.text = "%d/%d · %s" % [room_index + 1, rooms.size(), room.get("label", type_name)]
 	_apply_room_atmosphere(rtype)
 	Juice.pulse(room_label, 1.06, 0.18)
+	Juice.play_sfx("room")
 	next_btn.visible = false
 	loot_label.visible = false
 	match rtype:
@@ -267,10 +268,11 @@ func _spawn_room_enemies(ids: Array) -> void:
 	var i := 0
 	for eid in ids:
 		var e: Dictionary = ContentDB.get_enemy(str(eid))
-		var node := VF.enemy_node(e, Vector2(72, 88))
-		node.position = Vector2(360 + (i % 2) * 90, 140 + i * 100)
+		var node := VF.enemy_node(e, Vector2(84, 100))
+		node.position = Vector2(340 + (i % 2) * 100, 120 + i * 110)
 		node.modulate.a = 0.0
 		enemies_layer.add_child(node)
+		VF.idle_bob(node, 2.5, 2.2 + i * 0.15)
 		var tw := node.create_tween()
 		tw.tween_property(node, "modulate:a", 1.0, 0.22)
 		tw.parallel().tween_property(node, "position:x", node.position.x - 12.0, 0.22).set_trans(Tween.TRANS_BACK)

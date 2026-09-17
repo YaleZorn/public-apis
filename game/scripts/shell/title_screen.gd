@@ -33,7 +33,7 @@ func _ready() -> void:
 	tagline.text = "守卫剑阁 · 栈道夜行 · 真知识"
 	AP.apply_label(tagline, 18, AP.MIST_TEAL.lightened(0.28))
 	AP.apply_label(version_label, 13, Color(0.55, 0.62, 0.56, 1))
-	version_label.text = "v0.3.3 画面推高"
+	version_label.text = "v0.3.4 画面精抠"
 	continue_btn.visible = GameState.has_resume()
 	continue_btn.theme_type_variation = &"ButtonPrimary"
 	start_btn.theme_type_variation = &"ButtonPrimary"
@@ -46,7 +46,7 @@ func _ready() -> void:
 	await get_tree().process_frame
 	title.pivot_offset = title.size * 0.5
 	Juice.slide_in(start_btn, 18, 0.35)
-	Juice.start_ambient()
+	Juice.start_title_music()
 	Juice.play_sfx("tap")
 
 

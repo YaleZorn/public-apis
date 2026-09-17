@@ -1,7 +1,7 @@
 extends SceneTree
-## Capture portrait screenshots for Project store media (art push).
+## Capture portrait screenshots for Project store media (art grind).
 
-const OUT := "/cursor/stores/bc-71787b67-91e4-456d-b541-da2778721eaf/media/art-push"
+const OUT := "/cursor/stores/bc-71787b67-91e4-456d-b541-da2778721eaf/media/art-grind"
 
 
 func _initialize() -> void:

@@ -49,7 +49,7 @@ func _ready() -> void:
 	settings_panel.visible = false
 	_build_settings()
 	Atmo.build_lobby_decor(decor)
-	Juice.start_ambient()
+	Juice.start_lobby_music()
 	_refresh()
 	GameState.meta_changed.connect(_refresh)
 	GameState.checkpoint_changed.connect(_refresh)

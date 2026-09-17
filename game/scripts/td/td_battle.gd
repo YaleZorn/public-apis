@@ -105,7 +105,7 @@ func _build_path() -> void:
 		w = 688
 		h = 916
 	# Painted trail centerline in 720×1280 UV (spawn → gate approach).
-	# Gate UV kept above compact HUD so 门楼/据点 stay readable.
+	# Gate UV kept well above compact HUD so 门楼/据点 never clip.
 	var path_uv := [
 		Vector2(0.492, 0.090),
 		Vector2(0.500, 0.145),
@@ -118,9 +118,9 @@ func _build_path() -> void:
 		Vector2(0.553, 0.490),
 		Vector2(0.436, 0.545),
 		Vector2(0.419, 0.570),
-		Vector2(0.494, 0.600),
-		Vector2(0.545, 0.625),
-		Vector2(0.510, 0.648),
+		Vector2(0.494, 0.585),
+		Vector2(0.545, 0.600),
+		Vector2(0.510, 0.612),
 	]
 	path_points = PackedVector2Array()
 	for uv in path_uv:
@@ -144,9 +144,10 @@ func _build_decor(w: float, h: float) -> void:
 		c.queue_free()
 	if path_points.size() > 0:
 		var gate := Atmo._gate_node()
-		var gate_pos: Vector2 = path_points[path_points.size() - 1] - Vector2(44, 50)
-		# Keep full gatehouse clear of compact bottom HUD (safe band ≥112px)
-		gate_pos.y = minf(gate_pos.y, h - 112.0)
+		var gate_pos: Vector2 = path_points[path_points.size() - 1] - Vector2(40, 46)
+		# Keep full gatehouse clear of compact bottom HUD (safe band ≥128px)
+		gate_pos.y = minf(gate_pos.y, h - 128.0)
+		gate_pos.y = maxf(gate_pos.y, 24.0)
 		gate.position = gate_pos
 		decor_layer.add_child(gate)
 		var spawn := Atmo._spawn_marker()
@@ -372,7 +373,7 @@ func _tick_spawns(delta: float) -> void:
 
 func _spawn_enemy(eid: String) -> void:
 	var e: Dictionary = ContentDB.get_enemy(eid)
-	var node := VF.enemy_node(e)
+	var node := VF.enemy_node(e, Vector2(52, 64))
 	node.position = path_points[0] - node.custom_minimum_size * 0.5
 	enemies_layer.add_child(node)
 	node.set_meta("eid", eid)

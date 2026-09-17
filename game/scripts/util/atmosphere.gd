@@ -57,8 +57,8 @@ static func attach_full_bg(parent: Control, kind: String = "night") -> TextureRe
 		bg.texture = load(TD_FIELD)
 		# Shift art up so painted 门楼 sits in Field band, not under bottom HUD.
 		bg.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
-		bg.offset_top = -72
-		bg.offset_bottom = 72
+		bg.offset_top = -110
+		bg.offset_bottom = 40
 	else:
 		bg.texture = night_gradient() if kind != "paper" else paper_gradient()
 	parent.add_child(bg)
@@ -111,41 +111,92 @@ static func _build_explore_props(arena: Control, rtype: String) -> void:
 	# Keep props under units: move just above RoomArt/ArenaBg
 	var insert_at := mini(2, arena.get_child_count() - 1)
 	arena.move_child(layer, maxi(insert_at, 0))
-	var mist := mist_band(layer, 0.55, 70, 0.12)
-	drift_loop(mist, Vector2(18, 0), 6.2)
+
+	# Parallax depth: far mist / mid props / near fog
+	var far := mist_band(layer, 0.32, 90, 0.08)
+	drift_loop(far, Vector2(10, 0), 9.0)
+	var mid := mist_band(layer, 0.52, 78, 0.14)
+	drift_loop(mid, Vector2(22, 0), 6.0)
+	var near := mist_band(layer, 0.78, 56, 0.16)
+	drift_loop(near, Vector2(-16, 0), 4.8)
+	mountain_plane(layer, Rect2(Vector2(-40, 380), Vector2(780, 220)), Color(0.04, 0.09, 0.08, 0.28), -0.03)
+
 	match rtype:
 		"combat":
-			var lan := lantern_orb(layer, Vector2(520, 80), 13)
+			var lan := lantern_orb(layer, Vector2(520, 70), 14)
 			flicker_loop(lan, 0.68, 1.0, 1.5)
+			var lan_b := lantern_orb(layer, Vector2(90, 120), 11)
+			flicker_loop(lan_b, 0.62, 0.95, 2.1)
 			var threat := ColorRect.new()
 			threat.mouse_filter = Control.MOUSE_FILTER_IGNORE
-			threat.size = Vector2(120, 8)
-			threat.position = Vector2(40, 40)
-			threat.color = Color(AP.DANGER.r, AP.DANGER.g, AP.DANGER.b, 0.35)
+			threat.size = Vector2(140, 8)
+			threat.position = Vector2(36, 36)
+			threat.color = Color(AP.DANGER.r, AP.DANGER.g, AP.DANGER.b, 0.4)
 			layer.add_child(threat)
-		"event":
-			var lan2 := lantern_orb(layer, Vector2(80, 90), 12)
-			flicker_loop(lan2, 0.7, 0.98, 2.2)
-			mountain_plane(layer, Rect2(Vector2(-30, 420), Vector2(700, 180)), Color(0.06, 0.12, 0.18, 0.35), -0.02)
-		"train":
-			for i in 3:
+			# Rope rail suggestion
+			for i in 4:
 				var post := ColorRect.new()
 				post.mouse_filter = Control.MOUSE_FILTER_IGNORE
-				post.size = Vector2(10, 56 + i * 8)
-				post.position = Vector2(48 + i * 36, 360 + (i % 2) * 12)
-				post.color = Color(0.28, 0.42, 0.32, 0.55)
+				post.size = Vector2(5, 42 + (i % 2) * 10)
+				post.position = Vector2(48 + i * 52, 430)
+				post.color = Color(0.32, 0.24, 0.14, 0.55)
 				layer.add_child(post)
+			_spawn_embers(layer, 10, Color(AP.LANTERN_GOLD.r, AP.LANTERN_GOLD.g, AP.LANTERN_GOLD.b, 0.55))
+		"event":
+			var lan2 := lantern_orb(layer, Vector2(80, 90), 13)
+			flicker_loop(lan2, 0.7, 0.98, 2.2)
+			var scroll := ColorRect.new()
+			scroll.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			scroll.size = Vector2(28, 72)
+			scroll.position = Vector2(580, 160)
+			scroll.color = Color(0.78, 0.72, 0.55, 0.45)
+			layer.add_child(scroll)
+			mountain_plane(layer, Rect2(Vector2(-30, 400), Vector2(700, 200)), Color(0.06, 0.12, 0.18, 0.38), -0.02)
+			_spawn_embers(layer, 6, Color(0.55, 0.75, 0.9, 0.4))
+		"train":
+			for i in 5:
+				var post := ColorRect.new()
+				post.mouse_filter = Control.MOUSE_FILTER_IGNORE
+				post.size = Vector2(12, 58 + i * 6)
+				post.position = Vector2(40 + i * 34, 340 + (i % 2) * 14)
+				post.color = Color(0.28, 0.42, 0.32, 0.6)
+				layer.add_child(post)
+			var lamp := lantern_orb(layer, Vector2(540, 100), 12)
+			flicker_loop(lamp, 0.72, 1.0, 1.9)
 		"supply", "loot":
-			var glow := lantern_orb(layer, Vector2(560, 120), 16)
+			var glow := lantern_orb(layer, Vector2(560, 110), 16)
 			flicker_loop(glow, 0.75, 1.0, 1.8)
-			var crate := ColorRect.new()
-			crate.mouse_filter = Control.MOUSE_FILTER_IGNORE
-			crate.size = Vector2(64, 36)
-			crate.position = Vector2(40, 400)
-			crate.color = Color(0.42, 0.32, 0.16, 0.55)
-			layer.add_child(crate)
+			for i in 3:
+				var crate := ColorRect.new()
+				crate.mouse_filter = Control.MOUSE_FILTER_IGNORE
+				crate.size = Vector2(58 - i * 6, 30 + i * 4)
+				crate.position = Vector2(36 + i * 28, 400 - i * 12)
+				crate.color = Color(0.42, 0.32, 0.16, 0.55 + i * 0.05)
+				layer.add_child(crate)
+			_spawn_embers(layer, 8, Color(AP.LANTERN_GOLD.r, AP.LANTERN_GOLD.g, AP.LANTERN_GOLD.b, 0.5))
 		_:
 			pass
+
+
+static func _spawn_embers(parent: Control, count: int, col: Color) -> void:
+	for i in count:
+		var e := ColorRect.new()
+		e.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var s := 3.0 + float(i % 3)
+		e.size = Vector2(s, s)
+		e.color = col
+		e.position = Vector2(40.0 + randf() * 600.0, 80.0 + randf() * 420.0)
+		parent.add_child(e)
+		var rise := 40.0 + randf() * 70.0
+		var dur := 2.2 + randf() * 2.4
+		var start := e.position
+		var tw := e.create_tween().set_loops()
+		tw.tween_property(e, "position", start + Vector2(randf_range(-12, 12), -rise), dur).set_trans(Tween.TRANS_SINE)
+		tw.parallel().tween_property(e, "modulate:a", 0.15, dur)
+		tw.tween_callback(func():
+			e.position = Vector2(40.0 + randf() * 600.0, 200.0 + randf() * 300.0)
+			e.modulate.a = 1.0
+		)
 
 
 static func attach_field_art(field_bg: Control) -> void:
@@ -308,50 +359,50 @@ static func build_td_terrain(layer: Node2D, w: float, h: float, path: PackedVect
 
 
 static func _gate_node() -> Control:
-	## Compact ornate 门楼 — sits clear above bottom HUD.
+	## Compact ornate 门楼 — kept clear above bottom HUD (safe band ≥128px).
 	var root := Control.new()
-	root.custom_minimum_size = Vector2(88, 56)
-	root.size = Vector2(88, 56)
+	root.custom_minimum_size = Vector2(80, 50)
+	root.size = Vector2(80, 50)
 	var glow := ColorRect.new()
-	glow.size = Vector2(100, 68)
+	glow.size = Vector2(92, 60)
 	glow.position = Vector2(-6, -8)
-	glow.color = Color(AP.LANTERN_GOLD.r, AP.LANTERN_GOLD.g, AP.LANTERN_GOLD.b, 0.16)
+	glow.color = Color(AP.LANTERN_GOLD.r, AP.LANTERN_GOLD.g, AP.LANTERN_GOLD.b, 0.18)
 	glow.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	root.add_child(glow)
 	var base := ColorRect.new()
-	base.size = Vector2(88, 56)
-	base.color = Color(AP.GATE_WOOD.r, AP.GATE_WOOD.g, AP.GATE_WOOD.b, 0.9)
+	base.size = Vector2(80, 50)
+	base.color = Color(AP.GATE_WOOD.r, AP.GATE_WOOD.g, AP.GATE_WOOD.b, 0.92)
 	root.add_child(base)
 	var pillar_l := ColorRect.new()
-	pillar_l.size = Vector2(10, 46)
-	pillar_l.position = Vector2(6, 8)
+	pillar_l.size = Vector2(9, 40)
+	pillar_l.position = Vector2(5, 8)
 	pillar_l.color = Color(0.28, 0.18, 0.1, 0.95)
 	root.add_child(pillar_l)
 	var pillar_r := ColorRect.new()
-	pillar_r.size = Vector2(10, 46)
-	pillar_r.position = Vector2(72, 8)
+	pillar_r.size = Vector2(9, 40)
+	pillar_r.position = Vector2(66, 8)
 	pillar_r.color = Color(0.28, 0.18, 0.1, 0.95)
 	root.add_child(pillar_r)
 	var roof := ColorRect.new()
-	roof.size = Vector2(98, 12)
+	roof.size = Vector2(90, 11)
 	roof.position = Vector2(-5, -6)
 	roof.color = Color(0.55, 0.28, 0.18, 0.95)
 	root.add_child(roof)
 	var roof2 := ColorRect.new()
-	roof2.size = Vector2(88, 7)
+	roof2.size = Vector2(80, 6)
 	roof2.position = Vector2(0, 2)
-	roof2.color = Color(AP.LANTERN_GOLD.r, AP.LANTERN_GOLD.g, AP.LANTERN_GOLD.b, 0.58)
+	roof2.color = Color(AP.LANTERN_GOLD.r, AP.LANTERN_GOLD.g, AP.LANTERN_GOLD.b, 0.62)
 	root.add_child(roof2)
 	var arch := ColorRect.new()
-	arch.size = Vector2(36, 30)
-	arch.position = Vector2(26, 14)
+	arch.size = Vector2(32, 26)
+	arch.position = Vector2(24, 14)
 	arch.color = Color(AP.GATE_SHADOW.r, AP.GATE_SHADOW.g, AP.GATE_SHADOW.b, 0.85)
 	root.add_child(arch)
 	var title := Label.new()
 	title.text = "据点"
-	AP.apply_label(title, 12, AP.LANTERN_GOLD)
-	title.position = Vector2(18, 38)
-	title.size = Vector2(52, 16)
+	AP.apply_label(title, 11, AP.LANTERN_GOLD)
+	title.position = Vector2(14, 34)
+	title.size = Vector2(52, 14)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	root.add_child(title)
 	return root

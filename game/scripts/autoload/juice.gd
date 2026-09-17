@@ -64,14 +64,26 @@ func play_sfx(kind: String) -> void:
 
 
 func start_ambient() -> void:
-	play_bgm("ambient")
+	play_bgm("lobby")
+
+
+func start_title_music() -> void:
+	play_bgm("title")
+
+
+func start_lobby_music() -> void:
+	play_bgm("lobby")
 
 
 func start_battle_music() -> void:
-	play_bgm("battle")
+	play_bgm("td")
 
 
-func play_bgm(kind: String = "ambient") -> void:
+func start_explore_music() -> void:
+	play_bgm("explore")
+
+
+func play_bgm(kind: String = "lobby") -> void:
 	if _ambient_player == null:
 		return
 	_ambient_on = true
@@ -147,14 +159,21 @@ func _setup_fade() -> void:
 
 
 func _setup_ambient() -> void:
+	# Identifiable theme beds — title / lobby / TD / explore (legacy aliases kept).
 	_bgm_streams = {
-		"ambient": _compose_theme("ambient"),
-		"battle": _compose_theme("battle"),
+		"title": _compose_theme("title"),
+		"lobby": _compose_theme("lobby"),
+		"td": _compose_theme("td"),
+		"explore": _compose_theme("explore"),
+		"ambient": null,
+		"battle": null,
 	}
+	_bgm_streams["ambient"] = _bgm_streams["lobby"]
+	_bgm_streams["battle"] = _bgm_streams["td"]
 	_ambient_player = AudioStreamPlayer.new()
 	_ambient_player.name = "Ambient"
 	_ambient_player.bus = "Master"
-	_ambient_player.stream = _bgm_streams["ambient"]
+	_ambient_player.stream = _bgm_streams["lobby"]
 	add_child(_ambient_player)
 
 
@@ -192,6 +211,8 @@ func _build_streams() -> void:
 		"lose": _make_chime([220.0, 185.0, 147.0], 0.28, 0.2),
 		"skill": _make_chime([330.0, 415.0, 523.0], 0.14, 0.2),
 		"card": _make_chime([523.0, 659.0], 0.08, 0.14),
+		"room": _make_chime([247.0, 311.0, 370.0], 0.16, 0.16),
+		"lantern": _make_chime([523.0, 784.0], 0.1, 0.12),
 	}
 
 
@@ -248,88 +269,126 @@ func _make_noise_hit(dur: float, vol: float) -> AudioStreamWAV:
 
 
 func _compose_theme(kind: String) -> AudioStreamWAV:
-	## Musical looping beds — mist drone + pentatonic phrases (ambient)
-	## or pulse + rising tension motif (battle). Volume gated by 音乐 slider.
+	## Distinct musical looping beds (title / lobby / td / explore).
+	## Volume gated by 音乐 slider. Gongche-ish pentatonic cells + ADSR.
 	var wav := AudioStreamWAV.new()
 	wav.format = AudioStreamWAV.FORMAT_16_BITS
 	wav.mix_rate = 22050
 	wav.stereo = false
 	wav.loop_mode = AudioStreamWAV.LOOP_FORWARD
 	wav.loop_begin = 0
-	var dur := 16.0
+	var dur := 18.0
 	var count := int(wav.mix_rate * dur)
 	wav.loop_end = count
 	var data := PackedByteArray()
 	data.resize(count * 2)
-	# Gongche-ish D minor pentatonic (Hz)
-	# Phrase A / B for ambient call-response; battle uses shorter cells + ostinato
-	var amb_lead := [
+	# Theme motifs (Hz) — identifiable without scored OST assets
+	var title_lead := [
+		392.0, 440.0, 523.25, 587.33, 523.25, 440.0, 392.0, 349.23,
+		329.63, 349.23, 392.0, 440.0, 493.88, 440.0, 392.0, 329.63,
+	]
+	var title_harm := [
+		196.0, 220.0, 261.63, 293.66, 261.63, 220.0, 196.0, 174.61,
+		164.81, 174.61, 196.0, 220.0, 246.94, 220.0, 196.0, 164.81,
+	]
+	var lobby_lead := [
 		293.66, 349.23, 392.0, 440.0, 392.0, 349.23, 293.66, 261.63,
 		220.0, 261.63, 293.66, 349.23, 392.0, 349.23, 293.66, 220.0,
 	]
-	var amb_harmony := [
+	var lobby_harm := [
 		146.83, 174.61, 196.0, 220.0, 196.0, 174.61, 146.83, 130.81,
 		110.0, 130.81, 146.83, 174.61, 196.0, 174.61, 146.83, 110.0,
 	]
-	var bat_lead := [
+	var td_lead := [
 		220.0, 246.94, 293.66, 329.63, 293.66, 246.94, 220.0, 196.0,
 		164.81, 196.0, 220.0, 261.63, 293.66, 261.63, 220.0, 185.0,
 	]
-	var bat_bass := [
+	var td_bass := [
 		110.0, 110.0, 98.0, 98.0, 82.41, 82.41, 73.42, 73.42,
 		82.41, 82.41, 98.0, 98.0, 110.0, 110.0, 92.5, 92.5,
 	]
-	var lead: Array = bat_lead if kind == "battle" else amb_lead
-	var harm: Array = bat_bass if kind == "battle" else amb_harmony
+	var explore_lead := [
+		261.63, 293.66, 329.63, 349.23, 392.0, 349.23, 329.63, 293.66,
+		246.94, 261.63, 293.66, 329.63, 349.23, 311.13, 293.66, 246.94,
+	]
+	var explore_harm := [
+		130.81, 146.83, 164.81, 174.61, 196.0, 174.61, 164.81, 146.83,
+		123.47, 130.81, 146.83, 164.81, 174.61, 155.56, 146.83, 123.47,
+	]
+	var lead: Array
+	var harm: Array
+	match kind:
+		"title":
+			lead = title_lead
+			harm = title_harm
+		"td", "battle":
+			lead = td_lead
+			harm = td_bass
+		"explore":
+			lead = explore_lead
+			harm = explore_harm
+		_:
+			lead = lobby_lead
+			harm = lobby_harm
 	var step := dur / float(lead.size())
+	var is_td := kind == "td" or kind == "battle"
+	var is_title := kind == "title"
+	var is_explore := kind == "explore"
 	for i in count:
 		var t := float(i) / float(wav.mix_rate)
 		var note_i := int(floor(t / step)) % lead.size()
 		var note_t := fmod(t, step)
 		var hz: float = float(lead[note_i])
 		var hz_h: float = float(harm[note_i])
-		# Soft ADSR within step
-		var atk := clampf(note_t / 0.08, 0.0, 1.0)
-		var rel := clampf((step - note_t) / 0.18, 0.0, 1.0)
+		var atk := clampf(note_t / (0.12 if is_title else 0.08), 0.0, 1.0)
+		var rel := clampf((step - note_t) / (0.28 if is_title else 0.18), 0.0, 1.0)
 		var note_env := atk * rel
+		var drone_base := 48.0 if is_title else (62.0 if is_explore else 55.0)
 		var drone := (
-			sin(TAU * 55.0 * t) * 0.055
-			+ sin(TAU * 82.5 * t + 0.2) * 0.035
-			+ sin(TAU * 110.0 * t + 0.5) * 0.022
+			sin(TAU * drone_base * t) * 0.052
+			+ sin(TAU * drone_base * 1.5 * t + 0.2) * 0.032
+			+ sin(TAU * drone_base * 2.0 * t + 0.5) * 0.02
 		)
-		# Soft tremolo on drone (ambient breath)
-		drone *= 0.85 + 0.15 * sin(TAU * 0.25 * t)
+		drone *= 0.85 + 0.15 * sin(TAU * (0.18 if is_title else 0.25) * t)
 		var lead_s := (
-			sin(TAU * hz * t) * 0.048
-			+ sin(TAU * hz * 2.01 * t) * 0.014
+			sin(TAU * hz * t) * (0.055 if is_title else 0.046)
+			+ sin(TAU * hz * 2.01 * t) * 0.015
 			+ sin(TAU * hz * 3.0 * t) * 0.006
 		) * note_env
 		var harm_s := (
-			sin(TAU * hz_h * t) * 0.04
+			sin(TAU * hz_h * t) * 0.038
 			+ sin(TAU * hz_h * 1.5 * t) * 0.012
 		) * note_env
-		# Sparse high bell every 4th note
 		var bell := 0.0
 		if note_i % 4 == 0:
-			bell = sin(TAU * hz * 2.0 * t) * 0.018 * note_env * sin(PI * clampf(note_t / step, 0.0, 1.0))
+			bell = sin(TAU * hz * 2.0 * t) * 0.02 * note_env * sin(PI * clampf(note_t / step, 0.0, 1.0))
 		var pulse := 0.0
-		if kind == "battle":
-			var beat := fmod(t * 2.4, 1.0)
-			var kick := exp(-beat * 14.0) * 0.06
-			pulse = kick * sin(TAU * 70.0 * t)
-			# Offbeat click
-			var off := fmod(t * 2.4 + 0.5, 1.0)
-			pulse += exp(-off * 22.0) * 0.02 * sin(TAU * 180.0 * t)
-			drone *= 1.12
-			lead_s *= 1.2
+		if is_td:
+			var beat := fmod(t * 2.5, 1.0)
+			pulse = exp(-beat * 14.0) * 0.065 * sin(TAU * 70.0 * t)
+			var off := fmod(t * 2.5 + 0.5, 1.0)
+			pulse += exp(-off * 22.0) * 0.022 * sin(TAU * 180.0 * t)
+			drone *= 1.15
+			lead_s *= 1.22
+		elif is_explore:
+			# Walking ostinato + soft wood-block ticks
+			var walk := fmod(t * 1.6, 1.0)
+			pulse = exp(-walk * 10.0) * 0.028 * sin(TAU * 95.0 * t)
+			var arp_hz := float(explore_lead[int(floor(t * 1.2)) % explore_lead.size()])
+			bell += sin(TAU * arp_hz * 2.0 * t) * 0.01 * (0.5 + 0.5 * sin(TAU * 0.35 * t))
+			lead_s *= 1.08
+		elif is_title:
+			# Long bells + slow rising fifths
+			if note_i % 8 == 0:
+				bell += sin(TAU * hz * 1.5 * t) * 0.028 * note_env
+			drone *= 1.08
+			lead_s *= 1.15
 		else:
-			# Ambient: slow arp sparkle
-			var arp_hz := float(amb_lead[int(floor(t * 1.5)) % amb_lead.size()])
-			bell += sin(TAU * arp_hz * 2.0 * t) * 0.008 * (0.5 + 0.5 * sin(TAU * 0.4 * t))
+			var arp_hz2 := float(lobby_lead[int(floor(t * 1.5)) % lobby_lead.size()])
+			bell += sin(TAU * arp_hz2 * 2.0 * t) * 0.008 * (0.5 + 0.5 * sin(TAU * 0.4 * t))
 		var s := drone + lead_s + harm_s + bell + pulse
-		# Seamless loop crossfade
 		var edge := minf(t, dur - t)
-		var env := clampf(edge / 0.55, 0.0, 1.0)
+		var env := clampf(edge / 0.6, 0.0, 1.0)
 		var v := int(clamp(s * env * 32767.0, -32768.0, 32767.0))
 		data[i * 2] = v & 0xFF
 		data[i * 2 + 1] = (v >> 8) & 0xFF

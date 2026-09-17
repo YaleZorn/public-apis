@@ -223,7 +223,8 @@ static func _draw_unit_body(root: Control, role: String, col: Color, size: Vecto
 			root.add_child(body)
 
 
-static func enemy_node(enemy: Dictionary, size: Vector2 = Vector2(40, 48)) -> Control:
+static func enemy_node(enemy: Dictionary, size: Vector2 = Vector2(48, 58)) -> Control:
+	## Standing portrait parity with ally unit_node — readable midtones, gold plate, name.
 	var tags: Array = enemy.get("tags", [])
 	var root := Control.new()
 	root.custom_minimum_size = size
@@ -231,12 +232,24 @@ static func enemy_node(enemy: Dictionary, size: Vector2 = Vector2(40, 48)) -> Co
 	root.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	root.set_meta("enemy_id", str(enemy.get("id", "")))
 
-	var shadow := ColorRect.new()
-	shadow.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	shadow.size = size + Vector2(4, 4)
-	shadow.position = Vector2(-2, -2)
-	shadow.color = Color(0.02, 0.02, 0.02, 0.5)
-	root.add_child(shadow)
+	var threat := Color(0.9, 0.6, 0.35)
+	if "fast" in tags:
+		threat = Color(0.95, 0.38, 0.32)
+	elif "armored" in tags:
+		threat = Color(0.72, 0.78, 0.84)
+
+	var rim := ColorRect.new()
+	rim.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	rim.size = size + Vector2(4, 4)
+	rim.position = Vector2(-2, -2)
+	rim.color = Color(threat.r, threat.g, threat.b, 0.42)
+	root.add_child(rim)
+
+	var plate := ColorRect.new()
+	plate.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	plate.size = size
+	plate.color = Color(0.04, 0.07, 0.06, 0.62)
+	root.add_child(plate)
 
 	var tex := _enemy_tex(enemy)
 	if tex:
@@ -245,50 +258,51 @@ static func enemy_node(enemy: Dictionary, size: Vector2 = Vector2(40, 48)) -> Co
 		spr.texture = tex
 		spr.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		spr.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
-		spr.size = size
+		spr.size = size - Vector2(2, 8)
+		spr.position = Vector2(1, 1)
+		# Lift dark ink so combat silhouettes stay readable on mist BG
+		spr.modulate = Color(1.12, 1.08, 1.05, 1.0)
 		root.add_child(spr)
 	else:
 		var body := ColorRect.new()
 		body.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		body.size = size
+		body.size = size - Vector2(8, 12)
+		body.position = Vector2(4, 4)
 		body.color = Color(str(enemy.get("color", "#a0522d")))
 		root.add_child(body)
 
-	var rim := ColorRect.new()
-	rim.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	rim.size = Vector2(size.x, 4)
-	if "fast" in tags:
-		rim.color = Color(0.95, 0.35, 0.3)
-	elif "armored" in tags:
-		rim.color = Color(0.7, 0.75, 0.8)
-	else:
-		rim.color = Color(0.9, 0.6, 0.35)
-	root.add_child(rim)
+	var strip := ColorRect.new()
+	strip.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	strip.size = Vector2(size.x, 5)
+	strip.position = Vector2(0, size.y - 5)
+	strip.color = threat
+	root.add_child(strip)
 
-	# Tiny HP bar for clearer enemy feedback
+	# HP bar above frame
 	var hp_bg := ColorRect.new()
 	hp_bg.name = "HpBg"
 	hp_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	hp_bg.size = Vector2(size.x, 4)
-	hp_bg.position = Vector2(0, -6)
-	hp_bg.color = Color(0.08, 0.08, 0.08, 0.75)
+	hp_bg.size = Vector2(size.x, 5)
+	hp_bg.position = Vector2(0, -8)
+	hp_bg.color = Color(0.06, 0.06, 0.06, 0.8)
 	root.add_child(hp_bg)
 	var hp_fill := ColorRect.new()
 	hp_fill.name = "HpFill"
 	hp_fill.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	hp_fill.size = Vector2(size.x, 4)
-	hp_fill.position = Vector2(0, -6)
+	hp_fill.size = Vector2(size.x, 5)
+	hp_fill.position = Vector2(0, -8)
 	hp_fill.color = Color(0.85, 0.35, 0.28, 0.95)
 	root.add_child(hp_fill)
 
 	var badge := Label.new()
 	badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	badge.text = str(enemy.get("name", "?")).substr(0, 1)
-	AP.apply_label(badge, 11, Color(1, 0.94, 0.86))
-	badge.position = Vector2(0, size.y - 16)
-	badge.size = Vector2(size.x, 14)
+	badge.text = str(enemy.get("name", "?")).substr(0, 2)
+	AP.apply_label(badge, 12, AP.PAPER_INK)
+	badge.position = Vector2(0, size.y - 22)
+	badge.size = Vector2(size.x, 18)
 	badge.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	root.add_child(badge)
+	root.set_meta("idle_bob", true)
 	return root
 
 
