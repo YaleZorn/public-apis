@@ -57,8 +57,8 @@ static func attach_full_bg(parent: Control, kind: String = "night") -> TextureRe
 		bg.texture = load(TD_FIELD)
 		# Shift art up so painted 门楼 sits in Field band, not under bottom HUD.
 		bg.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
-		bg.offset_top = -56
-		bg.offset_bottom = 96
+		bg.offset_top = -72
+		bg.offset_bottom = 72
 	else:
 		bg.texture = night_gradient() if kind != "paper" else paper_gradient()
 	parent.add_child(bg)
@@ -94,7 +94,8 @@ static func apply_explore_room(arena: Control, rtype: String) -> void:
 		plate.visible = false
 	var veil := arena.get_node_or_null("ArenaBg") as ColorRect
 	if veil:
-		veil.color = Color(AP.room_tint(rtype).r, AP.room_tint(rtype).g, AP.room_tint(rtype).b, 0.28)
+		# Keep arena plate readable — light ink wash only
+		veil.color = Color(AP.room_tint(rtype).r, AP.room_tint(rtype).g, AP.room_tint(rtype).b, 0.12)
 	_build_explore_props(arena, rtype)
 
 

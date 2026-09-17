@@ -191,21 +191,27 @@ func _enter_room() -> void:
 
 
 func _apply_room_atmosphere(rtype: String) -> void:
+	# Swap full-bleed plate so explore rooms feel as authored as TD field.
+	var full := get_node_or_null("AtmosphereBg") as TextureRect
+	if full:
+		var path := Atmo.explore_room_path(rtype)
+		if ResourceLoader.exists(path) or FileAccess.file_exists(path):
+			full.texture = load(path)
+			full.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 	Atmo.apply_explore_room(arena, rtype)
 	var accent := get_node_or_null("Arena/ArenaAccent")
 	if accent:
 		match rtype:
 			"combat":
-				accent.color = Color(0.35, 0.18, 0.14, 0.42)
+				accent.color = Color(0.35, 0.18, 0.14, 0.32)
 			"event":
-				accent.color = Color(0.14, 0.24, 0.38, 0.45)
+				accent.color = Color(0.14, 0.24, 0.38, 0.35)
 			"train":
-				accent.color = Color(0.14, 0.34, 0.24, 0.42)
+				accent.color = Color(0.14, 0.34, 0.24, 0.32)
 			"loot", "supply":
-				accent.color = Color(0.42, 0.34, 0.14, 0.45)
+				accent.color = Color(0.42, 0.34, 0.14, 0.35)
 			_:
-				accent.color = Color(0.08, 0.1, 0.12, 0.5)
-	# Soft full-scene mist to bind room plate with title night BG
+				accent.color = Color(0.08, 0.1, 0.12, 0.4)
 	var edge := get_node_or_null("ExploreMist")
 	if edge == null:
 		edge = ColorRect.new()
@@ -214,7 +220,7 @@ func _apply_room_atmosphere(rtype: String) -> void:
 		edge.set_anchors_preset(Control.PRESET_FULL_RECT)
 		add_child(edge)
 		move_child(edge, 1)
-	(edge as ColorRect).color = Color(0.04, 0.10, 0.09, 0.18)
+	(edge as ColorRect).color = Color(0.03, 0.08, 0.07, 0.12)
 
 
 func _room_type_name(t: String) -> String:

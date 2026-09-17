@@ -117,10 +117,10 @@ func _build_path() -> void:
 		Vector2(0.565, 0.430),
 		Vector2(0.553, 0.490),
 		Vector2(0.436, 0.545),
-		Vector2(0.419, 0.585),
-		Vector2(0.494, 0.620),
-		Vector2(0.545, 0.650),
-		Vector2(0.510, 0.675),
+		Vector2(0.419, 0.570),
+		Vector2(0.494, 0.600),
+		Vector2(0.545, 0.625),
+		Vector2(0.510, 0.648),
 	]
 	path_points = PackedVector2Array()
 	for uv in path_uv:
