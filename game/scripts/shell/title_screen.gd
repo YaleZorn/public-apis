@@ -33,7 +33,7 @@ func _ready() -> void:
 	tagline.text = "守卫剑阁 · 栈道夜行 · 真知识"
 	AP.apply_label(tagline, 18, AP.MIST_TEAL.lightened(0.28))
 	AP.apply_label(version_label, 13, Color(0.55, 0.62, 0.56, 1))
-	version_label.text = "v0.3.1 画面精修"
+	version_label.text = "v0.3.2 画面加深"
 	continue_btn.visible = GameState.has_resume()
 	continue_btn.theme_type_variation = &"ButtonPrimary"
 	start_btn.theme_type_variation = &"ButtonPrimary"
@@ -85,7 +85,7 @@ func _build_settings_sliders() -> void:
 			c.queue_free()
 	_add_slider(box, "主音量", SettingsManager.master_volume, func(v): SettingsManager.set_master(v))
 	_add_slider(box, "音效", SettingsManager.sfx_volume, func(v): SettingsManager.set_sfx(v))
-	_add_slider(box, "氛围", SettingsManager.music_volume, func(v): SettingsManager.set_music(v))
+	_add_slider(box, "音乐", SettingsManager.music_volume, func(v): SettingsManager.set_music(v))
 	var sfx_toggle := CheckButton.new()
 	sfx_toggle.text = "音效开关"
 	sfx_toggle.button_pressed = SettingsManager.sfx_on

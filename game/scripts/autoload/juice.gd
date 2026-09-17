@@ -1,5 +1,5 @@
 extends Node
-## Lightweight juice: procedural SFX, ambient stub, float numbers, screen shake, fades.
+## Lightweight juice: procedural SFX, looping BGM beds, float numbers, shake, fades.
 
 const FloatingNumberScene := preload("res://scenes/ui/floating_number.tscn")
 
@@ -14,6 +14,8 @@ var _fade_layer: CanvasLayer
 var _fade_rect: ColorRect
 var _ambient_player: AudioStreamPlayer
 var _ambient_on: bool = false
+var _bgm_kind: String = "ambient"
+var _bgm_streams: Dictionary = {}
 
 
 func _ready() -> void:
@@ -62,9 +64,24 @@ func play_sfx(kind: String) -> void:
 
 
 func start_ambient() -> void:
+	play_bgm("ambient")
+
+
+func start_battle_music() -> void:
+	play_bgm("battle")
+
+
+func play_bgm(kind: String = "ambient") -> void:
 	if _ambient_player == null:
 		return
 	_ambient_on = true
+	if kind != _bgm_kind or _ambient_player.stream != _bgm_streams.get(kind):
+		_bgm_kind = kind
+		var stream: AudioStream = _bgm_streams.get(kind, _bgm_streams.get("ambient"))
+		var was_playing := _ambient_player.playing
+		_ambient_player.stream = stream
+		if was_playing or _ambient_on:
+			_ambient_player.play()
 	_sync_ambient_volume()
 	if not _ambient_player.playing:
 		_ambient_player.play()
@@ -130,10 +147,14 @@ func _setup_fade() -> void:
 
 
 func _setup_ambient() -> void:
+	_bgm_streams = {
+		"ambient": _compose_theme("ambient"),
+		"battle": _compose_theme("battle"),
+	}
 	_ambient_player = AudioStreamPlayer.new()
 	_ambient_player.name = "Ambient"
 	_ambient_player.bus = "Master"
-	_ambient_player.stream = _make_ambient_loop()
+	_ambient_player.stream = _bgm_streams["ambient"]
 	add_child(_ambient_player)
 
 
@@ -193,29 +214,49 @@ func _make_beep(hz: float, dur: float, vol: float) -> AudioStreamWAV:
 	return wav
 
 
-func _make_ambient_loop() -> AudioStreamWAV:
-	## Soft ink-mist drone stub (loopable). Not a full soundtrack.
+func _compose_theme(kind: String) -> AudioStreamWAV:
+	## Short looping procedural beds — mist drone + pentatonic motif (ambient)
+	## or pulse + tension fifths (battle). Volume still gated by 氛围 slider.
 	var wav := AudioStreamWAV.new()
 	wav.format = AudioStreamWAV.FORMAT_16_BITS
 	wav.mix_rate = 22050
 	wav.stereo = false
 	wav.loop_mode = AudioStreamWAV.LOOP_FORWARD
 	wav.loop_begin = 0
-	var dur := 4.0
+	var dur := 8.0
 	var count := int(wav.mix_rate * dur)
 	wav.loop_end = count
 	var data := PackedByteArray()
 	data.resize(count * 2)
+	# D minor pentatonic-ish (Hz): D3 A3 C4 D4 F4 G4 A4
+	var motif_amb := [146.83, 220.0, 261.63, 293.66, 349.23, 392.0, 440.0, 349.23]
+	var motif_bat := [110.0, 146.83, 164.81, 196.0, 220.0, 164.81, 146.83, 130.81]
+	var motif: Array = motif_bat if kind == "battle" else motif_amb
+	var step := dur / float(motif.size())
 	for i in count:
 		var t := float(i) / float(wav.mix_rate)
-		var s := (
-			sin(TAU * 55.0 * t) * 0.11
-			+ sin(TAU * 82.5 * t) * 0.07
-			+ sin(TAU * 110.0 * t + 0.4) * 0.04
-			+ sin(TAU * 0.35 * t) * 0.02
+		var note_i := int(floor(t / step)) % motif.size()
+		var note_t := fmod(t, step)
+		var hz: float = float(motif[note_i])
+		var note_env := sin(PI * clampf(note_t / step, 0.0, 1.0))
+		var drone := (
+			sin(TAU * 55.0 * t) * 0.07
+			+ sin(TAU * 82.5 * t) * 0.045
+			+ sin(TAU * 110.0 * t + 0.3) * 0.03
 		)
+		var lead := sin(TAU * hz * t) * 0.055 * note_env
+		var fifth := sin(TAU * hz * 1.5 * t) * 0.025 * note_env
+		var shimmer := sin(TAU * hz * 2.0 * t + 0.2) * 0.012 * note_env
+		var pulse := 0.0
+		if kind == "battle":
+			var beat := fmod(t * 2.0, 1.0)
+			pulse = (1.0 if beat < 0.08 else 0.0) * 0.05 * sin(TAU * 90.0 * t)
+			drone *= 1.15
+			lead *= 1.25
+		var s := drone + lead + fifth + shimmer + pulse
+		# Seamless loop crossfade at ends
 		var edge := minf(t, dur - t)
-		var env := clampf(edge / 0.35, 0.0, 1.0)
+		var env := clampf(edge / 0.4, 0.0, 1.0)
 		var v := int(clamp(s * env * 32767.0, -32768.0, 32767.0))
 		data[i * 2] = v & 0xFF
 		data[i * 2 + 1] = (v >> 8) & 0xFF

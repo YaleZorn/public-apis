@@ -1,5 +1,5 @@
 extends Control
-## Knowledge book + morning 3-question quiz — scannable journal look.
+## Knowledge book + morning 3-question quiz — jade journal look.
 
 const AP := preload("res://scripts/util/art_palette.gd")
 const Atmo := preload("res://scripts/util/atmosphere.gd")
@@ -22,34 +22,68 @@ func _ready() -> void:
 	var old_bg := get_node_or_null("Bg")
 	if old_bg:
 		old_bg.visible = false
-	AP.apply_label(quiz_title, 24, AP.LANTERN_GOLD)
+	AP.apply_label(quiz_title, 26, AP.LANTERN_GOLD)
 	AP.apply_label(status, 15, AP.PAPER_DIM)
 	AP.apply_richtext(book, 15)
+	Juice.start_ambient()
+	_polish_book_panel()
 	back_btn.pressed.connect(func():
 		Juice.play_sfx("tap")
 		Juice.fade_transition(func(): GameState.go_lobby())
 	)
 	start_quiz_btn.pressed.connect(_start_quiz)
+	start_quiz_btn.theme_type_variation = &"ButtonPrimary"
 	_refresh_book()
 	_refresh_quiz_state()
+	Juice.slide_in(quiz_title, 16.0, 0.28)
+
+
+func _polish_book_panel() -> void:
+	var panel := get_node_or_null("VBox/BookPanel") as PanelContainer
+	if panel == null:
+		return
+	# Soft jade paper plate over mist bg
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.07, 0.12, 0.11, 0.92)
+	style.border_color = Color(AP.LANTERN_GOLD.r, AP.LANTERN_GOLD.g, AP.LANTERN_GOLD.b, 0.45)
+	style.set_border_width_all(2)
+	style.set_corner_radius_all(6)
+	style.content_margin_left = 14
+	style.content_margin_right = 14
+	style.content_margin_top = 12
+	style.content_margin_bottom = 12
+	panel.add_theme_stylebox_override("panel", style)
+	# Top gold rule accent
+	var rule := ColorRect.new()
+	rule.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	rule.custom_minimum_size = Vector2(0, 3)
+	rule.color = Color(AP.LANTERN_GOLD.r, AP.LANTERN_GOLD.g, AP.LANTERN_GOLD.b, 0.55)
+	var vbox := get_node_or_null("VBox") as VBoxContainer
+	if vbox:
+		var idx := panel.get_index()
+		vbox.add_child(rule)
+		vbox.move_child(rule, idx)
 
 
 func _refresh_book() -> void:
 	book.clear()
-	book.append_text("[color=#e6c15a][b]健身知识本[/b][/color]（%d 条）\n" % ContentDB.knowledge_list.size())
+	book.append_text("[color=#e6c15a][b]健身知识本[/b][/color]  ·  墨笺\n")
+	book.append_text("[color=#5a9a90]%d 条已录 · 局内遇见解锁详情[/color]\n" % ContentDB.knowledge_list.size())
 	book.append_text("[color=#5a9a90][i]%s[/i][/color]\n\n" % ContentDB.knowledge_disclaimer)
 	for entry in ContentDB.knowledge_list:
 		var seen: bool = entry["id"] in GameState.knowledge_seen
-		var mark := "✓" if seen else "○"
+		var topic := str(entry.get("topic", ""))
 		if seen:
-			book.append_text("%s [b][color=#e8e0d0]%s[/color][/b] · [color=#5a9a90]%s[/color]\n建议：[color=#c8d8c8]%s[/color]\n因果：%s\n\n" % [
-				mark, entry.get("title", ""), entry.get("topic", ""),
-				entry.get("correct", ""), entry.get("why", "")
+			book.append_text("[color=#e6c15a]◆[/color] [b][color=#e8e0d0]%s[/color][/b]  [color=#5a9a90]%s[/color]\n" % [
+				entry.get("title", ""), topic
 			])
+			book.append_text("[color=#c8d8c8]建议[/color]  %s\n" % entry.get("correct", ""))
+			book.append_text("[color=#8a9a90]因果[/color]  %s\n\n" % entry.get("why", ""))
 		else:
-			book.append_text("%s [b]%s[/b] · %s\n[i][color=#6a7870]局内遇见后解锁详情[/color][/i]\n\n" % [
-				mark, entry.get("title", ""), entry.get("topic", "")
+			book.append_text("[color=#4a5a52]◇[/color] [b][color=#8a9488]%s[/color][/b]  [color=#4a5a52]%s[/color]\n" % [
+				entry.get("title", ""), topic
 			])
+			book.append_text("[i][color=#4a5a52]—— 雾中未开 ——[/color][/i]\n\n")
 
 
 func _refresh_quiz_state() -> void:
@@ -113,6 +147,7 @@ func _show_quiz_question() -> void:
 		b.custom_minimum_size = Vector2(0, 52)
 		b.pressed.connect(_answer.bind(i == answer, entry["id"]))
 		quiz_box.add_child(b)
+	Juice.slide_in(qlabel, 10.0, 0.2)
 
 
 func _answer(correct: bool, kid: String) -> void:

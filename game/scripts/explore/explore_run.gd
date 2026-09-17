@@ -52,6 +52,7 @@ func _ready() -> void:
 	AP.apply_label(hp_label, 16, AP.PAPER_DIM)
 	AP.apply_label(status_label, 15, AP.PAPER_DIM)
 	AP.apply_label(loot_label, 16, AP.LANTERN_GOLD)
+	Juice.start_battle_music()
 	knowledge_layer = KnowledgeCardScene.instantiate()
 	add_child(knowledge_layer)
 	knowledge_layer.resolved.connect(_on_knowledge_resolved)
@@ -119,6 +120,7 @@ func _enter_room() -> void:
 	enemies.clear()
 	for c in enemies_layer.get_children():
 		c.queue_free()
+	VF.room_wipe(self, Color(0.04, 0.10, 0.09, 0.7))
 	_rebuild_room_strip()
 	if room_index >= rooms.size():
 		_victory()
@@ -128,6 +130,7 @@ func _enter_room() -> void:
 	var type_name := _room_type_name(rtype)
 	room_label.text = "%d/%d · %s" % [room_index + 1, rooms.size(), room.get("label", type_name)]
 	_apply_room_atmosphere(rtype)
+	Juice.pulse(room_label, 1.06, 0.18)
 	next_btn.visible = false
 	loot_label.visible = false
 	match rtype:
@@ -252,10 +255,17 @@ func _spawn_room_enemies(ids: Array) -> void:
 		var e: Dictionary = ContentDB.get_enemy(str(eid))
 		var node := VF.enemy_node(e, Vector2(64, 76))
 		node.position = Vector2(380 + (i % 2) * 80, 160 + i * 95)
+		node.modulate.a = 0.0
 		enemies_layer.add_child(node)
+		var tw := node.create_tween()
+		tw.tween_property(node, "modulate:a", 1.0, 0.22)
+		tw.parallel().tween_property(node, "position:x", node.position.x - 12.0, 0.22).set_trans(Tween.TRANS_BACK)
+		var max_hp := float(e.get("hp", 50)) * 0.85
+		VF.set_enemy_hp_ratio(node, 1.0)
 		enemies.append({
 			"id": eid,
-			"hp": float(e.get("hp", 50)) * 0.85,
+			"hp": max_hp,
+			"max_hp": max_hp,
 			"atk": 8.0 + float(e.get("leak_damage", 1)) * 4.0,
 			"node": node,
 			"attack_cd": 1.0 + i * 0.2,
@@ -270,10 +280,13 @@ func _hero_auto_attack() -> void:
 	target.hp -= atk
 	var pos: Vector2 = target.node.position + target.node.custom_minimum_size * 0.5
 	Juice.float_number(pos, str(int(atk)), Color(1, 0.88, 0.5))
-	VF.hit_flash(enemies_layer, pos)
+	VF.hit_flash(enemies_layer, pos, Color(1.0, 0.92, 0.55, 0.9))
+	VF.set_enemy_hp_ratio(target.node, target.hp / maxf(target.max_hp, 1.0))
 	Juice.play_sfx("hit")
 	_pulse(_hero_visual)
+	_pulse(target.node)
 	if target.hp <= 0:
+		VF.death_puff(enemies_layer, pos, Color(0.95, 0.5, 0.35, 0.85))
 		target.node.queue_free()
 		enemies.erase(target)
 		Juice.play_sfx("kill")
@@ -310,35 +323,48 @@ func _cast_skill() -> void:
 		return
 	var effect := str(skill.get("effect", ""))
 	var value := float(skill.get("value", 0))
+	var burst_col := Color(0.7, 0.88, 0.75, 0.8)
 	match effect:
 		"aoe_damage":
+			burst_col = Color(0.95, 0.55, 0.35, 0.85)
 			for enemy in enemies.duplicate():
 				enemy.hp -= value
-				Juice.float_number(enemy.node.position, str(int(value)), Color(0.85, 0.65, 1))
+				Juice.float_number(enemy.node.position, str(int(value)), Color(0.95, 0.7, 0.45))
+				VF.hit_flash(enemies_layer, enemy.node.position + enemy.node.custom_minimum_size * 0.5, burst_col)
+				VF.set_enemy_hp_ratio(enemy.node, enemy.hp / maxf(enemy.max_hp, 1.0))
 				if enemy.hp <= 0:
+					VF.death_puff(enemies_layer, enemy.node.position + enemy.node.custom_minimum_size * 0.5)
 					enemy.node.queue_free()
 					enemies.erase(enemy)
 		"heal":
+			burst_col = Color(0.55, 0.9, 0.65, 0.85)
 			hp = minf(max_hp, hp + value)
 			Juice.float_number(_hero_visual.position, "+%d" % int(value), Color(0.55, 0.9, 0.6))
 		"shield":
+			burst_col = Color(0.55, 0.75, 0.95, 0.85)
 			shield += value
 			Juice.float_number(_hero_visual.position, "盾+%d" % int(value), Color(0.55, 0.75, 0.95))
 		"slow_all":
+			burst_col = Color(0.55, 0.75, 0.95, 0.8)
 			slow_all_timer = float(skill.get("duration", 2.0))
+			for enemy in enemies:
+				if enemy.node:
+					enemy.node.modulate = Color(0.65, 0.8, 1.1, 1.0)
 		_:
 			for enemy in enemies.duplicate():
 				enemy.hp -= value
+				VF.set_enemy_hp_ratio(enemy.node, enemy.hp / maxf(enemy.max_hp, 1.0))
 				if enemy.hp <= 0:
+					VF.death_puff(enemies_layer, enemy.node.position + enemy.node.custom_minimum_size * 0.5)
 					enemy.node.queue_free()
 					enemies.erase(enemy)
 	skill_cd = float(skill.get("cooldown", 8.0))
 	var burst_at: Vector2 = arena.size * 0.5
 	if _hero_visual:
 		burst_at = _hero_visual.position + _hero_visual.custom_minimum_size * 0.5
-	VF.skill_burst(arena, burst_at, Color(0.7, 0.88, 0.75, 0.75))
+	VF.skill_burst(arena, burst_at, burst_col)
 	Juice.play_sfx("skill")
-	Juice.screen_shake(arena, 4.0)
+	Juice.screen_shake(arena, 5.0)
 	_refresh_skill_btn()
 	_refresh()
 	if enemies.is_empty() and combat_active:
@@ -368,10 +394,13 @@ func _show_loot(text: String, col: Color) -> void:
 func _advance_room() -> void:
 	if awaiting_knowledge or game_done:
 		return
-	room_index += 1
-	room_completed = false
-	_persist()
-	_enter_room()
+	Juice.play_sfx("tap")
+	Juice.fade_transition(func():
+		room_index += 1
+		room_completed = false
+		_persist()
+		_enter_room()
+	, Color(0.03, 0.09, 0.08, 1.0), 0.28)
 
 
 func _on_knowledge_resolved(_id: String, correct: bool) -> void:

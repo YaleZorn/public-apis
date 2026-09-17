@@ -3,6 +3,7 @@ extends Control
 
 const AP := preload("res://scripts/util/art_palette.gd")
 const Atmo := preload("res://scripts/util/atmosphere.gd")
+const VF := preload("res://scripts/util/visual_factory.gd")
 
 @onready var title_label: Label = %TitleLabel
 @onready var subtitle: Label = %Subtitle
@@ -111,19 +112,24 @@ func _rebuild_hero_bar() -> void:
 		c.queue_free()
 	for uid in GameState.unlocked_units:
 		var u: Dictionary = ContentDB.get_unit(uid)
-		var b := Button.new()
-		b.text = str(u.get("name", uid))
-		b.custom_minimum_size = Vector2(0, 40)
-		if uid == GameState.explore_hero_id:
-			b.disabled = true
-			b.text = "★ " + b.text
-		b.pressed.connect(func():
+		var selected: bool = uid == GameState.explore_hero_id
+		var wrap := Button.new()
+		wrap.custom_minimum_size = Vector2(100, 124)
+		wrap.focus_mode = Control.FOCUS_NONE
+		wrap.clip_contents = true
+		wrap.text = ""
+		wrap.disabled = selected
+		var card := VF.portrait_card(u, Vector2(96, 120), selected)
+		card.position = Vector2(2, 2)
+		card.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		wrap.add_child(card)
+		wrap.pressed.connect(func():
 			GameState.explore_hero_id = uid
 			GameState.persist_meta_keep_checkpoints()
 			Juice.play_sfx("tap")
 			_refresh()
 		)
-		hero_bar.add_child(b)
+		hero_bar.add_child(wrap)
 
 
 func _rebuild_gear_buttons() -> void:
@@ -183,7 +189,7 @@ func _build_settings() -> void:
 		SettingsManager.set_sfx(v)
 		GameState.persist_meta_keep_checkpoints()
 	)
-	_add_slider(box, "氛围", SettingsManager.music_volume, func(v):
+	_add_slider(box, "音乐", SettingsManager.music_volume, func(v):
 		SettingsManager.set_music(v)
 		GameState.persist_meta_keep_checkpoints()
 	)

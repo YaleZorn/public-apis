@@ -48,6 +48,10 @@ static func attach_full_bg(parent: Control, kind: String = "night") -> TextureRe
 		bg.texture = load(TITLE_BG)
 	elif kind == "td" and ResourceLoader.exists(TD_FIELD):
 		bg.texture = load(TD_FIELD)
+		# Shift art up so painted 门楼 sits in Field band, not under bottom HUD.
+		bg.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+		bg.offset_top = -40
+		bg.offset_bottom = 120
 	else:
 		bg.texture = night_gradient() if kind != "paper" else paper_gradient()
 	parent.add_child(bg)
@@ -215,27 +219,50 @@ static func build_td_terrain(layer: Node2D, w: float, h: float, path: PackedVect
 
 
 static func _gate_node() -> Control:
+	## Ornate 门楼 landmark — readable above bottom HUD.
 	var root := Control.new()
-	root.custom_minimum_size = Vector2(72, 48)
-	root.size = Vector2(72, 48)
+	root.custom_minimum_size = Vector2(96, 64)
+	root.size = Vector2(96, 64)
+	var glow := ColorRect.new()
+	glow.size = Vector2(110, 78)
+	glow.position = Vector2(-7, -10)
+	glow.color = Color(AP.LANTERN_GOLD.r, AP.LANTERN_GOLD.g, AP.LANTERN_GOLD.b, 0.14)
+	glow.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	root.add_child(glow)
 	var base := ColorRect.new()
-	base.size = Vector2(72, 48)
-	base.color = Color(AP.GATE_WOOD.r, AP.GATE_WOOD.g, AP.GATE_WOOD.b, 0.72)
+	base.size = Vector2(96, 64)
+	base.color = Color(AP.GATE_WOOD.r, AP.GATE_WOOD.g, AP.GATE_WOOD.b, 0.88)
 	root.add_child(base)
+	var pillar_l := ColorRect.new()
+	pillar_l.size = Vector2(12, 54)
+	pillar_l.position = Vector2(6, 8)
+	pillar_l.color = Color(0.28, 0.18, 0.1, 0.95)
+	root.add_child(pillar_l)
+	var pillar_r := ColorRect.new()
+	pillar_r.size = Vector2(12, 54)
+	pillar_r.position = Vector2(78, 8)
+	pillar_r.color = Color(0.28, 0.18, 0.1, 0.95)
+	root.add_child(pillar_r)
 	var roof := ColorRect.new()
-	roof.size = Vector2(82, 10)
-	roof.position = Vector2(-5, -6)
-	roof.color = Color(0.55, 0.28, 0.18, 0.85)
+	roof.size = Vector2(108, 14)
+	roof.position = Vector2(-6, -8)
+	roof.color = Color(0.55, 0.28, 0.18, 0.95)
 	root.add_child(roof)
+	var roof2 := ColorRect.new()
+	roof2.size = Vector2(96, 8)
+	roof2.position = Vector2(0, 2)
+	roof2.color = Color(AP.LANTERN_GOLD.r, AP.LANTERN_GOLD.g, AP.LANTERN_GOLD.b, 0.55)
+	root.add_child(roof2)
 	var arch := ColorRect.new()
-	arch.size = Vector2(32, 30)
-	arch.position = Vector2(20, 10)
-	arch.color = Color(AP.GATE_SHADOW.r, AP.GATE_SHADOW.g, AP.GATE_SHADOW.b, 0.75)
+	arch.size = Vector2(40, 36)
+	arch.position = Vector2(28, 16)
+	arch.color = Color(AP.GATE_SHADOW.r, AP.GATE_SHADOW.g, AP.GATE_SHADOW.b, 0.85)
 	root.add_child(arch)
 	var title := Label.new()
-	title.text = "据点"
+	title.text = "据点·门楼"
 	AP.apply_label(title, 13, AP.LANTERN_GOLD)
-	title.position = Vector2(18, 28)
+	title.position = Vector2(12, 44)
+	title.size = Vector2(72, 18)
 	root.add_child(title)
 	return root
 
