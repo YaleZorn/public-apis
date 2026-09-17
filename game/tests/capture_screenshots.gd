@@ -1,7 +1,7 @@
 extends SceneTree
-## Capture portrait screenshots for Project store media (art refine).
+## Capture portrait screenshots for Project store media (art deepen).
 
-const OUT := "/cursor/stores/bc-71787b67-91e4-456d-b541-da2778721eaf/media/art-refine"
+const OUT := "/cursor/stores/bc-71787b67-91e4-456d-b541-da2778721eaf/media/art-deepen"
 
 
 func _initialize() -> void:
@@ -16,9 +16,9 @@ func _run() -> void:
 	if FileAccess.file_exists(save_path):
 		DirAccess.remove_absolute(save_path)
 	await _shot("res://scenes/shell/title_screen.tscn", "01-title.png", 0.9)
-	await _shot("res://scenes/lobby/lobby.tscn", "02-lobby.png", 0.6)
+	await _shot("res://scenes/lobby/lobby.tscn", "02-lobby.png", 0.7)
 	await _shot_td()
-	await _shot("res://scenes/explore/explore_run.tscn", "04-explore.png", 0.75)
+	await _shot("res://scenes/explore/explore_run.tscn", "04-explore.png", 0.85)
 	await _shot("res://scenes/knowledge/knowledge_hub.tscn", "05-knowledge.png", 0.55)
 	print("SCREENSHOTS_OK ", OUT)
 	quit(0)
@@ -45,9 +45,9 @@ func _shot_td() -> void:
 	td._on_slot_pressed(1)
 	td.selected_unit_id = "unit_qinggong"
 	td._on_slot_pressed(2)
-	await create_timer(0.3).timeout
+	await create_timer(0.35).timeout
 	td._on_start_wave()
-	await create_timer(1.6).timeout
+	await create_timer(1.8).timeout
 	_save("03-td.png")
 	td.queue_free()
 	await create_timer(0.15).timeout

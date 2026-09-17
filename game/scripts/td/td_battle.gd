@@ -58,6 +58,7 @@ func _ready() -> void:
 		Atmo.attach_field_art(field_bg)
 	AP.apply_label(chapter_label, 16, AP.LANTERN_GOLD)
 	AP.apply_label(wave_banner, 26, AP.LANTERN_GOLD)
+	Juice.start_battle_music()
 	knowledge_layer = KnowledgeCardScene.instantiate()
 	add_child(knowledge_layer)
 	knowledge_layer.resolved.connect(_on_knowledge_resolved)
@@ -103,8 +104,8 @@ func _build_path() -> void:
 	if w < 10:
 		w = 688
 		h = 916
-	# Painted trail centerline in 720×1280 UV (spawn platform → gate approach).
-	# Sampled from td-jiange-field.jpg wooden walkway; clipped to Field viewport.
+	# Painted trail centerline in 720×1280 UV (spawn → gate approach).
+	# Gate UV kept above compact HUD so 门楼/据点 stay readable.
 	var path_uv := [
 		Vector2(0.492, 0.090),
 		Vector2(0.500, 0.145),
@@ -117,9 +118,9 @@ func _build_path() -> void:
 		Vector2(0.553, 0.490),
 		Vector2(0.436, 0.545),
 		Vector2(0.419, 0.600),
-		Vector2(0.494, 0.655),
-		Vector2(0.575, 0.720),
-		Vector2(0.532, 0.770),
+		Vector2(0.494, 0.640),
+		Vector2(0.545, 0.675),
+		Vector2(0.510, 0.705),
 	]
 	path_points = PackedVector2Array()
 	for uv in path_uv:
@@ -138,12 +139,15 @@ func _build_path() -> void:
 
 
 func _build_decor(w: float, h: float) -> void:
-	# Gate + spawn markers only — painted field carries terrain mood
+	# Gate + spawn markers — landmark kept clear of bottom HUD
 	for c in decor_layer.get_children():
 		c.queue_free()
 	if path_points.size() > 0:
 		var gate := Atmo._gate_node()
-		gate.position = path_points[path_points.size() - 1] - Vector2(36, 44)
+		var gate_pos: Vector2 = path_points[path_points.size() - 1] - Vector2(48, 58)
+		# Keep full gatehouse clear of compact bottom HUD
+		gate_pos.y = minf(gate_pos.y, h - 88.0)
+		gate.position = gate_pos
 		decor_layer.add_child(gate)
 		var spawn := Atmo._spawn_marker()
 		spawn.position = path_points[0] - Vector2(14, 14)
@@ -201,16 +205,36 @@ func _build_roster_bar() -> void:
 		c.queue_free()
 	for uid in GameState.unlocked_units:
 		var u: Dictionary = ContentDB.get_unit(uid)
-		var b := Button.new()
-		var role_tag := _role_short(str(u.get("role", "")))
-		b.text = "%s\n%d两 %s" % [u.get("name", uid), int(u.get("cost", 50)), role_tag]
-		b.custom_minimum_size = Vector2(112, 74)
-		b.pressed.connect(func():
+		var wrap := Button.new()
+		wrap.custom_minimum_size = Vector2(72, 56)
+		wrap.focus_mode = Control.FOCUS_NONE
+		wrap.clip_contents = true
+		wrap.text = ""
+		var card := VF.portrait_card(u, Vector2(68, 52), false)
+		card.position = Vector2(2, 2)
+		card.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		wrap.add_child(card)
+		var cost := Label.new()
+		cost.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		cost.text = "%d两" % int(u.get("cost", 50))
+		AP.apply_label(cost, 10, AP.LANTERN_GOLD)
+		cost.position = Vector2(4, 38)
+		wrap.add_child(cost)
+		wrap.pressed.connect(func():
 			selected_unit_id = uid
 			status_label.text = "已选 %s — 点空槽放置" % u.get("name", uid)
 			Juice.play_sfx("tap")
+			_refresh_roster_selection()
 		)
-		roster_bar.add_child(b)
+		wrap.set_meta("unit_id", uid)
+		roster_bar.add_child(wrap)
+
+
+func _refresh_roster_selection() -> void:
+	for b in roster_bar.get_children():
+		if b is Button:
+			var uid := str(b.get_meta("unit_id", ""))
+			b.modulate = Color(1.15, 1.1, 0.9) if uid == selected_unit_id else Color.WHITE
 
 
 func _role_short(role: String) -> String:
@@ -360,6 +384,8 @@ func _spawn_enemy(eid: String) -> void:
 	node.set_meta("leak", int(e.get("leak_damage", 1)))
 	node.set_meta("path_i", 0)
 	node.set_meta("progress", 0.0)
+	if node is Control:
+		VF.set_enemy_hp_ratio(node as Control, 1.0)
 	enemies_alive += 1
 
 
@@ -416,8 +442,13 @@ func _tick_combat(delta: float) -> void:
 		var hit_pos: Vector2 = target.position + target.custom_minimum_size * 0.5
 		Juice.float_number(hit_pos, str(int(dmg)), Color(1, 0.85, 0.45))
 		VF.hit_flash(enemies_layer, hit_pos)
+		var hp_now := float(target.get_meta("hp"))
+		var hp_max := float(target.get_meta("max_hp"))
+		if target is Control:
+			VF.set_enemy_hp_ratio(target as Control, hp_now / maxf(hp_max, 1.0))
+			_flash_enemy(target as Control)
 		Juice.play_sfx("hit")
-		if float(target.get_meta("hp")) <= 0:
+		if hp_now <= 0:
 			_kill_enemy(target)
 
 
@@ -479,10 +510,21 @@ func _kill_enemy(node: Node) -> void:
 	var reward := int(node.get_meta("reward"))
 	silver += reward
 	enemies_alive = max(0, enemies_alive - 1)
-	Juice.float_number(node.position, "+%d" % reward, Color(0.7, 0.95, 0.65))
+	var at: Vector2 = node.position + (node.custom_minimum_size * 0.5 if node is Control else Vector2.ZERO)
+	Juice.float_number(at, "+%d" % reward, Color(0.7, 0.95, 0.65))
+	VF.death_puff(enemies_layer, at)
 	Juice.play_sfx("kill")
 	node.queue_free()
 	_refresh_hud()
+
+
+func _flash_enemy(node: Control) -> void:
+	if node == null:
+		return
+	var base := node.modulate
+	node.modulate = Color(1.4, 1.2, 1.05, 1.0)
+	var tw := node.create_tween()
+	tw.tween_property(node, "modulate", base, 0.1)
 
 
 func _leak(node: Node) -> void:

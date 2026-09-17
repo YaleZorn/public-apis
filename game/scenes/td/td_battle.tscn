@@ -73,9 +73,9 @@ anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 offset_left = 8.0
-offset_top = 72.0
+offset_top = 64.0
 offset_right = -8.0
-offset_bottom = -240.0
+offset_bottom = -164.0
 
 [node name="WaveBanner" type="Label" parent="Field"]
 unique_name_in_owner = true
@@ -135,21 +135,21 @@ anchors_preset = 12
 anchor_top = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = 16.0
-offset_top = -228.0
-offset_right = -16.0
-offset_bottom = -12.0
-theme_override_constants/separation = 8
+offset_left = 12.0
+offset_top = -152.0
+offset_right = -12.0
+offset_bottom = -6.0
+theme_override_constants/separation = 4
 
 [node name="StatusLabel" type="Label" parent="Bottom"]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_font_sizes/font_size = 15
+theme_override_font_sizes/font_size = 12
 autowrap_mode = 3
 text = "状态"
 
 [node name="RosterScroll" type="ScrollContainer" parent="Bottom"]
-custom_minimum_size = Vector2(0, 78)
+custom_minimum_size = Vector2(0, 58)
 layout_mode = 2
 horizontal_scroll_mode = 1
 vertical_scroll_mode = 0
@@ -157,34 +157,34 @@ vertical_scroll_mode = 0
 [node name="RosterBar" type="HBoxContainer" parent="Bottom/RosterScroll"]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_constants/separation = 8
+theme_override_constants/separation = 6
 
 [node name="Actions" type="HBoxContainer" parent="Bottom"]
 layout_mode = 2
-theme_override_constants/separation = 8
+theme_override_constants/separation = 6
 
 [node name="StartWaveBtn" type="Button" parent="Bottom/Actions"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 56)
+custom_minimum_size = Vector2(0, 40)
 layout_mode = 2
 size_flags_horizontal = 3
 text = "开始波次"
 
 [node name="RecallBtn" type="Button" parent="Bottom/Actions"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 56)
+custom_minimum_size = Vector2(0, 40)
 layout_mode = 2
 size_flags_horizontal = 3
 text = "回收"
 
 [node name="SpeedBtn" type="Button" parent="Bottom/Actions"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 56)
+custom_minimum_size = Vector2(0, 40)
 layout_mode = 2
 text = "速度 x1"
 
 [node name="LobbyBtn" type="Button" parent="Bottom"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 48)
+custom_minimum_size = Vector2(0, 36)
 layout_mode = 2
 text = "存档并回大厅"

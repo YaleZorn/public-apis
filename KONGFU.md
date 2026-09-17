@@ -1,7 +1,3 @@
-# Kongfu Roguelike
+# Kongfu Roguelike (Godot) — art deepen v0.3.2
 
-Godot 4 portrait mobile game living under `game/`.
-
-- Design: Project store `docs/gameplay-design.md` + `docs/project-context.md`
-- Run: `cd game && godot --path .`
-- Branch lineage: v0 slice → playable chapter (v0.2) → **art pass (v0.3)**
+See `game/README.md` for run / smoke / art notes.
