@@ -55,10 +55,10 @@ static func attach_full_bg(parent: Control, kind: String = "night") -> TextureRe
 		bg.texture = load(TITLE_BG)
 	elif kind == "td" and ResourceLoader.exists(TD_FIELD):
 		bg.texture = load(TD_FIELD)
-		# Shift art up so painted 门楼 sits in Field band, not under bottom HUD.
+		# Aggressive up-shift: painted 门楼 lives in Field, not under bottom HUD.
 		bg.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
-		bg.offset_top = -110
-		bg.offset_bottom = 40
+		bg.offset_top = -160
+		bg.offset_bottom = 20
 	else:
 		bg.texture = night_gradient() if kind != "paper" else paper_gradient()
 	parent.add_child(bg)

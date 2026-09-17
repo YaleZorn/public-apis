@@ -159,6 +159,19 @@ func _build_decor(w: float, h: float) -> void:
 	mist.color = Color(0.66, 0.77, 0.72, 0.07)
 	mist.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	decor_layer.add_child(mist)
+	# Soft ink veil over field floor so painted gatehouse never peeks under HUD
+	var floor_veil := ColorRect.new()
+	floor_veil.size = Vector2(w, 72)
+	floor_veil.position = Vector2(0, h - 72)
+	floor_veil.color = Color(0.03, 0.07, 0.06, 0.55)
+	floor_veil.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	decor_layer.add_child(floor_veil)
+	var floor_fade := ColorRect.new()
+	floor_fade.size = Vector2(w, 36)
+	floor_fade.position = Vector2(0, h - 108)
+	floor_fade.color = Color(0.03, 0.07, 0.06, 0.28)
+	floor_fade.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	decor_layer.add_child(floor_fade)
 
 
 func _build_slots() -> void:
@@ -373,7 +386,7 @@ func _tick_spawns(delta: float) -> void:
 
 func _spawn_enemy(eid: String) -> void:
 	var e: Dictionary = ContentDB.get_enemy(eid)
-	var node := VF.enemy_node(e, Vector2(52, 64))
+	var node := VF.enemy_node(e, Vector2(56, 70))
 	node.position = path_points[0] - node.custom_minimum_size * 0.5
 	enemies_layer.add_child(node)
 	node.set_meta("eid", eid)
