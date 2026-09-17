@@ -1,0 +1,444 @@
+extends RefCounted
+class_name VisualFactory
+## Per-character portrait cards + role accents — subway-readable wuxia identity.
+
+const AP := preload("res://scripts/util/art_palette.gd")
+const ATLAS_PATH := "res://assets/textures/unit-enemy-atlas.jpg"
+const PORTRAIT_DIR := "res://assets/textures/portraits/"
+
+# Atlas fallback (1280x720, 7 figures).
+const ATLAS_W := 1280.0
+const ATLAS_H := 720.0
+const COLS := 7
+
+const CROP_INSETS := [
+	Vector4(0.10, 0.06, 0.10, 0.08),
+	Vector4(0.12, 0.08, 0.10, 0.10),
+	Vector4(0.10, 0.05, 0.10, 0.08),
+	Vector4(0.11, 0.06, 0.11, 0.08),
+	Vector4(0.12, 0.10, 0.12, 0.10),
+	Vector4(0.10, 0.07, 0.10, 0.08),
+	Vector4(0.14, 0.10, 0.10, 0.12),
+]
+
+static var _atlas_tex: Texture2D
+static var _portrait_cache: Dictionary = {}
+
+
+static func _atlas() -> Texture2D:
+	if _atlas_tex == null and ResourceLoader.exists(ATLAS_PATH):
+		_atlas_tex = load(ATLAS_PATH)
+	return _atlas_tex
+
+
+static func _portrait_tex(id: String) -> Texture2D:
+	if id == "":
+		return null
+	if _portrait_cache.has(id):
+		return _portrait_cache[id]
+	var path := PORTRAIT_DIR + id + ".png"
+	if ResourceLoader.exists(path) or FileAccess.file_exists(path):
+		var tex: Texture2D = load(path)
+		_portrait_cache[id] = tex
+		return tex
+	_portrait_cache[id] = null
+	return null
+
+
+static func _region(index: int) -> AtlasTexture:
+	var src := _atlas()
+	if src == null:
+		return null
+	var cell_w := ATLAS_W / float(COLS)
+	var inset: Vector4 = CROP_INSETS[clampi(index, 0, CROP_INSETS.size() - 1)]
+	var at := AtlasTexture.new()
+	at.atlas = src
+	at.region = Rect2(
+		index * cell_w + cell_w * inset.x,
+		ATLAS_H * inset.y,
+		cell_w * (1.0 - inset.x - inset.z),
+		ATLAS_H * (1.0 - inset.y - inset.w)
+	)
+	return at
+
+
+static func _role_index(role: String) -> int:
+	match role:
+		"tank": return 0
+		"dps": return 1
+		"control": return 2
+		"support": return 3
+		"summon": return 1
+		_: return 1
+
+
+static func _enemy_index(tags: Array) -> int:
+	if "armored" in tags:
+		return 5
+	if "fast" in tags:
+		return 6
+	return 4
+
+
+static func _unit_tex(unit: Dictionary) -> Texture2D:
+	var tex := _portrait_tex(str(unit.get("id", "")))
+	if tex:
+		return tex
+	return _region(_role_index(str(unit.get("role", "dps"))))
+
+
+static func _enemy_tex(enemy: Dictionary) -> Texture2D:
+	var tex := _portrait_tex(str(enemy.get("id", "")))
+	if tex:
+		return tex
+	return _region(_enemy_index(enemy.get("tags", [])))
+
+
+static func unit_node(unit: Dictionary, size: Vector2 = Vector2(64, 72)) -> Control:
+	var role := str(unit.get("role", "dps"))
+	var root := Control.new()
+	root.custom_minimum_size = size
+	root.size = size
+	root.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	root.set_meta("unit_id", str(unit.get("id", "")))
+	root.set_meta("role", role)
+
+	var rim := ColorRect.new()
+	rim.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	rim.size = size + Vector2(4, 4)
+	rim.position = Vector2(-2, -2)
+	rim.color = Color(AP.LANTERN_GOLD.r, AP.LANTERN_GOLD.g, AP.LANTERN_GOLD.b, 0.22)
+	root.add_child(rim)
+
+	var plate := ColorRect.new()
+	plate.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	plate.size = size
+	plate.color = Color(0.03, 0.06, 0.05, 0.55)
+	root.add_child(plate)
+
+	var tex := _unit_tex(unit)
+	if tex:
+		var spr := TextureRect.new()
+		spr.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		spr.texture = tex
+		spr.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		spr.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+		spr.size = size - Vector2(2, 6)
+		spr.position = Vector2(1, 1)
+		root.add_child(spr)
+	else:
+		_draw_unit_body(root, role, Color(str(unit.get("color", "#6a8f71"))), size)
+
+	var strip := ColorRect.new()
+	strip.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	strip.size = Vector2(size.x, 5)
+	strip.position = Vector2(0, size.y - 5)
+	strip.color = AP.role_accent(role)
+	root.add_child(strip)
+
+	var label := Label.new()
+	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	label.text = str(unit.get("name", "?")).substr(0, 2)
+	AP.apply_label(label, 12, AP.PAPER_INK)
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.position = Vector2(0, size.y - 22)
+	label.size = Vector2(size.x, 18)
+	root.add_child(label)
+	root.set_meta("idle_bob", true)
+	return root
+
+
+## Lobby / roster: taller portrait card with faction + role chip.
+static func portrait_card(unit: Dictionary, size: Vector2 = Vector2(96, 120), selected: bool = false) -> Control:
+	var role := str(unit.get("role", "dps"))
+	var root := Control.new()
+	root.custom_minimum_size = size
+	root.size = size
+	root.mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	var frame := ColorRect.new()
+	frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	frame.size = size
+	frame.color = Color(0.05, 0.10, 0.09, 0.92)
+	root.add_child(frame)
+
+	var border := ColorRect.new()
+	border.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	border.size = size + Vector2(4, 4)
+	border.position = Vector2(-2, -2)
+	border.color = Color(AP.LANTERN_GOLD.r, AP.LANTERN_GOLD.g, AP.LANTERN_GOLD.b, 0.55 if selected else 0.28)
+	root.add_child(border)
+	root.move_child(border, 0)
+
+	var tex := _unit_tex(unit)
+	if tex:
+		var spr := TextureRect.new()
+		spr.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		spr.texture = tex
+		spr.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		spr.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+		spr.size = Vector2(size.x - 6, size.y - 28)
+		spr.position = Vector2(3, 3)
+		root.add_child(spr)
+
+	var role_chip := ColorRect.new()
+	role_chip.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	role_chip.size = Vector2(size.x - 6, 22)
+	role_chip.position = Vector2(3, size.y - 25)
+	role_chip.color = Color(AP.role_accent(role).r, AP.role_accent(role).g, AP.role_accent(role).b, 0.85)
+	root.add_child(role_chip)
+
+	var name_l := Label.new()
+	name_l.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	name_l.text = str(unit.get("name", "?"))
+	AP.apply_label(name_l, 12, AP.PAPER_INK)
+	name_l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	name_l.position = Vector2(0, size.y - 24)
+	name_l.size = Vector2(size.x, 20)
+	root.add_child(name_l)
+
+	if selected:
+		var star := Label.new()
+		star.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		star.text = "★"
+		AP.apply_label(star, 14, AP.LANTERN_GOLD)
+		star.position = Vector2(4, 4)
+		root.add_child(star)
+	return root
+
+
+static func _draw_unit_body(root: Control, role: String, col: Color, size: Vector2) -> void:
+	var body := ColorRect.new()
+	body.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	match role:
+		"tank":
+			body.size = size - Vector2(10, 14)
+			body.position = Vector2(5, 6)
+			body.color = col
+			root.add_child(body)
+		_:
+			body.size = Vector2(size.x * 0.45, size.y * 0.7)
+			body.position = Vector2(size.x * 0.28, size.y * 0.1)
+			body.color = col
+			root.add_child(body)
+
+
+static func enemy_node(enemy: Dictionary, size: Vector2 = Vector2(48, 58)) -> Control:
+	## Standing portrait parity with ally unit_node — readable midtones, gold plate, name.
+	var tags: Array = enemy.get("tags", [])
+	var root := Control.new()
+	root.custom_minimum_size = size
+	root.size = size
+	root.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	root.set_meta("enemy_id", str(enemy.get("id", "")))
+
+	var threat := Color(0.9, 0.6, 0.35)
+	if "fast" in tags:
+		threat = Color(0.95, 0.38, 0.32)
+	elif "armored" in tags:
+		threat = Color(0.72, 0.78, 0.84)
+
+	var rim := ColorRect.new()
+	rim.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	rim.size = size + Vector2(4, 4)
+	rim.position = Vector2(-2, -2)
+	rim.color = Color(threat.r, threat.g, threat.b, 0.42)
+	root.add_child(rim)
+
+	var plate := ColorRect.new()
+	plate.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	plate.size = size
+	plate.color = Color(0.04, 0.07, 0.06, 0.62)
+	root.add_child(plate)
+
+	var tex := _enemy_tex(enemy)
+	if tex:
+		var spr := TextureRect.new()
+		spr.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		spr.texture = tex
+		spr.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		spr.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+		spr.size = size - Vector2(2, 8)
+		spr.position = Vector2(1, 1)
+		# Lift dark ink so combat silhouettes stay readable on mist BG
+		spr.modulate = Color(1.12, 1.08, 1.05, 1.0)
+		root.add_child(spr)
+	else:
+		var body := ColorRect.new()
+		body.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		body.size = size - Vector2(8, 12)
+		body.position = Vector2(4, 4)
+		body.color = Color(str(enemy.get("color", "#a0522d")))
+		root.add_child(body)
+
+	var strip := ColorRect.new()
+	strip.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	strip.size = Vector2(size.x, 5)
+	strip.position = Vector2(0, size.y - 5)
+	strip.color = threat
+	root.add_child(strip)
+
+	# HP bar above frame
+	var hp_bg := ColorRect.new()
+	hp_bg.name = "HpBg"
+	hp_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	hp_bg.size = Vector2(size.x, 5)
+	hp_bg.position = Vector2(0, -8)
+	hp_bg.color = Color(0.06, 0.06, 0.06, 0.8)
+	root.add_child(hp_bg)
+	var hp_fill := ColorRect.new()
+	hp_fill.name = "HpFill"
+	hp_fill.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	hp_fill.size = Vector2(size.x, 5)
+	hp_fill.position = Vector2(0, -8)
+	hp_fill.color = Color(0.85, 0.35, 0.28, 0.95)
+	root.add_child(hp_fill)
+
+	var badge := Label.new()
+	badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	badge.text = str(enemy.get("name", "?")).substr(0, 2)
+	AP.apply_label(badge, 12, AP.PAPER_INK)
+	badge.position = Vector2(0, size.y - 22)
+	badge.size = Vector2(size.x, 18)
+	badge.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	root.add_child(badge)
+	root.set_meta("idle_bob", true)
+	return root
+
+
+static func set_enemy_hp_ratio(node: Control, ratio: float) -> void:
+	if node == null:
+		return
+	var fill := node.get_node_or_null("HpFill") as ColorRect
+	if fill == null:
+		return
+	var w := node.custom_minimum_size.x if node.custom_minimum_size.x > 0 else node.size.x
+	fill.size.x = maxf(1.0, w * clampf(ratio, 0.0, 1.0))
+	if ratio < 0.35:
+		fill.color = Color(0.95, 0.25, 0.2, 0.95)
+	elif ratio < 0.65:
+		fill.color = Color(0.95, 0.7, 0.3, 0.95)
+	else:
+		fill.color = Color(0.85, 0.35, 0.28, 0.95)
+
+
+static func gate_marker(size: Vector2 = Vector2(84, 56)) -> Control:
+	var Atmo := preload("res://scripts/util/atmosphere.gd")
+	return Atmo._gate_node()
+
+
+static func terrain_patch(col: Color, size: Vector2) -> ColorRect:
+	var r := ColorRect.new()
+	r.size = size
+	r.color = col
+	return r
+
+
+static func hit_flash(parent: Node, at: Vector2, color: Color = Color(1, 0.9, 0.55, 0.85)) -> void:
+	if parent == null:
+		return
+	# Core spark
+	var flash := ColorRect.new()
+	flash.size = Vector2(22, 22)
+	flash.position = at - flash.size * 0.5
+	flash.color = color
+	flash.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	parent.add_child(flash)
+	# Slash strokes for readable hit juice
+	for i in 3:
+		var slash := ColorRect.new()
+		slash.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		slash.size = Vector2(28 + i * 6, 3)
+		slash.position = at + Vector2(-14 - i * 2, -6 + i * 5)
+		slash.rotation = -0.55 + i * 0.35
+		slash.color = Color(color.r, color.g, color.b, 0.7 - i * 0.15)
+		parent.add_child(slash)
+		var stw := slash.create_tween()
+		stw.tween_property(slash, "modulate:a", 0.0, 0.16)
+		stw.tween_callback(slash.queue_free)
+	var tw := flash.create_tween()
+	tw.tween_property(flash, "scale", Vector2(2.0, 2.0), 0.12)
+	tw.parallel().tween_property(flash, "modulate:a", 0.0, 0.18)
+	tw.tween_callback(flash.queue_free)
+
+
+static func skill_burst(parent: Node, at: Vector2, color: Color = Color(0.7, 0.85, 0.95, 0.7)) -> void:
+	if parent == null:
+		return
+	# Expanding outer ring
+	var ring := ColorRect.new()
+	ring.size = Vector2(36, 36)
+	ring.position = at - ring.size * 0.5
+	ring.color = color
+	ring.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	parent.add_child(ring)
+	# Inner core pulse
+	var core := ColorRect.new()
+	core.size = Vector2(18, 18)
+	core.position = at - core.size * 0.5
+	core.color = Color(AP.LANTERN_GOLD.r, AP.LANTERN_GOLD.g, AP.LANTERN_GOLD.b, 0.85)
+	core.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	parent.add_child(core)
+	# Radial sparks
+	for i in 6:
+		var spark := ColorRect.new()
+		spark.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		spark.size = Vector2(8, 8)
+		spark.position = at - spark.size * 0.5
+		spark.color = Color(color.r, color.g, color.b, 0.9)
+		parent.add_child(spark)
+		var ang := TAU * float(i) / 6.0
+		var dest := at + Vector2(cos(ang), sin(ang)) * 56.0 - spark.size * 0.5
+		var stw := spark.create_tween()
+		stw.tween_property(spark, "position", dest, 0.28).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+		stw.parallel().tween_property(spark, "modulate:a", 0.0, 0.28)
+		stw.tween_callback(spark.queue_free)
+	var tw := ring.create_tween()
+	tw.tween_property(ring, "scale", Vector2(3.6, 3.6), 0.32).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	tw.parallel().tween_property(ring, "modulate:a", 0.0, 0.32)
+	tw.tween_callback(ring.queue_free)
+	var ctw := core.create_tween()
+	ctw.tween_property(core, "scale", Vector2(2.4, 2.4), 0.2)
+	ctw.parallel().tween_property(core, "modulate:a", 0.0, 0.22)
+	ctw.tween_callback(core.queue_free)
+
+
+static func death_puff(parent: Node, at: Vector2, color: Color = Color(0.9, 0.55, 0.35, 0.8)) -> void:
+	if parent == null:
+		return
+	for i in 5:
+		var p := ColorRect.new()
+		p.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		p.size = Vector2(10, 10)
+		p.position = at - p.size * 0.5
+		p.color = color
+		parent.add_child(p)
+		var ang := TAU * float(i) / 5.0 + randf() * 0.4
+		var dest := at + Vector2(cos(ang), sin(ang)) * (28.0 + randf() * 24.0) - p.size * 0.5
+		var tw := p.create_tween()
+		tw.tween_property(p, "position", dest, 0.28)
+		tw.parallel().tween_property(p, "modulate:a", 0.0, 0.28)
+		tw.tween_callback(p.queue_free)
+
+
+static func room_wipe(parent: Control, color: Color = Color(0.04, 0.10, 0.09, 0.85)) -> void:
+	if parent == null:
+		return
+	var veil := ColorRect.new()
+	veil.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	veil.set_anchors_preset(Control.PRESET_FULL_RECT)
+	veil.color = Color(color.r, color.g, color.b, 0.0)
+	parent.add_child(veil)
+	var tw := veil.create_tween()
+	tw.tween_property(veil, "color:a", color.a, 0.12)
+	tw.tween_property(veil, "color:a", 0.0, 0.22)
+	tw.tween_callback(veil.queue_free)
+
+
+static func idle_bob(node: Control, amp: float = 3.0, period: float = 2.4) -> void:
+	if node == null:
+		return
+	var base := node.position
+	var tw := node.create_tween().set_loops()
+	tw.tween_property(node, "position:y", base.y - amp, period * 0.5).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	tw.tween_property(node, "position:y", base.y + amp * 0.4, period * 0.5).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
