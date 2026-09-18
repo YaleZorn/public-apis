@@ -1,0 +1,209 @@
+{
+  "content_pack": "core",
+  "units": [
+    {
+      "id": "unit_tiebi",
+      "name": "铁臂护卫",
+      "faction": "少林",
+      "role": "tank",
+      "stars": 1,
+      "fragments": 0,
+      "unlocked": true,
+      "cost": 80,
+      "recall_refund": 0.5,
+      "td": {
+        "hp": 420,
+        "atk": 18,
+        "range": 90,
+        "attack_interval": 1.1,
+        "aura": { "type": "armor_share", "value": 0.12, "radius": 140 },
+        "skill": "嘲讽近敌，降低其移速 15%"
+      },
+      "explore": {
+        "hp": 180,
+        "atk": 22,
+        "attack_interval": 0.85,
+        "active": {
+          "id": "iron_guard",
+          "name": "铁壁",
+          "cooldown": 8.0,
+          "effect": "shield",
+          "value": 60,
+          "duration": 3.0
+        }
+      },
+      "knowledge_bind": "k_warmup",
+      "color": "#4a7c59"
+    },
+    {
+      "id": "unit_feidao",
+      "name": "飞刀客",
+      "faction": "唐门",
+      "role": "dps",
+      "stars": 1,
+      "fragments": 0,
+      "unlocked": true,
+      "cost": 70,
+      "recall_refund": 0.5,
+      "td": {
+        "hp": 160,
+        "atk": 36,
+        "range": 180,
+        "attack_interval": 0.7,
+        "aura": { "type": "none", "value": 0, "radius": 0 },
+        "skill": "远程连射，优先打血少目标"
+      },
+      "explore": {
+        "hp": 120,
+        "atk": 28,
+        "attack_interval": 0.65,
+        "active": {
+          "id": "fan_knives",
+          "name": "散花",
+          "cooldown": 6.5,
+          "effect": "aoe_damage",
+          "value": 55,
+          "duration": 0
+        }
+      },
+      "knowledge_bind": "k_protein",
+      "color": "#c45c26"
+    },
+    {
+      "id": "unit_qinggong",
+      "name": "轻功弟子",
+      "faction": "峨眉",
+      "role": "control",
+      "stars": 1,
+      "fragments": 0,
+      "unlocked": true,
+      "cost": 75,
+      "recall_refund": 0.5,
+      "td": {
+        "hp": 140,
+        "atk": 22,
+        "range": 150,
+        "attack_interval": 0.9,
+        "aura": { "type": "slow", "value": 0.18, "radius": 120 },
+        "skill": "光环减速路过敌人"
+      },
+      "explore": {
+        "hp": 110,
+        "atk": 24,
+        "attack_interval": 0.7,
+        "active": {
+          "id": "swift_step",
+          "name": "凌波",
+          "cooldown": 7.0,
+          "effect": "slow_all",
+          "value": 0.4,
+          "duration": 2.5
+        }
+      },
+      "knowledge_bind": "k_sleep",
+      "color": "#5b8def"
+    },
+    {
+      "id": "unit_yishi",
+      "name": "药师",
+      "faction": "药王谷",
+      "role": "support",
+      "stars": 1,
+      "fragments": 0,
+      "unlocked": true,
+      "cost": 85,
+      "recall_refund": 0.5,
+      "td": {
+        "hp": 150,
+        "atk": 10,
+        "range": 160,
+        "attack_interval": 1.2,
+        "aura": { "type": "regen", "value": 6, "radius": 150 },
+        "skill": "为范围内友军缓慢回血"
+      },
+      "explore": {
+        "hp": 100,
+        "atk": 14,
+        "attack_interval": 1.0,
+        "active": {
+          "id": "heal_salve",
+          "name": "金疮药",
+          "cooldown": 9.0,
+          "effect": "heal",
+          "value": 45,
+          "duration": 0
+        }
+      },
+      "knowledge_bind": "k_hydration",
+      "color": "#6bcb77"
+    },
+    {
+      "id": "unit_zhaoyun",
+      "name": "枪阵学徒",
+      "faction": "军阵",
+      "role": "summon",
+      "stars": 1,
+      "fragments": 0,
+      "unlocked": false,
+      "cost": 95,
+      "recall_refund": 0.45,
+      "td": {
+        "hp": 200,
+        "atk": 28,
+        "range": 110,
+        "attack_interval": 0.95,
+        "aura": { "type": "atk_buff", "value": 0.1, "radius": 130 },
+        "skill": "召唤短矛影，光环加攻"
+      },
+      "explore": {
+        "hp": 140,
+        "atk": 26,
+        "attack_interval": 0.75,
+        "active": {
+          "id": "spear_volley",
+          "name": "齐射",
+          "cooldown": 8.5,
+          "effect": "aoe_damage",
+          "value": 70,
+          "duration": 0
+        }
+      },
+      "knowledge_bind": "k_progressive",
+      "color": "#d4a017"
+    },
+    {
+      "id": "unit_mingwang",
+      "name": "明王拳",
+      "faction": "密宗",
+      "role": "dps",
+      "stars": 1,
+      "fragments": 0,
+      "unlocked": false,
+      "cost": 100,
+      "recall_refund": 0.45,
+      "td": {
+        "hp": 220,
+        "atk": 42,
+        "range": 100,
+        "attack_interval": 1.05,
+        "aura": { "type": "none", "value": 0, "radius": 0 },
+        "skill": "近战高伤，击破护甲敌人额外伤害"
+      },
+      "explore": {
+        "hp": 150,
+        "atk": 32,
+        "attack_interval": 0.8,
+        "active": {
+          "id": "vajra_burst",
+          "name": "金刚崩",
+          "cooldown": 7.5,
+          "effect": "aoe_damage",
+          "value": 80,
+          "duration": 0
+        }
+      },
+      "knowledge_bind": "k_rest_day",
+      "color": "#9b59b6"
+    }
+  ]
+}
