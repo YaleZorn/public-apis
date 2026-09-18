@@ -11,16 +11,16 @@ func _initialize() -> void:
 
 
 func _run() -> void:
-	# Wipe user save so title brand shot stays clean (no 续关).
+	# Wipe save + clear in-memory checkpoints (autoload may have already loaded).
 	var save_path := "user://kongfu_save_v0.json"
 	if FileAccess.file_exists(save_path):
 		DirAccess.remove_absolute(save_path)
+	var gs := root.get_node_or_null("GameState")
+	if gs:
+		gs.set("td_checkpoint", {})
+		gs.set("explore_checkpoint", {})
 	await _shot("res://scenes/shell/title_screen.tscn", "01-title.png", 0.9)
-	# Unlock full roster so lobby shows all 6 portraits side-by-side.
-	for u in ContentDB.unit_list:
-		var uid := str(u.get("id", ""))
-		if uid != "" and uid not in GameState.unlocked_units:
-			GameState.unlocked_units.append(uid)
+	# Lobby already paints full 6-card roster (locked dimmed) for side-by-side check.
 	await _shot("res://scenes/lobby/lobby.tscn", "02-lobby.png", 0.75)
 	await _shot_td()
 	await _shot("res://scenes/explore/explore_run.tscn", "04-explore.png", 0.9)
