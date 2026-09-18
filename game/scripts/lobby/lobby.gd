@@ -110,25 +110,30 @@ func _frag_bar(frags: int) -> String:
 func _rebuild_hero_bar() -> void:
 	for c in hero_bar.get_children():
 		c.queue_free()
-	for uid in GameState.unlocked_units:
-		var u: Dictionary = ContentDB.get_unit(uid)
-		var selected: bool = uid == GameState.explore_hero_id
+	# Full roster side-by-side (locked cards dimmed) so portrait set reads as one plate.
+	for u in ContentDB.unit_list:
+		var uid := str(u.get("id", ""))
+		var unlocked: bool = uid in GameState.unlocked_units
+		var selected: bool = unlocked and uid == GameState.explore_hero_id
 		var wrap := Button.new()
-		wrap.custom_minimum_size = Vector2(100, 124)
+		wrap.custom_minimum_size = Vector2(92, 118)
 		wrap.focus_mode = Control.FOCUS_NONE
 		wrap.clip_contents = true
 		wrap.text = ""
-		wrap.disabled = selected
-		var card := VF.portrait_card(u, Vector2(104, 128), selected)
+		wrap.disabled = selected or not unlocked
+		var card := VF.portrait_card(u, Vector2(96, 120), selected)
 		card.position = Vector2(2, 2)
 		card.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		if not unlocked:
+			card.modulate = Color(0.55, 0.58, 0.56, 0.78)
 		wrap.add_child(card)
-		wrap.pressed.connect(func():
-			GameState.explore_hero_id = uid
-			GameState.persist_meta_keep_checkpoints()
-			Juice.play_sfx("tap")
-			_refresh()
-		)
+		if unlocked:
+			wrap.pressed.connect(func():
+				GameState.explore_hero_id = uid
+				GameState.persist_meta_keep_checkpoints()
+				Juice.play_sfx("tap")
+				_refresh()
+			)
 		hero_bar.add_child(wrap)
 
 

@@ -125,6 +125,8 @@ static func unit_node(unit: Dictionary, size: Vector2 = Vector2(64, 72)) -> Cont
 		spr.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 		spr.size = size - Vector2(2, 6)
 		spr.position = Vector2(1, 1)
+		# Match enemy midtone lift so TD/explore stands share visual weight
+		spr.modulate = Color(1.06, 1.04, 1.02, 1.0)
 		root.add_child(spr)
 	else:
 		_draw_unit_body(root, role, Color(str(unit.get("color", "#6a8f71"))), size)
@@ -179,6 +181,7 @@ static func portrait_card(unit: Dictionary, size: Vector2 = Vector2(96, 120), se
 		spr.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 		spr.size = Vector2(size.x - 6, size.y - 28)
 		spr.position = Vector2(3, 3)
+		spr.modulate = Color(1.05, 1.03, 1.02, 1.0)
 		root.add_child(spr)
 
 	var role_chip := ColorRect.new()
@@ -260,8 +263,8 @@ static func enemy_node(enemy: Dictionary, size: Vector2 = Vector2(48, 58)) -> Co
 		spr.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 		spr.size = size - Vector2(2, 8)
 		spr.position = Vector2(1, 1)
-		# Lift dark ink so combat silhouettes stay readable on mist BG
-		spr.modulate = Color(1.12, 1.08, 1.05, 1.0)
+		# Parity midtone lift with ally stands (portraits already normalized)
+		spr.modulate = Color(1.08, 1.05, 1.03, 1.0)
 		root.add_child(spr)
 	else:
 		var body := ColorRect.new()

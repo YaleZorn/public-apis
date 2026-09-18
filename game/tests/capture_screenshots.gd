@@ -1,7 +1,7 @@
 extends SceneTree
-## Capture portrait screenshots for Project store media (art grind).
+## Capture portrait screenshots for Project store media (art ship).
 
-const OUT := "/cursor/stores/bc-71787b67-91e4-456d-b541-da2778721eaf/media/art-grind"
+const OUT := "/cursor/stores/bc-71787b67-91e4-456d-b541-da2778721eaf/media/art-ship"
 
 
 func _initialize() -> void:
@@ -16,9 +16,14 @@ func _run() -> void:
 	if FileAccess.file_exists(save_path):
 		DirAccess.remove_absolute(save_path)
 	await _shot("res://scenes/shell/title_screen.tscn", "01-title.png", 0.9)
-	await _shot("res://scenes/lobby/lobby.tscn", "02-lobby.png", 0.7)
+	# Unlock full roster so lobby shows all 6 portraits side-by-side.
+	for u in ContentDB.unit_list:
+		var uid := str(u.get("id", ""))
+		if uid != "" and uid not in GameState.unlocked_units:
+			GameState.unlocked_units.append(uid)
+	await _shot("res://scenes/lobby/lobby.tscn", "02-lobby.png", 0.75)
 	await _shot_td()
-	await _shot("res://scenes/explore/explore_run.tscn", "04-explore.png", 0.85)
+	await _shot("res://scenes/explore/explore_run.tscn", "04-explore.png", 0.9)
 	await _shot("res://scenes/knowledge/knowledge_hub.tscn", "05-knowledge.png", 0.55)
 	print("SCREENSHOTS_OK ", OUT)
 	quit(0)
@@ -47,7 +52,7 @@ func _shot_td() -> void:
 	td._on_slot_pressed(2)
 	await create_timer(0.35).timeout
 	td._on_start_wave()
-	await create_timer(1.8).timeout
+	await create_timer(2.0).timeout
 	_save("03-td.png")
 	td.queue_free()
 	await create_timer(0.15).timeout

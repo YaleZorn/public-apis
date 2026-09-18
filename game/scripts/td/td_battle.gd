@@ -119,8 +119,8 @@ func _build_path() -> void:
 		Vector2(0.436, 0.545),
 		Vector2(0.419, 0.570),
 		Vector2(0.494, 0.585),
-		Vector2(0.545, 0.600),
-		Vector2(0.510, 0.612),
+		Vector2(0.545, 0.595),
+		Vector2(0.505, 0.600),
 	]
 	path_points = PackedVector2Array()
 	for uv in path_uv:
@@ -145,8 +145,8 @@ func _build_decor(w: float, h: float) -> void:
 	if path_points.size() > 0:
 		var gate := Atmo._gate_node()
 		var gate_pos: Vector2 = path_points[path_points.size() - 1] - Vector2(40, 46)
-		# Keep full gatehouse clear of compact bottom HUD (safe band ≥128px)
-		gate_pos.y = minf(gate_pos.y, h - 128.0)
+		# Keep full gatehouse clear of compact bottom HUD (safe band ≥140px)
+		gate_pos.y = minf(gate_pos.y, h - 140.0)
 		gate_pos.y = maxf(gate_pos.y, 24.0)
 		gate.position = gate_pos
 		decor_layer.add_child(gate)
@@ -161,21 +161,21 @@ func _build_decor(w: float, h: float) -> void:
 	decor_layer.add_child(mist)
 	# Soft ink veil over field floor so painted gatehouse never peeks under HUD
 	var floor_veil := ColorRect.new()
-	floor_veil.size = Vector2(w, 96)
-	floor_veil.position = Vector2(0, h - 96)
-	floor_veil.color = Color(0.02, 0.06, 0.05, 0.72)
+	floor_veil.size = Vector2(w, 110)
+	floor_veil.position = Vector2(0, h - 110)
+	floor_veil.color = Color(0.02, 0.06, 0.05, 0.78)
 	floor_veil.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	decor_layer.add_child(floor_veil)
 	var floor_fade := ColorRect.new()
-	floor_fade.size = Vector2(w, 48)
-	floor_fade.position = Vector2(0, h - 144)
-	floor_fade.color = Color(0.02, 0.06, 0.05, 0.38)
+	floor_fade.size = Vector2(w, 56)
+	floor_fade.position = Vector2(0, h - 166)
+	floor_fade.color = Color(0.02, 0.06, 0.05, 0.42)
 	floor_fade.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	decor_layer.add_child(floor_fade)
 	var floor_top := ColorRect.new()
-	floor_top.size = Vector2(w, 28)
-	floor_top.position = Vector2(0, h - 172)
-	floor_top.color = Color(0.02, 0.06, 0.05, 0.18)
+	floor_top.size = Vector2(w, 32)
+	floor_top.position = Vector2(0, h - 198)
+	floor_top.color = Color(0.02, 0.06, 0.05, 0.2)
 	floor_top.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	decor_layer.add_child(floor_top)
 

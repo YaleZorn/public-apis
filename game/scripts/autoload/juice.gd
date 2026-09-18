@@ -270,14 +270,14 @@ func _make_noise_hit(dur: float, vol: float) -> AudioStreamWAV:
 
 func _compose_theme(kind: String) -> AudioStreamWAV:
 	## Distinct musical looping beds (title / lobby / td / explore).
-	## Volume gated by 音乐 slider. Gongche-ish pentatonic cells + ADSR.
+	## Fuller than thin beep beds: pad + drone + lead + motif bells. Volume via 音乐.
 	var wav := AudioStreamWAV.new()
 	wav.format = AudioStreamWAV.FORMAT_16_BITS
 	wav.mix_rate = 22050
 	wav.stereo = false
 	wav.loop_mode = AudioStreamWAV.LOOP_FORWARD
 	wav.loop_begin = 0
-	var dur := 18.0
+	var dur := 24.0
 	var count := int(wav.mix_rate * dur)
 	wav.loop_end = count
 	var data := PackedByteArray()
@@ -334,61 +334,84 @@ func _compose_theme(kind: String) -> AudioStreamWAV:
 	var is_td := kind == "td" or kind == "battle"
 	var is_title := kind == "title"
 	var is_explore := kind == "explore"
+	var is_lobby := not is_td and not is_title and not is_explore
 	for i in count:
 		var t := float(i) / float(wav.mix_rate)
 		var note_i := int(floor(t / step)) % lead.size()
 		var note_t := fmod(t, step)
 		var hz: float = float(lead[note_i])
 		var hz_h: float = float(harm[note_i])
-		var atk := clampf(note_t / (0.12 if is_title else 0.08), 0.0, 1.0)
-		var rel := clampf((step - note_t) / (0.28 if is_title else 0.18), 0.0, 1.0)
+		var atk := clampf(note_t / (0.14 if is_title else 0.09), 0.0, 1.0)
+		var rel := clampf((step - note_t) / (0.36 if is_title else 0.22), 0.0, 1.0)
 		var note_env := atk * rel
-		var drone_base := 48.0 if is_title else (62.0 if is_explore else 55.0)
+		# Warm pad bed (identifiable body, not thin beep)
+		var pad_base := 65.0 if is_title else (78.0 if is_explore else (52.0 if is_td else 70.0))
+		var pad := (
+			sin(TAU * pad_base * t) * 0.048
+			+ sin(TAU * pad_base * 1.498 * t + 0.3) * 0.034
+			+ sin(TAU * pad_base * 2.01 * t + 0.7) * 0.022
+			+ sin(TAU * pad_base * 0.5 * t) * 0.028
+		)
+		pad *= 0.82 + 0.18 * sin(TAU * (0.12 if is_title else 0.2) * t)
+		var drone_base := 48.0 if is_title else (62.0 if is_explore else (44.0 if is_td else 55.0))
 		var drone := (
-			sin(TAU * drone_base * t) * 0.052
-			+ sin(TAU * drone_base * 1.5 * t + 0.2) * 0.032
-			+ sin(TAU * drone_base * 2.0 * t + 0.5) * 0.02
+			sin(TAU * drone_base * t) * 0.06
+			+ sin(TAU * drone_base * 1.5 * t + 0.2) * 0.036
+			+ sin(TAU * drone_base * 2.0 * t + 0.5) * 0.024
 		)
 		drone *= 0.85 + 0.15 * sin(TAU * (0.18 if is_title else 0.25) * t)
 		var lead_s := (
-			sin(TAU * hz * t) * (0.055 if is_title else 0.046)
-			+ sin(TAU * hz * 2.01 * t) * 0.015
-			+ sin(TAU * hz * 3.0 * t) * 0.006
+			sin(TAU * hz * t) * (0.062 if is_title else 0.052)
+			+ sin(TAU * hz * 2.01 * t) * 0.02
+			+ sin(TAU * hz * 3.0 * t) * 0.01
+			+ sin(TAU * hz * 0.5 * t) * 0.012
 		) * note_env
 		var harm_s := (
-			sin(TAU * hz_h * t) * 0.038
-			+ sin(TAU * hz_h * 1.5 * t) * 0.012
+			sin(TAU * hz_h * t) * 0.044
+			+ sin(TAU * hz_h * 1.5 * t) * 0.016
+			+ sin(TAU * hz_h * 2.0 * t) * 0.008
 		) * note_env
 		var bell := 0.0
 		if note_i % 4 == 0:
-			bell = sin(TAU * hz * 2.0 * t) * 0.02 * note_env * sin(PI * clampf(note_t / step, 0.0, 1.0))
+			bell = sin(TAU * hz * 2.0 * t) * 0.026 * note_env * sin(PI * clampf(note_t / step, 0.0, 1.0))
 		var pulse := 0.0
 		if is_td:
-			var beat := fmod(t * 2.5, 1.0)
-			pulse = exp(-beat * 14.0) * 0.065 * sin(TAU * 70.0 * t)
-			var off := fmod(t * 2.5 + 0.5, 1.0)
-			pulse += exp(-off * 22.0) * 0.022 * sin(TAU * 180.0 * t)
-			drone *= 1.15
-			lead_s *= 1.22
+			var beat := fmod(t * 2.6, 1.0)
+			pulse = exp(-beat * 12.0) * 0.078 * sin(TAU * 68.0 * t)
+			var off := fmod(t * 2.6 + 0.5, 1.0)
+			pulse += exp(-off * 20.0) * 0.028 * sin(TAU * 170.0 * t)
+			# Marching fifths under lead
+			pulse += sin(TAU * hz_h * 0.5 * t) * 0.02 * note_env
+			drone *= 1.2
+			lead_s *= 1.28
+			pad *= 1.1
 		elif is_explore:
-			# Walking ostinato + soft wood-block ticks
-			var walk := fmod(t * 1.6, 1.0)
-			pulse = exp(-walk * 10.0) * 0.028 * sin(TAU * 95.0 * t)
-			var arp_hz := float(explore_lead[int(floor(t * 1.2)) % explore_lead.size()])
-			bell += sin(TAU * arp_hz * 2.0 * t) * 0.01 * (0.5 + 0.5 * sin(TAU * 0.35 * t))
-			lead_s *= 1.08
+			var walk := fmod(t * 1.55, 1.0)
+			pulse = exp(-walk * 9.0) * 0.034 * sin(TAU * 92.0 * t)
+			var wood := fmod(t * 3.1, 1.0)
+			pulse += exp(-wood * 28.0) * 0.016 * sin(TAU * 420.0 * t)
+			var arp_hz := float(explore_lead[int(floor(t * 1.15)) % explore_lead.size()])
+			bell += sin(TAU * arp_hz * 2.0 * t) * 0.014 * (0.5 + 0.5 * sin(TAU * 0.32 * t))
+			lead_s *= 1.12
+			pad *= 1.08
 		elif is_title:
-			# Long bells + slow rising fifths
 			if note_i % 8 == 0:
-				bell += sin(TAU * hz * 1.5 * t) * 0.028 * note_env
-			drone *= 1.08
-			lead_s *= 1.15
-		else:
-			var arp_hz2 := float(lobby_lead[int(floor(t * 1.5)) % lobby_lead.size()])
-			bell += sin(TAU * arp_hz2 * 2.0 * t) * 0.008 * (0.5 + 0.5 * sin(TAU * 0.4 * t))
-		var s := drone + lead_s + harm_s + bell + pulse
+				bell += sin(TAU * hz * 1.5 * t) * 0.034 * note_env
+			# Rising fifth swell
+			bell += sin(TAU * hz * 1.498 * t) * 0.012 * note_env * sin(TAU * 0.08 * t)
+			drone *= 1.12
+			lead_s *= 1.2
+			pad *= 1.15
+		elif is_lobby:
+			var arp_hz2 := float(lobby_lead[int(floor(t * 1.45)) % lobby_lead.size()])
+			bell += sin(TAU * arp_hz2 * 2.0 * t) * 0.012 * (0.5 + 0.5 * sin(TAU * 0.38 * t))
+			# Soft plucked echo
+			if note_i % 2 == 0:
+				bell += sin(TAU * hz * 3.0 * t) * 0.01 * note_env
+			pad *= 1.05
+		var s := pad + drone + lead_s + harm_s + bell + pulse
 		var edge := minf(t, dur - t)
-		var env := clampf(edge / 0.6, 0.0, 1.0)
+		var env := clampf(edge / 0.8, 0.0, 1.0)
 		var v := int(clamp(s * env * 32767.0, -32768.0, 32767.0))
 		data[i * 2] = v & 0xFF
 		data[i * 2 + 1] = (v >> 8) & 0xFF

@@ -57,8 +57,8 @@ static func attach_full_bg(parent: Control, kind: String = "night") -> TextureRe
 		bg.texture = load(TD_FIELD)
 		# Aggressive up-shift: painted 门楼 lives in Field, not under bottom HUD.
 		bg.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
-		bg.offset_top = -160
-		bg.offset_bottom = 20
+		bg.offset_top = -180
+		bg.offset_bottom = 10
 	else:
 		bg.texture = night_gradient() if kind != "paper" else paper_gradient()
 	parent.add_child(bg)
@@ -112,14 +112,17 @@ static func _build_explore_props(arena: Control, rtype: String) -> void:
 	var insert_at := mini(2, arena.get_child_count() - 1)
 	arena.move_child(layer, maxi(insert_at, 0))
 
-	# Parallax depth: far mist / mid props / near fog
-	var far := mist_band(layer, 0.32, 90, 0.08)
-	drift_loop(far, Vector2(10, 0), 9.0)
-	var mid := mist_band(layer, 0.52, 78, 0.14)
-	drift_loop(mid, Vector2(22, 0), 6.0)
-	var near := mist_band(layer, 0.78, 56, 0.16)
-	drift_loop(near, Vector2(-16, 0), 4.8)
-	mountain_plane(layer, Rect2(Vector2(-40, 380), Vector2(780, 220)), Color(0.04, 0.09, 0.08, 0.28), -0.03)
+	# Parallax depth: far mist / mid props / near fog — thickness ≈ TD field
+	var far := mist_band(layer, 0.28, 110, 0.1)
+	drift_loop(far, Vector2(14, 0), 9.5)
+	var mid := mist_band(layer, 0.48, 88, 0.16)
+	drift_loop(mid, Vector2(26, 0), 6.2)
+	var near := mist_band(layer, 0.72, 70, 0.2)
+	drift_loop(near, Vector2(-20, 0), 4.6)
+	var ground := mist_band(layer, 0.88, 48, 0.14)
+	drift_loop(ground, Vector2(8, 0), 7.5)
+	mountain_plane(layer, Rect2(Vector2(-40, 360), Vector2(780, 260)), Color(0.04, 0.09, 0.08, 0.32), -0.03)
+	mountain_plane(layer, Rect2(Vector2(200, 420), Vector2(560, 180)), Color(0.05, 0.11, 0.1, 0.22), 0.02)
 
 	match rtype:
 		"combat":
