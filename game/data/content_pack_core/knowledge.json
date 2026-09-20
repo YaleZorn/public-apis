@@ -13,7 +13,11 @@
       "quiz": [
         {
           "q": "力量训练前更合适的是？",
-          "choices": ["立刻上最大重量", "5–10 分钟动态热身", "长时间静态拉伸到极限"],
+          "choices": [
+            "立刻上最大重量",
+            "5–10 分钟动态热身",
+            "长时间静态拉伸到极限"
+          ],
           "answer": 1
         }
       ],
@@ -22,11 +26,30 @@
       "scenario": {
         "prompt": "弟子喊冷就想扛石锁。你怎么安排？",
         "choices": [
-          { "text": "直接开练，节省时间", "correct": false },
-          { "text": "先绕场慢跑/关节活动再加重", "correct": true },
-          { "text": "先做很久的极限静态拉伸", "correct": false }
+          {
+            "text": "直接开练，节省时间",
+            "correct": false
+          },
+          {
+            "text": "先绕场慢跑/关节活动再加重",
+            "correct": true
+          },
+          {
+            "text": "先做很久的极限静态拉伸",
+            "correct": false
+          }
         ]
-      }
+      },
+      "mode_hooks": [
+        {
+          "mode": "td",
+          "hook": "wave_prep_silver_bonus"
+        },
+        {
+          "mode": "explore",
+          "hook": "start_shield_small"
+        }
+      ]
     },
     {
       "id": "k_hydration",
@@ -38,7 +61,11 @@
       "quiz": [
         {
           "q": "训练补水更稳妥的做法是？",
-          "choices": ["口渴才喝一大杯", "少量多次，前后都补", "只喝含糖饮料"],
+          "choices": [
+            "口渴才喝一大杯",
+            "少量多次，前后都补",
+            "只喝含糖饮料"
+          ],
           "answer": 1
         }
       ],
@@ -47,11 +74,30 @@
       "scenario": {
         "prompt": "暑天守关，弟子只渴了才猛灌。更好的是？",
         "choices": [
-          { "text": "等渴了再喝", "correct": false },
-          { "text": "少量多次补水", "correct": true },
-          { "text": "只靠含糖饮", "correct": false }
+          {
+            "text": "等渴了再喝",
+            "correct": false
+          },
+          {
+            "text": "少量多次补水",
+            "correct": true
+          },
+          {
+            "text": "只靠含糖饮",
+            "correct": false
+          }
         ]
-      }
+      },
+      "mode_hooks": [
+        {
+          "mode": "td",
+          "hook": "regen_aura_boost"
+        },
+        {
+          "mode": "explore",
+          "hook": "heal_on_enter"
+        }
+      ]
     },
     {
       "id": "k_protein",
@@ -63,7 +109,11 @@
       "quiz": [
         {
           "q": "日常蛋白质摄入更推荐？",
-          "choices": ["只在练后狂吃一顿", "分散到三餐", "完全不吃也可以"],
+          "choices": [
+            "只在练后狂吃一顿",
+            "分散到三餐",
+            "完全不吃也可以"
+          ],
           "answer": 1
         }
       ],
@@ -72,11 +122,30 @@
       "scenario": {
         "prompt": "弟子只在打完仗后狂吃肉。你提醒？",
         "choices": [
-          { "text": "对，必须练后一次吃完", "correct": false },
-          { "text": "三餐都安排一些蛋白更好", "correct": true },
-          { "text": "蛋白没用，全吃碳水", "correct": false }
+          {
+            "text": "对，必须练后一次吃完",
+            "correct": false
+          },
+          {
+            "text": "三餐都安排一些蛋白更好",
+            "correct": true
+          },
+          {
+            "text": "蛋白没用，全吃碳水",
+            "correct": false
+          }
         ]
-      }
+      },
+      "mode_hooks": [
+        {
+          "mode": "td",
+          "hook": "unit_atk_small"
+        },
+        {
+          "mode": "explore",
+          "hook": "atk_buff_room"
+        }
+      ]
     },
     {
       "id": "k_sleep",
@@ -88,7 +157,11 @@
       "quiz": [
         {
           "q": "高强度训练周，优先保障的是？",
-          "choices": ["靠补剂替代睡眠", "尽量睡够 7–9 小时", "通宵练功"],
+          "choices": [
+            "靠补剂替代睡眠",
+            "尽量睡够 7–9 小时",
+            "通宵练功"
+          ],
           "answer": 1
         }
       ],
@@ -97,11 +170,30 @@
       "scenario": {
         "prompt": "弟子连续熬夜还想加练。你建议？",
         "choices": [
-          { "text": "用补剂顶着继续练", "correct": false },
-          { "text": "先把睡眠补回来再谈加量", "correct": true },
-          { "text": "熬夜不影响恢复", "correct": false }
+          {
+            "text": "用补剂顶着继续练",
+            "correct": false
+          },
+          {
+            "text": "先把睡眠补回来再谈加量",
+            "correct": true
+          },
+          {
+            "text": "熬夜不影响恢复",
+            "correct": false
+          }
         ]
-      }
+      },
+      "mode_hooks": [
+        {
+          "mode": "td",
+          "hook": "lives_temp_bonus"
+        },
+        {
+          "mode": "explore",
+          "hook": "max_hp_small"
+        }
+      ]
     },
     {
       "id": "k_breathing",
@@ -113,7 +205,11 @@
       "quiz": [
         {
           "q": "一般力量动作呼吸更稳妥的是？",
-          "choices": ["全程死憋", "发力呼、回落吸（极重短时腹压）", "越乱越好"],
+          "choices": [
+            "全程死憋",
+            "发力呼、回落吸（极重短时腹压）",
+            "越乱越好"
+          ],
           "answer": 1
         }
       ],
@@ -122,11 +218,30 @@
       "scenario": {
         "prompt": "弟子推石时脸涨紫、全程憋气。纠正？",
         "choices": [
-          { "text": "对，越憋越有力", "correct": false },
-          { "text": "多数情况发力呼气，勿长时间憋", "correct": true },
-          { "text": "随便乱喘就行", "correct": false }
+          {
+            "text": "对，越憋越有力",
+            "correct": false
+          },
+          {
+            "text": "多数情况发力呼气，勿长时间憋",
+            "correct": true
+          },
+          {
+            "text": "随便乱喘就行",
+            "correct": false
+          }
         ]
-      }
+      },
+      "mode_hooks": [
+        {
+          "mode": "td",
+          "hook": "attack_interval_small"
+        },
+        {
+          "mode": "explore",
+          "hook": "skill_cd_reduce"
+        }
+      ]
     },
     {
       "id": "k_rest_day",
@@ -138,7 +253,11 @@
       "quiz": [
         {
           "q": "想长期进步，更合理的是？",
-          "choices": ["每天力竭", "有计划地安排恢复", "从不休息"],
+          "choices": [
+            "每天力竭",
+            "有计划地安排恢复",
+            "从不休息"
+          ],
           "answer": 1
         }
       ],
@@ -147,11 +266,30 @@
       "scenario": {
         "prompt": "弟子天天死练不愿歇。你怎么说？",
         "choices": [
-          { "text": "对，停一天就退步", "correct": false },
-          { "text": "恢复日让身体适应负荷", "correct": true },
-          { "text": "只有受伤才该歇", "correct": false }
+          {
+            "text": "对，停一天就退步",
+            "correct": false
+          },
+          {
+            "text": "恢复日让身体适应负荷",
+            "correct": true
+          },
+          {
+            "text": "只有受伤才该歇",
+            "correct": false
+          }
         ]
-      }
+      },
+      "mode_hooks": [
+        {
+          "mode": "td",
+          "hook": "recall_refund_bonus"
+        },
+        {
+          "mode": "explore",
+          "hook": "heal_on_clear"
+        }
+      ]
     },
     {
       "id": "k_carbs_timing",
@@ -163,7 +301,11 @@
       "quiz": [
         {
           "q": "高强度训练日，碳水角色是？",
-          "choices": ["必须完全禁止", "可在练前/后适量支持表现", "只吃糖即可"],
+          "choices": [
+            "必须完全禁止",
+            "可在练前/后适量支持表现",
+            "只吃糖即可"
+          ],
           "answer": 1
         }
       ],
@@ -172,11 +314,30 @@
       "scenario": {
         "prompt": "弟子为减脂练前坚决不吃。更稳妥？",
         "choices": [
-          { "text": "高强度也必须空腹", "correct": false },
-          { "text": "可适量碳水支持表现，总热量再控", "correct": true },
-          { "text": "只喝甜饮料", "correct": false }
+          {
+            "text": "高强度也必须空腹",
+            "correct": false
+          },
+          {
+            "text": "可适量碳水支持表现，总热量再控",
+            "correct": true
+          },
+          {
+            "text": "只喝甜饮料",
+            "correct": false
+          }
         ]
-      }
+      },
+      "mode_hooks": [
+        {
+          "mode": "td",
+          "hook": "silver_kill_bonus"
+        },
+        {
+          "mode": "explore",
+          "hook": "energy_room"
+        }
+      ]
     },
     {
       "id": "k_form",
@@ -188,7 +349,11 @@
       "quiz": [
         {
           "q": "加重量前更该确认？",
-          "choices": ["能不能晃着举起", "动作是否可控、幅度与对位", "旁边人是否在看"],
+          "choices": [
+            "能不能晃着举起",
+            "动作是否可控、幅度与对位",
+            "旁边人是否在看"
+          ],
           "answer": 1
         }
       ],
@@ -197,11 +362,30 @@
       "scenario": {
         "prompt": "弟子为刷面子乱晃着扛大石。你强调？",
         "choices": [
-          { "text": "重量面子最重要", "correct": false },
-          { "text": "先保证可控动作再加重", "correct": true },
-          { "text": "幅度越小越好看", "correct": false }
+          {
+            "text": "重量面子最重要",
+            "correct": false
+          },
+          {
+            "text": "先保证可控动作再加重",
+            "correct": true
+          },
+          {
+            "text": "幅度越小越好看",
+            "correct": false
+          }
         ]
-      }
+      },
+      "mode_hooks": [
+        {
+          "mode": "td",
+          "hook": "armor_pen_small"
+        },
+        {
+          "mode": "explore",
+          "hook": "crit_feel"
+        }
+      ]
     },
     {
       "id": "k_progressive",
@@ -213,7 +397,11 @@
       "quiz": [
         {
           "q": "长期变强的核心原则之一是？",
-          "choices": ["永远同一重量", "渐进增加可恢复的负荷", "每周翻倍重量"],
+          "choices": [
+            "永远同一重量",
+            "渐进增加可恢复的负荷",
+            "每周翻倍重量"
+          ],
           "answer": 1
         }
       ],
@@ -222,11 +410,30 @@
       "scenario": {
         "prompt": "弟子三年只推同一块石。建议？",
         "choices": [
-          { "text": "保持不变最安全也最强", "correct": false },
-          { "text": "恢复允许时逐步加重或加次数", "correct": true },
-          { "text": "下周直接翻倍", "correct": false }
+          {
+            "text": "保持不变最安全也最强",
+            "correct": false
+          },
+          {
+            "text": "恢复允许时逐步加重或加次数",
+            "correct": true
+          },
+          {
+            "text": "下周直接翻倍",
+            "correct": false
+          }
         ]
-      }
+      },
+      "mode_hooks": [
+        {
+          "mode": "td",
+          "hook": "wave_scaling_resist"
+        },
+        {
+          "mode": "explore",
+          "hook": "xp_feel"
+        }
+      ]
     },
     {
       "id": "k_veg_fiber",
@@ -238,7 +445,11 @@
       "quiz": [
         {
           "q": "力量训练饮食中蔬果？",
-          "choices": ["完全可有可无", "应纳入日常，提供纤维与微量素", "只喝果汁代替"],
+          "choices": [
+            "完全可有可无",
+            "应纳入日常，提供纤维与微量素",
+            "只喝果汁代替"
+          ],
           "answer": 1
         }
       ],
@@ -247,11 +458,30 @@
       "scenario": {
         "prompt": "弟子顿顿只吃肉不碰菜。你补一句？",
         "choices": [
-          { "text": "肌肉只靠肉", "correct": false },
-          { "text": "蔬果纤维与微量素也要有", "correct": true },
-          { "text": "果汁可以完全替代蔬菜", "correct": false }
+          {
+            "text": "肌肉只靠肉",
+            "correct": false
+          },
+          {
+            "text": "蔬果纤维与微量素也要有",
+            "correct": true
+          },
+          {
+            "text": "果汁可以完全替代蔬菜",
+            "correct": false
+          }
         ]
-      }
+      },
+      "mode_hooks": [
+        {
+          "mode": "td",
+          "hook": "support_aura_boost"
+        },
+        {
+          "mode": "explore",
+          "hook": "regen_small"
+        }
+      ]
     },
     {
       "id": "k_deload",
@@ -263,7 +493,11 @@
       "quiz": [
         {
           "q": "连续加压后感到沉重，合理策略是？",
-          "choices": ["继续加到崩", "安排减载再进阶", "永久停训"],
+          "choices": [
+            "继续加到崩",
+            "安排减载再进阶",
+            "永久停训"
+          ],
           "answer": 1
         }
       ],
@@ -272,11 +506,30 @@
       "scenario": {
         "prompt": "弟子连战数周眼睛发红。你安排？",
         "choices": [
-          { "text": "再加一轮死练", "correct": false },
-          { "text": "减载一周再进阶", "correct": true },
-          { "text": "从此封刀不练", "correct": false }
+          {
+            "text": "再加一轮死练",
+            "correct": false
+          },
+          {
+            "text": "减载一周再进阶",
+            "correct": true
+          },
+          {
+            "text": "从此封刀不练",
+            "correct": false
+          }
         ]
-      }
+      },
+      "mode_hooks": [
+        {
+          "mode": "td",
+          "hook": "prep_time_extra"
+        },
+        {
+          "mode": "explore",
+          "hook": "full_heal_event"
+        }
+      ]
     },
     {
       "id": "k_caffeine",
@@ -288,7 +541,11 @@
       "quiz": [
         {
           "q": "想睡好一点，咖啡因？",
-          "choices": ["睡前刚喝也没事", "敏感者下午后少喝", "越多恢复越好"],
+          "choices": [
+            "睡前刚喝也没事",
+            "敏感者下午后少喝",
+            "越多恢复越好"
+          ],
           "answer": 1
         }
       ],
@@ -297,11 +554,30 @@
       "scenario": {
         "prompt": "弟子夜巡靠浓茶硬撑。提醒？",
         "choices": [
-          { "text": "越晚喝越精神越好", "correct": false },
-          { "text": "敏感者下午后少摄入", "correct": true },
-          { "text": "咖啡因能替代睡眠", "correct": false }
+          {
+            "text": "越晚喝越精神越好",
+            "correct": false
+          },
+          {
+            "text": "敏感者下午后少摄入",
+            "correct": true
+          },
+          {
+            "text": "咖啡因能替代睡眠",
+            "correct": false
+          }
         ]
-      }
+      },
+      "mode_hooks": [
+        {
+          "mode": "td",
+          "hook": "fast_enemy_reveal"
+        },
+        {
+          "mode": "explore",
+          "hook": "slow_resist"
+        }
+      ]
     },
     {
       "id": "k_soreness",
@@ -313,7 +589,11 @@
       "quiz": [
         {
           "q": "衡量训练是否有效，更好看？",
-          "choices": ["必须很酸", "负荷与表现是否进步", "越痛越成功"],
+          "choices": [
+            "必须很酸",
+            "负荷与表现是否进步",
+            "越痛越成功"
+          ],
           "answer": 1
         }
       ],
@@ -322,11 +602,30 @@
       "scenario": {
         "prompt": "弟子今天不酸就焦虑。你说？",
         "choices": [
-          { "text": "不酸=白练", "correct": false },
-          { "text": "看负荷与表现，酸不是唯一指标", "correct": true },
-          { "text": "必须练到剧痛", "correct": false }
+          {
+            "text": "不酸=白练",
+            "correct": false
+          },
+          {
+            "text": "看负荷与表现，酸不是唯一指标",
+            "correct": true
+          },
+          {
+            "text": "必须练到剧痛",
+            "correct": false
+          }
         ]
-      }
+      },
+      "mode_hooks": [
+        {
+          "mode": "td",
+          "hook": "leak_forgive_once"
+        },
+        {
+          "mode": "explore",
+          "hook": "ignore_chip"
+        }
+      ]
     },
     {
       "id": "k_steps",
@@ -338,7 +637,11 @@
       "quiz": [
         {
           "q": "力量训练之外，日常活动？",
-          "choices": ["完全不重要", "适量步行等活动有益", "必须再加两小时力竭"],
+          "choices": [
+            "完全不重要",
+            "适量步行等活动有益",
+            "必须再加两小时力竭"
+          ],
           "answer": 1
         }
       ],
@@ -347,11 +650,30 @@
       "scenario": {
         "prompt": "弟子练完就躺一天。建议？",
         "choices": [
-          { "text": "躺着才是恢复", "correct": false },
-          { "text": "可穿插轻松步行等日常活动", "correct": true },
-          { "text": "必须立刻再力竭一次", "correct": false }
+          {
+            "text": "躺着才是恢复",
+            "correct": false
+          },
+          {
+            "text": "可穿插轻松步行等日常活动",
+            "correct": true
+          },
+          {
+            "text": "必须立刻再力竭一次",
+            "correct": false
+          }
         ]
-      }
+      },
+      "mode_hooks": [
+        {
+          "mode": "td",
+          "hook": "path_vision"
+        },
+        {
+          "mode": "explore",
+          "hook": "move_feel"
+        }
+      ]
     },
     {
       "id": "k_consistency",
@@ -363,7 +685,11 @@
       "quiz": [
         {
           "q": "长期健身更关键的是？",
-          "choices": ["偶尔爆肝", "可坚持的规律安排", "只在心情好时练"],
+          "choices": [
+            "偶尔爆肝",
+            "可坚持的规律安排",
+            "只在心情好时练"
+          ],
           "answer": 1
         }
       ],
@@ -372,11 +698,846 @@
       "scenario": {
         "prompt": "弟子三月练一次但每次爆肝。你导向？",
         "choices": [
-          { "text": "爆肝才有效", "correct": false },
-          { "text": "找可坚持的规律节奏", "correct": true },
-          { "text": "心情不好就永不练", "correct": false }
+          {
+            "text": "爆肝才有效",
+            "correct": false
+          },
+          {
+            "text": "找可坚持的规律节奏",
+            "correct": true
+          },
+          {
+            "text": "心情不好就永不练",
+            "correct": false
+          }
         ]
-      }
+      },
+      "mode_hooks": [
+        {
+          "mode": "td",
+          "hook": "meta_fragment_bonus"
+        },
+        {
+          "mode": "explore",
+          "hook": "stable_clear"
+        }
+      ]
+    },
+    {
+      "id": "k_rpe",
+      "topic": "训练",
+      "title": "用自觉强度留余地",
+      "misconception": "每组都必须力竭才算练到位。",
+      "correct": "多数组留 1–3 次余力（RPE 7–9）；偶尔冲顶即可。",
+      "why": "长期力竭累积疲劳与伤病风险，留余地更能稳定进步。",
+      "quiz": [
+        {
+          "q": "日常力量组更稳妥的强度是？",
+          "choices": [
+            "每组必须力竭",
+            "多数组留 1–3 次余力",
+            "永远只用很轻重量"
+          ],
+          "answer": 1
+        }
+      ],
+      "td_hook": "wave_prep_silver_bonus",
+      "explore_hook": "start_shield_small",
+      "scenario": {
+        "prompt": "弟子每组都练到崩溃。你怎么调？",
+        "choices": [
+          {
+            "text": "对，力竭才有效",
+            "correct": false
+          },
+          {
+            "text": "多数组留一点余力，偶尔冲顶",
+            "correct": true
+          },
+          {
+            "text": "永远只用羽毛重量",
+            "correct": false
+          }
+        ]
+      },
+      "mode_hooks": [
+        {
+          "mode": "td",
+          "hook": "wave_prep_silver_bonus"
+        },
+        {
+          "mode": "explore",
+          "hook": "start_shield_small"
+        }
+      ]
+    },
+    {
+      "id": "k_sets_reps",
+      "topic": "训练",
+      "title": "组数次数要匹配目标",
+      "misconception": "力量、增肌、耐力都用同一套次数最好。",
+      "correct": "大致：力量偏低次数高负荷；增肌中等次数；耐力偏高次数低负荷，并保证恢复。",
+      "why": "不同适应依赖不同刺激；一刀切效率低。",
+      "quiz": [
+        {
+          "q": "想兼顾力量与体积，常见做法是？",
+          "choices": [
+            "只用超高次数",
+            "按目标调整次数与负荷区间",
+            "完全随机次数"
+          ],
+          "answer": 1
+        }
+      ],
+      "td_hook": "unit_atk_small",
+      "explore_hook": "atk_buff_room",
+      "scenario": {
+        "prompt": "弟子力量课却狂刷 30 次轻重量。建议？",
+        "choices": [
+          {
+            "text": "次数越多越强",
+            "correct": false
+          },
+          {
+            "text": "按目标选次数与负荷",
+            "correct": true
+          },
+          {
+            "text": "次数完全无所谓",
+            "correct": false
+          }
+        ]
+      },
+      "mode_hooks": [
+        {
+          "mode": "td",
+          "hook": "unit_atk_small"
+        },
+        {
+          "mode": "explore",
+          "hook": "atk_buff_room"
+        }
+      ]
+    },
+    {
+      "id": "k_mobility",
+      "topic": "训练",
+      "title": "活动度服务动作质量",
+      "misconception": "柔韧练到劈叉才算合格，否则别练力量。",
+      "correct": "优先练出动作所需的可控活动度；不必追求极限柔韧炫耀。",
+      "why": "够用的活动度减少代偿；过度拉伸到不稳反而危险。",
+      "quiz": [
+        {
+          "q": "力量训练相关活动度更该追求？",
+          "choices": [
+            "极限柔韧表演",
+            "动作所需的可控幅度",
+            "完全不练活动度"
+          ],
+          "answer": 1
+        }
+      ],
+      "td_hook": "armor_pen_small",
+      "explore_hook": "crit_feel",
+      "scenario": {
+        "prompt": "弟子深蹲跪不稳却硬压重量。先做？",
+        "choices": [
+          {
+            "text": "继续硬压",
+            "correct": false
+          },
+          {
+            "text": "先改善可控活动度与对位",
+            "correct": true
+          },
+          {
+            "text": "只练劈叉",
+            "correct": false
+          }
+        ]
+      },
+      "mode_hooks": [
+        {
+          "mode": "td",
+          "hook": "armor_pen_small"
+        },
+        {
+          "mode": "explore",
+          "hook": "crit_feel"
+        }
+      ]
+    },
+    {
+      "id": "k_core_brace",
+      "topic": "训练",
+      "title": "核心是抗伸展与稳定",
+      "misconception": "核心=狂做卷腹到灼烧。",
+      "correct": "学习腹压/抗伸展（如死虫、侧桥），并迁移到深蹲硬拉等复合动作。",
+      "why": "稳定躯干才能安全传力；卷腹只是很小一块。",
+      "quiz": [
+        {
+          "q": "复合动作前，核心更该练？",
+          "choices": [
+            "只狂卷腹",
+            "抗伸展与腹压稳定",
+            "完全忽略"
+          ],
+          "answer": 1
+        }
+      ],
+      "td_hook": "lives_temp_bonus",
+      "explore_hook": "max_hp_small",
+      "scenario": {
+        "prompt": "弟子硬拉弓背却只加卷腹。纠正？",
+        "choices": [
+          {
+            "text": "卷腹越多腰越稳",
+            "correct": false
+          },
+          {
+            "text": "练腹压与抗伸展并迁移到动作",
+            "correct": true
+          },
+          {
+            "text": "核心无关紧要",
+            "correct": false
+          }
+        ]
+      },
+      "mode_hooks": [
+        {
+          "mode": "td",
+          "hook": "lives_temp_bonus"
+        },
+        {
+          "mode": "explore",
+          "hook": "max_hp_small"
+        }
+      ]
+    },
+    {
+      "id": "k_eccentric",
+      "topic": "训练",
+      "title": "离心控制别甩下来",
+      "misconception": "放下阶段可以随便甩，反正不算数。",
+      "correct": "离心段保持控制；适当放慢有助刺激与关节安全。",
+      "why": "失控离心易拉伤，也浪费适应机会。",
+      "quiz": [
+        {
+          "q": "下放重量时更推荐？",
+          "choices": [
+            "随意甩落",
+            "保持可控速度",
+            "越快越好"
+          ],
+          "answer": 1
+        }
+      ],
+      "td_hook": "attack_interval_small",
+      "explore_hook": "skill_cd_reduce",
+      "scenario": {
+        "prompt": "弟子卧推砸胸口。你喊停因为？",
+        "choices": [
+          {
+            "text": "砸得越响越强",
+            "correct": false
+          },
+          {
+            "text": "离心要控，保护肩肘",
+            "correct": true
+          },
+          {
+            "text": "离心完全无用",
+            "correct": false
+          }
+        ]
+      },
+      "mode_hooks": [
+        {
+          "mode": "td",
+          "hook": "attack_interval_small"
+        },
+        {
+          "mode": "explore",
+          "hook": "skill_cd_reduce"
+        }
+      ]
+    },
+    {
+      "id": "k_calorie_balance",
+      "topic": "饮食",
+      "title": "体重变化看长期能量差",
+      "misconception": "某一种「魔法食物」决定胖瘦，热量无关。",
+      "correct": "长期体重趋势主要看总能量摄入与消耗；食物质量影响健康与可持续。",
+      "why": "否认能量平衡会导致极端无效饮食。",
+      "quiz": [
+        {
+          "q": "长期体重变化的主因更接近？",
+          "choices": [
+            "单一魔法食物",
+            "长期能量差 + 可持续饮食质量",
+            "完全由星座决定"
+          ],
+          "answer": 1
+        }
+      ],
+      "td_hook": "silver_kill_bonus",
+      "explore_hook": "energy_room",
+      "scenario": {
+        "prompt": "弟子只禁一种食物却热量暴涨。提醒？",
+        "choices": [
+          {
+            "text": "禁一种就够了",
+            "correct": false
+          },
+          {
+            "text": "看长期总热量与饮食质量",
+            "correct": true
+          },
+          {
+            "text": "热量完全无关",
+            "correct": false
+          }
+        ]
+      },
+      "mode_hooks": [
+        {
+          "mode": "td",
+          "hook": "silver_kill_bonus"
+        },
+        {
+          "mode": "explore",
+          "hook": "energy_room"
+        }
+      ]
+    },
+    {
+      "id": "k_meal_timing",
+      "topic": "饮食",
+      "title": "进餐节奏服务训练与生活",
+      "misconception": "必须严格间歇断食否则无效。",
+      "correct": "找能坚持的进餐窗口；训练日可把更多能量放在练前练后。",
+      "why": "可持续性 > 潮流窗口；总营养仍优先。",
+      "quiz": [
+        {
+          "q": "进餐时间安排更重要的是？",
+          "choices": [
+            "必须跟网红窗口一模一样",
+            "可持续并服务训练表现",
+            "一天只吃一顿才科学"
+          ],
+          "answer": 1
+        }
+      ],
+      "td_hook": "regen_aura_boost",
+      "explore_hook": "heal_on_enter",
+      "scenario": {
+        "prompt": "弟子因赶不上断食窗口焦虑。你说？",
+        "choices": [
+          {
+            "text": "错过窗口等于白练",
+            "correct": false
+          },
+          {
+            "text": "找可持续节奏，服务训练即可",
+            "correct": true
+          },
+          {
+            "text": "必须只吃一顿",
+            "correct": false
+          }
+        ]
+      },
+      "mode_hooks": [
+        {
+          "mode": "td",
+          "hook": "regen_aura_boost"
+        },
+        {
+          "mode": "explore",
+          "hook": "heal_on_enter"
+        }
+      ]
+    },
+    {
+      "id": "k_salt_sweat",
+      "topic": "饮食",
+      "title": "大量出汗可补电解质",
+      "misconception": "只喝纯水、从不考虑钠钾，出再多汗也一样。",
+      "correct": "长时间大汗训练可适量含电解质饮或随餐补盐，避免只猛灌白水。",
+      "why": "汗液带走钠等；只补水可能不适。非医疗处方，个体差异大。",
+      "quiz": [
+        {
+          "q": "酷暑长训出汗很多时？",
+          "choices": [
+            "只猛灌白水即可",
+            "可考虑电解质/随餐盐，少量多次",
+            "完全不喝水"
+          ],
+          "answer": 1
+        }
+      ],
+      "td_hook": "support_aura_boost",
+      "explore_hook": "regen_small",
+      "scenario": {
+        "prompt": "暑天弟子狂灌白水仍抽筋感。可试？",
+        "choices": [
+          {
+            "text": "再灌两壶白水",
+            "correct": false
+          },
+          {
+            "text": "少量多次并考虑电解质",
+            "correct": true
+          },
+          {
+            "text": "从此禁水",
+            "correct": false
+          }
+        ]
+      },
+      "mode_hooks": [
+        {
+          "mode": "td",
+          "hook": "support_aura_boost"
+        },
+        {
+          "mode": "explore",
+          "hook": "regen_small"
+        }
+      ]
+    },
+    {
+      "id": "k_alcohol",
+      "topic": "饮食",
+      "title": "酒精拖累恢复",
+      "misconception": "练后小酌不影响肌肉与睡眠。",
+      "correct": "酒精可干扰睡眠与蛋白合成；关键恢复期少喝或避开。",
+      "why": "恢复窗口被酒精打断，次日表现也易下滑。",
+      "quiz": [
+        {
+          "q": "高强度训练后关于酒精？",
+          "choices": [
+            "越多恢复越好",
+            "可能拖累睡眠与合成，宜少/避开",
+            "必须每天喝"
+          ],
+          "answer": 1
+        }
+      ],
+      "td_hook": "wave_scaling_resist",
+      "explore_hook": "slow_resist",
+      "scenario": {
+        "prompt": "弟子大练后狂欢到深夜。风险？",
+        "choices": [
+          {
+            "text": "酒精助恢复",
+            "correct": false
+          },
+          {
+            "text": "可能伤睡眠与合成",
+            "correct": true
+          },
+          {
+            "text": "完全无影响",
+            "correct": false
+          }
+        ]
+      },
+      "mode_hooks": [
+        {
+          "mode": "td",
+          "hook": "wave_scaling_resist"
+        },
+        {
+          "mode": "explore",
+          "hook": "slow_resist"
+        }
+      ]
+    },
+    {
+      "id": "k_fiber_ramp",
+      "topic": "饮食",
+      "title": "纤维加量要渐进",
+      "misconception": "一天把纤维提到很高必然立刻舒服。",
+      "correct": "逐步增加蔬果全谷，并保证饮水，减少胀气不适。",
+      "why": "肠道需要适应；陡增易腹胀。",
+      "quiz": [
+        {
+          "q": "提高膳食纤维更稳妥？",
+          "choices": [
+            "一天暴增到很高",
+            "渐进增加并喝够水",
+            "完全不碰纤维"
+          ],
+          "answer": 1
+        }
+      ],
+      "td_hook": "support_aura_boost",
+      "explore_hook": "heal_on_clear",
+      "scenario": {
+        "prompt": "弟子突然狂吃麸皮胀气。建议？",
+        "choices": [
+          {
+            "text": "再加倍纤维",
+            "correct": false
+          },
+          {
+            "text": "渐进加量并补水",
+            "correct": true
+          },
+          {
+            "text": "纤维有害该戒",
+            "correct": false
+          }
+        ]
+      },
+      "mode_hooks": [
+        {
+          "mode": "td",
+          "hook": "support_aura_boost"
+        },
+        {
+          "mode": "explore",
+          "hook": "heal_on_clear"
+        }
+      ]
+    },
+    {
+      "id": "k_sleep_schedule",
+      "topic": "作息",
+      "title": "固定起床比熬夜补觉稳",
+      "misconception": "工作日缺觉、周末睡到下午可以完全补回来。",
+      "correct": "尽量固定起床时间；缺觉以早睡与短午睡补，避免大幅颠倒生物钟。",
+      "why": "社交时差会损害白天表现与情绪。",
+      "quiz": [
+        {
+          "q": "长期睡眠更稳的策略？",
+          "choices": [
+            "工作日缺、周末狂补到下午",
+            "相对固定起床，缺觉早睡/短午睡",
+            "完全不规律更好"
+          ],
+          "answer": 1
+        }
+      ],
+      "td_hook": "prep_time_extra",
+      "explore_hook": "full_heal_event",
+      "scenario": {
+        "prompt": "弟子周中通宵周末昏睡。导向？",
+        "choices": [
+          {
+            "text": "周末补觉就够了",
+            "correct": false
+          },
+          {
+            "text": "固定起床，缺觉靠早睡",
+            "correct": true
+          },
+          {
+            "text": "睡眠规律无意义",
+            "correct": false
+          }
+        ]
+      },
+      "mode_hooks": [
+        {
+          "mode": "td",
+          "hook": "prep_time_extra"
+        },
+        {
+          "mode": "explore",
+          "hook": "full_heal_event"
+        }
+      ]
+    },
+    {
+      "id": "k_stress_walk",
+      "topic": "作息",
+      "title": "压力大时先降负荷",
+      "misconception": "压力越大越要加练发泄。",
+      "correct": "高压周可降容量/强度，保留技术动作与步行；优先睡眠。",
+      "why": "压力本身是负荷；再叠死练易崩溃。",
+      "quiz": [
+        {
+          "q": "工作压力爆表的一周？",
+          "choices": [
+            "训练量翻倍发泄",
+            "可减量保技术与睡眠",
+            "完全静卧不动三天强制"
+          ],
+          "answer": 1
+        }
+      ],
+      "td_hook": "leak_forgive_once",
+      "explore_hook": "ignore_chip",
+      "scenario": {
+        "prompt": "弟子考试周还要死练力竭。建议？",
+        "choices": [
+          {
+            "text": "压力大更要死练",
+            "correct": false
+          },
+          {
+            "text": "减量保睡眠与技术",
+            "correct": true
+          },
+          {
+            "text": "彻底封训一个月",
+            "correct": false
+          }
+        ]
+      },
+      "mode_hooks": [
+        {
+          "mode": "td",
+          "hook": "leak_forgive_once"
+        },
+        {
+          "mode": "explore",
+          "hook": "ignore_chip"
+        }
+      ]
+    },
+    {
+      "id": "k_screen_curfew",
+      "topic": "作息",
+      "title": "睡前降屏幕刺激",
+      "misconception": "躺床刷短视频有助入睡。",
+      "correct": "睡前 30–60 分钟降低亮屏与刺激内容，有助更快入睡。",
+      "why": "蓝光与情绪唤醒推迟入睡。",
+      "quiz": [
+        {
+          "q": "改善入睡，睡前更该？",
+          "choices": [
+            "狂刷视频到睡着",
+            "降屏幕刺激、提前放松",
+            "开最亮闪光灯"
+          ],
+          "answer": 1
+        }
+      ],
+      "td_hook": "fast_enemy_reveal",
+      "explore_hook": "move_feel",
+      "scenario": {
+        "prompt": "弟子躺床刷到凌晨。改法？",
+        "choices": [
+          {
+            "text": "刷到自然睡",
+            "correct": false
+          },
+          {
+            "text": "提前降屏幕刺激",
+            "correct": true
+          },
+          {
+            "text": "屏幕越多睡越好",
+            "correct": false
+          }
+        ]
+      },
+      "mode_hooks": [
+        {
+          "mode": "td",
+          "hook": "fast_enemy_reveal"
+        },
+        {
+          "mode": "explore",
+          "hook": "move_feel"
+        }
+      ]
+    },
+    {
+      "id": "k_warmup_specific",
+      "topic": "训练",
+      "title": "热身要贴近主项",
+      "misconception": "随便拉伸两下就算热身完成。",
+      "correct": "一般热身 + 主项轻组激活（如深蹲前空杆/轻负荷组）。",
+      "why": "专项激活让神经与关节准备好目标动作。",
+      "quiz": [
+        {
+          "q": "深蹲日热身更完整的是？",
+          "choices": [
+            "只静态拉腿就上大重量",
+            "一般活动 + 轻组激活",
+            "完全不热身"
+          ],
+          "answer": 1
+        }
+      ],
+      "td_hook": "wave_prep_silver_bonus",
+      "explore_hook": "start_shield_small",
+      "scenario": {
+        "prompt": "弟子压腿两下就上大石锁。更好？",
+        "choices": [
+          {
+            "text": "已经够了",
+            "correct": false
+          },
+          {
+            "text": "加轻组激活再加重",
+            "correct": true
+          },
+          {
+            "text": "热身浪费时间",
+            "correct": false
+          }
+        ]
+      },
+      "mode_hooks": [
+        {
+          "mode": "td",
+          "hook": "wave_prep_silver_bonus"
+        },
+        {
+          "mode": "explore",
+          "hook": "start_shield_small"
+        }
+      ]
+    },
+    {
+      "id": "k_protein_food_first",
+      "topic": "饮食",
+      "title": "蛋白优先食物来源",
+      "misconception": "不喝蛋白粉就长不出肌肉。",
+      "correct": "优先蛋奶豆鱼肉等食物；粉剂只是方便补差的工具。",
+      "why": "食物还带其他营养；粉剂非必须。",
+      "quiz": [
+        {
+          "q": "蛋白质摄入？",
+          "choices": [
+            "必须靠蛋白粉",
+            "食物优先，粉剂可补差",
+            "完全不需要蛋白"
+          ],
+          "answer": 1
+        }
+      ],
+      "td_hook": "unit_atk_small",
+      "explore_hook": "atk_buff_room",
+      "scenario": {
+        "prompt": "弟子没粉就拒绝练。你说？",
+        "choices": [
+          {
+            "text": "没粉等于白练",
+            "correct": false
+          },
+          {
+            "text": "食物蛋白优先，粉只是方便",
+            "correct": true
+          },
+          {
+            "text": "蛋白完全无用",
+            "correct": false
+          }
+        ]
+      },
+      "mode_hooks": [
+        {
+          "mode": "td",
+          "hook": "unit_atk_small"
+        },
+        {
+          "mode": "explore",
+          "hook": "atk_buff_room"
+        }
+      ]
+    },
+    {
+      "id": "k_injury_red_flags",
+      "topic": "训练",
+      "title": "锐痛要停，别硬顶",
+      "misconception": "关节锐痛可以痛着练过去。",
+      "correct": "肌肉轻度酸可调整；关节锐痛、肿胀、无力应停训并必要时就医。",
+      "why": "疼痛是警示；硬顶可能加重损伤。本条非诊断。",
+      "quiz": [
+        {
+          "q": "训练中出现关节锐痛？",
+          "choices": [
+            "加大重量顶过去",
+            "停止该动作并评估/就医",
+            "忽略疼痛"
+          ],
+          "answer": 1
+        }
+      ],
+      "td_hook": "lives_temp_bonus",
+      "explore_hook": "max_hp_small",
+      "scenario": {
+        "prompt": "弟子肩关节锐痛还要推举。你？",
+        "choices": [
+          {
+            "text": "痛着练才突破",
+            "correct": false
+          },
+          {
+            "text": "停该动作，必要时就医",
+            "correct": true
+          },
+          {
+            "text": "锐痛可以忽略",
+            "correct": false
+          }
+        ]
+      },
+      "mode_hooks": [
+        {
+          "mode": "td",
+          "hook": "lives_temp_bonus"
+        },
+        {
+          "mode": "explore",
+          "hook": "max_hp_small"
+        }
+      ]
+    },
+    {
+      "id": "k_neophyte_volume",
+      "topic": "训练",
+      "title": "新手容量宜保守",
+      "misconception": "新手也要照抄健美冠军的 Splits 与超大容量。",
+      "correct": "新手用全身或上下肢简单计划，每周 2–3 次，容量循序渐进。",
+      "why": "过大容量恢复不过来，动作质量也崩。",
+      "quiz": [
+        {
+          "q": "力量新手更合适？",
+          "choices": [
+            "照抄冠军超大容量",
+            "简单计划、循序加量",
+            "每天练同一肌群力竭"
+          ],
+          "answer": 1
+        }
+      ],
+      "td_hook": "meta_fragment_bonus",
+      "explore_hook": "stable_clear",
+      "scenario": {
+        "prompt": "新手弟子抄七分化狂练。导向？",
+        "choices": [
+          {
+            "text": "冠军计划最好",
+            "correct": false
+          },
+          {
+            "text": "先简单计划循序加",
+            "correct": true
+          },
+          {
+            "text": "每天同一肌群力竭",
+            "correct": false
+          }
+        ]
+      },
+      "mode_hooks": [
+        {
+          "mode": "td",
+          "hook": "meta_fragment_bonus"
+        },
+        {
+          "mode": "explore",
+          "hook": "stable_clear"
+        }
+      ]
     }
   ]
 }

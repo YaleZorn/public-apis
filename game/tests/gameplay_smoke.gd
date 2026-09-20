@@ -1,5 +1,5 @@
 extends SceneTree
-## Headless gameplay smoke: Idle + TD + Explore + Arena + Tower (M1–M5).
+## Headless gameplay smoke: Idle + TD + Explore + Arena + Tower + Knowledge/DLC (M1–M6).
 
 var _td: Node = null
 
@@ -22,6 +22,9 @@ func _start() -> void:
 		quit(1)
 		return
 	if not await _smoke_tower():
+		quit(1)
+		return
+	if not await _smoke_knowledge_packs():
 		quit(1)
 		return
 	print("GAMEPLAY_SMOKE_OK")
@@ -289,4 +292,50 @@ func _smoke_tower() -> bool:
 		return false
 	print("tower_ok floor_cleared=", gs.tower_floor_cleared, " exclusive=", gs.gear_unlocked)
 	tw.queue_free()
+	return true
+
+
+func _smoke_knowledge_packs() -> bool:
+	var cdb = root.get_node_or_null("ContentDB")
+	var gs = root.get_node_or_null("GameState")
+	if cdb == null or gs == null:
+		push_error("ContentDB/GameState missing")
+		return false
+	if cdb.knowledge_list.size() < 30:
+		push_error("merged knowledge < 30 got %d" % cdb.knowledge_list.size())
+		return false
+	if not cdb.units.has("unit_mulan"):
+		push_error("demo pack unit_mulan not merged")
+		return false
+	if not cdb.knowledge.has("k_demo_trail_pace"):
+		push_error("demo knowledge not merged")
+		return false
+	if not cdb.gear.has("gear_demo_trail_charm"):
+		push_error("demo gear not merged")
+		return false
+	if "demo_mountain" not in cdb.loaded_pack_ids:
+		push_error("demo_mountain not in loaded_pack_ids %s" % str(cdb.loaded_pack_ids))
+		return false
+	gs.mark_knowledge_delivered("k_warmup", false)
+	if "k_warmup" not in gs.knowledge_review_queue:
+		push_error("wrong answer should enqueue review")
+		return false
+	gs.mark_knowledge_delivered("k_warmup", true)
+	if not gs.knowledge_due.has("k_warmup"):
+		push_error("correct answer should schedule spaced due")
+		return false
+	gs.complete_morning_quiz(3)
+	if not gs.is_morning_buff_live():
+		push_error("morning buff should be live after score>=2")
+		return false
+	var hub_packed = load("res://scenes/knowledge/knowledge_hub.tscn")
+	if hub_packed == null:
+		push_error("knowledge hub missing")
+		return false
+	var hub = hub_packed.instantiate()
+	root.add_child(hub)
+	await create_timer(0.45).timeout
+	hub.queue_free()
+	await create_timer(0.1).timeout
+	print("knowledge_packs_ok entries=", cdb.knowledge_list.size(), " packs=", cdb.loaded_pack_ids)
 	return true

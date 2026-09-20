@@ -1,6 +1,7 @@
 extends Control
 ## M5 爬塔：纵向层表 · 复用自动战环 · 层间存档 · 专属装备掉落钩子。
 
+const KnowledgeCardScene := preload("res://scenes/knowledge/knowledge_card.tscn")
 const ResultOverlayScene := preload("res://scenes/ui/result_overlay.tscn")
 const AutoCombatRing := preload("res://scripts/combat/auto_combat_ring.gd")
 const Atmo := preload("res://scripts/util/atmosphere.gd")
@@ -26,9 +27,11 @@ var cfg: Dictionary = {}
 var floor_index: int = 1 ## 1-based floor number
 var between_floors: bool = false
 var game_done: bool = false
+var awaiting_knowledge: bool = false
 var last_loot_note: String = ""
 var exclusive_got: String = ""
 var result_overlay: CanvasLayer
+var knowledge_layer: CanvasLayer
 var _portrait: Control
 
 
@@ -50,7 +53,12 @@ func _ready() -> void:
 	Juice.start_explore_music()
 	result_overlay = ResultOverlayScene.instantiate()
 	add_child(result_overlay)
+	knowledge_layer = KnowledgeCardScene.instantiate()
+	add_child(knowledge_layer)
+	knowledge_layer.resolved.connect(_on_knowledge_resolved)
 	skill_btn.pressed.connect(func():
+		if awaiting_knowledge:
+			return
 		if ring.cast_skill():
 			_refresh()
 	)
@@ -66,10 +74,18 @@ func _ready() -> void:
 	else:
 		floor_index = int(cfg.get("start_floor", 1))
 		var shield := 0.0
-		if GameState.morning_buff_active:
+		if GameState.is_morning_buff_live():
 			shield += float(cfg.get("morning_shield", 15))
+		shield += float(GameState.knowledge_meta_bonuses().get("explore_shield", 0))
 		if "gear_bamboo_cup" in GameState.gear_equipped:
 			shield += float(cfg.get("bamboo_shield", 10))
+		if "gear_demo_trail_charm" in GameState.gear_equipped:
+			shield += 8.0
+		# Tiny tower knowledge hook: learned floor_shield_small
+		for kid in GameState.knowledge_seen:
+			if int(GameState.knowledge_correct.get(kid, 0)) > 0 and ContentDB.knowledge_hook(str(kid), "tower") == "floor_shield_small":
+				shield += 10
+				break
 		ring.init_hero(hero, shield)
 		_build_portrait(hero)
 		_enter_floor(false)
@@ -86,7 +102,7 @@ func _build_portrait(uid: String) -> void:
 
 
 func _process(delta: float) -> void:
-	if game_done or between_floors:
+	if game_done or between_floors or awaiting_knowledge:
 		return
 	ring.tick(delta)
 	_refresh()
@@ -101,6 +117,7 @@ func _floor_cfg(n: int) -> Dictionary:
 
 func _enter_floor(from_resume_cleared: bool) -> void:
 	between_floors = false
+	awaiting_knowledge = false
 	next_btn.visible = false
 	ring.clear_enemies()
 	var f: Dictionary = _floor_cfg(floor_index)
@@ -170,10 +187,26 @@ func _on_floor_cleared() -> void:
 	next_btn.text = "下一层" if not next_f.is_empty() else "登顶结算"
 	_persist()
 	_refresh()
+	# Light layer-gap knowledge card — subway-friendly, leave-to-lobby still ok after resolve.
+	var kid = f.get("knowledge_card", null)
+	if kid != null and str(kid) != "":
+		awaiting_knowledge = true
+		next_btn.visible = false
+		knowledge_layer.present(str(kid))
+
+
+func _on_knowledge_resolved(_id: String, correct: bool) -> void:
+	awaiting_knowledge = false
+	if correct and ring:
+		ring.hp = minf(ring.max_hp, ring.hp + 8)
+	next_btn.visible = true
+	_persist()
+	_refresh()
+	status_label.text = "功法笺已记 · 可进下一层或回大厅。"
 
 
 func _on_next_floor() -> void:
-	if game_done or not between_floors:
+	if game_done or not between_floors or awaiting_knowledge:
 		return
 	Juice.play_sfx("tap")
 	var next_f := _floor_cfg(floor_index + 1)
@@ -222,6 +255,9 @@ func _finish_tower(title: String, body: String) -> void:
 
 func _save_and_lobby() -> void:
 	if game_done:
+		return
+	if awaiting_knowledge:
+		status_label.text = "先看完功法笺，再存档回大厅。"
 		return
 	if ring.combat_active and not between_floors:
 		status_label.text = "战斗中请先清层，或等力竭退塔。"
@@ -290,5 +326,5 @@ func _refresh() -> void:
 	hp_bar.max_value = ring.max_hp
 	hp_bar.value = ring.hp
 	skill_btn.text = ring.skill_button_text()
-	skill_btn.disabled = ring.skill_disabled() or between_floors
-	lobby_btn.disabled = ring.combat_active and not between_floors
+	skill_btn.disabled = ring.skill_disabled() or between_floors or awaiting_knowledge
+	lobby_btn.disabled = (ring.combat_active and not between_floors) or awaiting_knowledge

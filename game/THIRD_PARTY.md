@@ -44,11 +44,13 @@ Full MIT text: [`third_party/ape1121-godot-4-tower-defense-template/LICENSE`](./
 
 ## Shell / content (first-party)
 
-Title, lobby, art (ink-mist), ContentDB, SaveManager, knowledge pipeline, Idle hub, explore 搜打撤, arena 演武场, tower 爬塔 — Kongfu project original under the repository license. Offline, **no IAP**. Content-pack seam: `manifest.content_pack` + gear `content_pack` field for future DLC packs.
+Title, lobby, art (ink-mist), ContentDB multi-pack loader, SaveManager, knowledge pipeline (journal / morning quiz / spaced review), Idle hub, explore 搜打撤, arena 演武场, tower 爬塔 — Kongfu project original under the repository license. Offline, **no IAP**.
+
+**content_pack seam:** scan `res://data/content_pack_*`, merge owned packs (`manifest.owned` or save `owned_content_packs`). Demo pack: `content_pack_demo_mountain` (units + knowledge + gear). How-to: [`data/CONTENT_PACKS.md`](./data/CONTENT_PACKS.md).
 
 ## Future grafts
 
-- Knowledge morning-quiz polish / content_pack demo pack (M7-ish)
 - Optional vendor expressobits full inventory
+- Additional thematic packs (still local-owned, no store billing in v0)
 
 When vendoring LICENSE files: append under `third_party/` and update this file.

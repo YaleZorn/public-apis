@@ -85,9 +85,15 @@ func _ready() -> void:
 		_load_checkpoint(GameState.td_checkpoint)
 	else:
 		silver = int(ContentDB.waves_cfg.get("starting_silver", 200))
-		if GameState.morning_buff_active:
+		if GameState.is_morning_buff_live():
 			silver += 20
+		silver += int(GameState.knowledge_meta_bonuses().get("td_start_silver", 0))
+		# Tiny mastery from correctly learned knowledge (td_hook wave_prep).
+		if _has_learned_hook("wave_prep_silver_bonus"):
+			silver += 8
 		lives = int(ContentDB.waves_cfg.get("starting_lives", 12))
+		if _has_learned_hook("lives_temp_bonus"):
+			lives += 1
 		wave_index = 0
 		_persist_prep()
 	_refresh_hud()
@@ -374,8 +380,10 @@ func _on_recall() -> void:
 	var info: Dictionary = deployed[selected_slot]
 	var u: Dictionary = ContentDB.get_unit(info.unit_id)
 	var refund := int(int(u.get("cost", 50)) * float(u.get("recall_refund", 0.5)))
-	if GameState.morning_buff_active:
+	if GameState.is_morning_buff_live():
 		refund = int(refund * 1.1)
+	if _has_learned_hook("recall_refund_bonus"):
+		refund = int(refund * 1.05)
 	if "gear_linen_wrap" in GameState.gear_equipped:
 		refund = int(refund * 1.05)
 	silver += refund
@@ -517,6 +525,9 @@ func _tick_combat(delta: float) -> void:
 			continue
 		var atk := float(td.get("atk", 10))
 		atk *= 1.0 + 0.02 * GameState.effective_mastery(info.unit_id)
+		atk *= float(GameState.knowledge_meta_bonuses().get("td_atk_mult", 1.0))
+		if _has_learned_hook("unit_atk_small"):
+			atk *= 1.03
 		atk *= _atk_buff_multiplier(info.pos)
 		var armor: float = float(target.get_meta("armor"))
 		var dmg := maxf(1.0, atk - armor * 0.5)
@@ -659,6 +670,15 @@ func _on_knowledge_resolved(_id: String, _correct: bool) -> void:
 	awaiting_knowledge = false
 	_persist_prep()
 	status_label.text = "知识已记入。准备下一波。"
+
+
+func _has_learned_hook(hook_name: String) -> bool:
+	for kid in GameState.knowledge_seen:
+		if int(GameState.knowledge_correct.get(kid, 0)) <= 0:
+			continue
+		if ContentDB.knowledge_hook(str(kid), "td") == hook_name:
+			return true
+	return false
 
 
 func _victory() -> void:

@@ -15,10 +15,14 @@ var explore_hero_id: String = "unit_feidao"
 var hero_mastery: Dictionary = {} ## id -> int (TD atk weight + unlock weight)
 var training_level: Dictionary = {} ## id -> int proficiency from Idle slots
 var knowledge_seen: Array = [] ## ids delivered
-var knowledge_review_queue: Array = [] ## ids for spaced review
+var knowledge_review_queue: Array = [] ## ids needing review (wrong / due)
 var knowledge_correct: Dictionary = {} ## id -> times correct
+var knowledge_due: Dictionary = {} ## id -> unix due (spaced review)
 var morning_quiz_done_day: int = -1
 var morning_buff_active: bool = false
+var morning_buff_day: int = -1 ## buff only valid on this day key
+## Local DLC unlocks (no store billing). Core always owned via ContentDB.
+var owned_content_packs: Array = ["demo_mountain"]
 var total_td_clears: int = 0
 var total_explore_clears: int = 0
 var total_arena_runs: int = 0
@@ -81,6 +85,8 @@ func _init_defaults() -> void:
 	idle_pending_silver = 15.0
 	idle_pending_xiuwei = 5.0
 	idle_pending_materials = 1.0
+	if owns_content_pack("demo_mountain") and ContentDB.gear.has("gear_demo_trail_charm"):
+		unlock_gear("gear_demo_trail_charm")
 
 
 func _ensure_training_slots() -> void:
@@ -100,8 +106,16 @@ func _apply_meta(meta: Dictionary) -> void:
 	knowledge_seen = meta.get("knowledge_seen", knowledge_seen)
 	knowledge_review_queue = meta.get("knowledge_review_queue", knowledge_review_queue)
 	knowledge_correct = meta.get("knowledge_correct", knowledge_correct)
+	knowledge_due = meta.get("knowledge_due", knowledge_due)
+	if typeof(knowledge_due) != TYPE_DICTIONARY:
+		knowledge_due = {}
 	morning_quiz_done_day = int(meta.get("morning_quiz_done_day", -1))
 	morning_buff_active = bool(meta.get("morning_buff_active", false))
+	morning_buff_day = int(meta.get("morning_buff_day", -1))
+	owned_content_packs = meta.get("owned_content_packs", owned_content_packs)
+	if typeof(owned_content_packs) != TYPE_ARRAY:
+		owned_content_packs = ["demo_mountain"]
+	_refresh_morning_buff_for_today()
 	total_td_clears = int(meta.get("total_td_clears", 0))
 	total_explore_clears = int(meta.get("total_explore_clears", 0))
 	total_arena_runs = int(meta.get("total_arena_runs", 0))
@@ -146,8 +160,11 @@ func export_meta() -> Dictionary:
 		"knowledge_seen": knowledge_seen.duplicate(),
 		"knowledge_review_queue": knowledge_review_queue.duplicate(),
 		"knowledge_correct": knowledge_correct.duplicate(),
+		"knowledge_due": knowledge_due.duplicate(),
 		"morning_quiz_done_day": morning_quiz_done_day,
 		"morning_buff_active": morning_buff_active,
+		"morning_buff_day": morning_buff_day,
+		"owned_content_packs": owned_content_packs.duplicate(),
 		"total_td_clears": total_td_clears,
 		"total_explore_clears": total_explore_clears,
 		"total_arena_runs": total_arena_runs,
@@ -167,6 +184,7 @@ func export_meta() -> Dictionary:
 		"training_slots": training_slots.duplicate(true),
 		"settings": SettingsManager.export_settings(),
 		"content_pack": ContentDB.manifest.get("content_pack", "core"),
+		"loaded_content_packs": ContentDB.loaded_pack_ids.duplicate(),
 	}
 
 
@@ -288,13 +306,92 @@ func mark_knowledge_delivered(kid: String, correct: bool) -> void:
 		return
 	if kid not in knowledge_seen:
 		knowledge_seen.append(kid)
+	var now := Time.get_unix_time_from_system()
 	if correct:
 		knowledge_correct[kid] = int(knowledge_correct.get(kid, 0)) + 1
 		knowledge_review_queue.erase(kid)
+		knowledge_due[kid] = now + _spaced_interval_sec(int(knowledge_correct[kid]))
 	else:
 		if kid not in knowledge_review_queue:
 			knowledge_review_queue.append(kid)
+		knowledge_due[kid] = now # due immediately
 	meta_changed.emit()
+
+
+func _spaced_interval_sec(correct_times: int) -> float:
+	## Light spaced intervals: 1d → 3d → 7d (caps).
+	if correct_times <= 1:
+		return 86400.0
+	if correct_times == 2:
+		return 86400.0 * 3.0
+	return 86400.0 * 7.0
+
+
+func knowledge_due_ids() -> Array:
+	var now := Time.get_unix_time_from_system()
+	var out: Array = []
+	for kid in knowledge_review_queue:
+		if ContentDB.knowledge.has(kid) and kid not in out:
+			out.append(kid)
+	for kid in knowledge_due.keys():
+		if not ContentDB.knowledge.has(kid):
+			continue
+		if float(knowledge_due[kid]) <= now and kid not in out:
+			out.append(kid)
+	return out
+
+
+func knowledge_progress_tier() -> int:
+	## Tiny meta buffs from real learning progress (correct unique cards).
+	var n := 0
+	for kid in knowledge_correct.keys():
+		if int(knowledge_correct[kid]) > 0:
+			n += 1
+	if n >= 20:
+		return 3
+	if n >= 10:
+		return 2
+	if n >= 5:
+		return 1
+	return 0
+
+
+func knowledge_meta_bonuses() -> Dictionary:
+	## Applied lightly in TD / explore / arena / tower — subway-friendly numbers.
+	var tier := knowledge_progress_tier()
+	return {
+		"tier": tier,
+		"td_start_silver": 5 * tier,
+		"td_atk_mult": 1.0 + 0.02 * float(tier),
+		"explore_shield": 4 * tier,
+		"explore_max_hp": 5 * tier,
+		"auto_combat_atk_mult": 1.0 + 0.015 * float(tier),
+	}
+
+
+func owns_content_pack(pack_id: String) -> bool:
+	if pack_id == "core" or pack_id == "":
+		return true
+	return pack_id in owned_content_packs
+
+
+func unlock_content_pack(pack_id: String) -> void:
+	if pack_id == "" or pack_id in owned_content_packs:
+		return
+	owned_content_packs.append(pack_id)
+	ContentDB.reload()
+	# Demo trail charm auto-unlock when demo pack owned.
+	for g in ContentDB.gear_list:
+		if str(g.get("content_pack", "")) == pack_id and str(g.get("unlock", "")).begins_with("pack_"):
+			unlock_gear(str(g.get("id", "")))
+	meta_changed.emit()
+	persist_meta_keep_checkpoints()
+
+
+func _refresh_morning_buff_for_today() -> void:
+	## Buff expires if the calendar day rolled and quiz was not re-done.
+	if morning_buff_active and morning_buff_day != today_key() and morning_quiz_done_day != today_key():
+		morning_buff_active = false
 
 
 func unlock_unit(uid: String) -> void:
@@ -335,9 +432,15 @@ func can_morning_quiz() -> bool:
 
 func complete_morning_quiz(score: int) -> void:
 	morning_quiz_done_day = today_key()
+	morning_buff_day = today_key()
 	morning_buff_active = score >= 2
 	meta_changed.emit()
 	persist_meta_keep_checkpoints()
+
+
+func is_morning_buff_live() -> bool:
+	_refresh_morning_buff_for_today()
+	return morning_buff_active and morning_buff_day == today_key()
 
 
 func unlock_gear(gid: String) -> void:

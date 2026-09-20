@@ -35,6 +35,11 @@ func _check_files() -> bool:
 		"res://data/content_pack_core/tower.json",
 		"res://data/content_pack_core/knowledge.json",
 		"res://data/content_pack_core/gear.json",
+		"res://data/content_pack_demo_mountain/manifest.json",
+		"res://data/content_pack_demo_mountain/units.json",
+		"res://data/content_pack_demo_mountain/knowledge.json",
+		"res://data/content_pack_demo_mountain/gear.json",
+		"res://data/CONTENT_PACKS.md",
 		"res://scenes/shell/title_screen.tscn",
 		"res://resources/kongfu_theme.tres",
 		"res://THIRD_PARTY.md",
@@ -147,12 +152,32 @@ func _check_json() -> bool:
 	if exclusive_gear < 1:
 		push_error("Need >=1 tower exclusive gear")
 		return false
-	if knowledge["entries"].size() < 15:
-		push_error("Need 15 knowledge entries")
+	if knowledge["entries"].size() < 30:
+		push_error("Need >=30 knowledge entries in core, got %d" % knowledge["entries"].size())
 		return false
-	print("json_ok units=%d named_idle=%d enemies=%d waves=%d nodes=%d mats=%d knowledge=%d arena_pool=%d tower_floors=%d exclusive_gear=%d infinite=%s flank=%s" % [
+	var demo_man = JSON.parse_string(FileAccess.get_file_as_string("res://data/content_pack_demo_mountain/manifest.json"))
+	if typeof(demo_man) != TYPE_DICTIONARY or str(demo_man.get("content_pack", "")) != "demo_mountain":
+		push_error("demo mountain pack manifest missing")
+		return false
+	if not bool(demo_man.get("owned", false)):
+		push_error("demo pack should be owned locally (no IAP)")
+		return false
+	var demo_k = JSON.parse_string(FileAccess.get_file_as_string("res://data/content_pack_demo_mountain/knowledge.json"))
+	var demo_u = JSON.parse_string(FileAccess.get_file_as_string("res://data/content_pack_demo_mountain/units.json"))
+	var demo_g = JSON.parse_string(FileAccess.get_file_as_string("res://data/content_pack_demo_mountain/gear.json"))
+	if demo_k.get("entries", []).size() < 3:
+		push_error("demo pack need >=3 knowledge")
+		return false
+	if demo_u.get("units", []).size() < 1:
+		push_error("demo pack need >=1 unit")
+		return false
+	if demo_g.get("gear", []).size() < 1:
+		push_error("demo pack need >=1 gear")
+		return false
+	print("json_ok units=%d named_idle=%d enemies=%d waves=%d nodes=%d mats=%d knowledge=%d demo_k=%d arena_pool=%d tower_floors=%d exclusive_gear=%d infinite=%s flank=%s" % [
 		units["units"].size(), named, enemies["enemies"].size(), waves["waves"].size(),
 		rooms.get("nodes", []).size(), mats["materials"].size(), knowledge["entries"].size(),
+		demo_k["entries"].size(),
 		arena.get("enemy_pool", []).size(), tower.get("floors", []).size(), exclusive_gear,
 		str(waves.get("infinite", false)), str(has_flank)
 	])
