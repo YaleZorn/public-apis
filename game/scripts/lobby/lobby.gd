@@ -1,5 +1,5 @@
 extends Control
-## Main hub: mode select, roster/gear meta, continue shortcut — ink-mist atmosphere.
+## Main hub: Idle celebrity meta + mode select — ink-mist atmosphere.
 
 const AP := preload("res://scripts/util/art_palette.gd")
 const Atmo := preload("res://scripts/util/atmosphere.gd")
@@ -30,16 +30,25 @@ func _ready() -> void:
 		accent.visible = false
 	title_label.text = "剑阁·大厅"
 	AP.apply_label(title_label, 44, AP.LANTERN_GOLD)
-	subtitle.text = ContentDB.waves_cfg.get("chapter_title", "守卫剑阁 · 无限波")
+	subtitle.text = "Idle 名人花名册 · 守卫剑阁 TD"
 	AP.apply_label(subtitle, 15, AP.MIST_TEAL.lightened(0.22))
-	# M1 stubs: Idle / 爬塔 / 演武 — disabled placeholders (modes land M3–M5).
-	var idle_stub := get_node_or_null("%IdleStubBtn")
+	# M2: Idle hub live; 爬塔 / 演武 remain stubs for M3+.
+	var idle_btn := get_node_or_null("%IdleStubBtn") as Button
 	var tower_stub := get_node_or_null("%TowerStubBtn")
 	var arena_stub := get_node_or_null("%ArenaStubBtn")
-	for stub in [idle_stub, tower_stub, arena_stub]:
+	if idle_btn:
+		idle_btn.disabled = false
+		idle_btn.text = "名人花名册 · Idle"
+		idle_btn.theme_type_variation = &"ButtonPrimary"
+		idle_btn.tooltip_text = "挂机银两/修为/材料 · 训练槽喂 TD"
+		idle_btn.pressed.connect(func():
+			Juice.play_sfx("tap")
+			Juice.fade_transition(func(): GameState.go_idle())
+		)
+	for stub in [tower_stub, arena_stub]:
 		if stub:
 			stub.disabled = true
-			stub.tooltip_text = "M1 范围外 · 大厅入口预留"
+			stub.tooltip_text = "后续里程碑 · 大厅入口预留"
 	AP.apply_richtext(roster_panel, 15)
 	AP.apply_richtext(gear_panel, 14)
 	AP.apply_label(status_label, 13, Color(0.65, 0.72, 0.64, 1))
@@ -58,6 +67,7 @@ func _ready() -> void:
 	_build_settings()
 	Atmo.build_lobby_decor(decor)
 	Juice.start_lobby_music()
+	GameState.refresh_idle_accrual()
 	_refresh()
 	GameState.meta_changed.connect(_refresh)
 	GameState.checkpoint_changed.connect(_refresh)
@@ -68,21 +78,34 @@ func _refresh() -> void:
 	continue_btn.visible = has_resume
 	continue_btn.text = "续关 · %s" % ("塔防" if GameState.resume_target() == "td" else "探索")
 	var unlocked := GameState.unlocked_units.size()
+	var total := ContentDB.unit_list.size()
 	var seen := GameState.knowledge_seen.size()
 	var review := GameState.knowledge_review_queue.size()
 	if seen >= 5 and "gear_jade_token" not in GameState.gear_unlocked:
 		GameState.unlock_gear("gear_jade_token")
+	var pending := GameState.pending_claim_totals()
 	roster_panel.clear()
-	roster_panel.append_text("[b]阵容[/b]  %d/6 已解锁\n" % unlocked)
-	for uid in GameState.unlocked_units:
-		var u: Dictionary = ContentDB.get_unit(uid)
-		var frags := int(GameState.unit_fragments.get(uid, 0))
-		var mastery := int(GameState.hero_mastery.get(uid, 0))
-		var mark := "★" if uid == GameState.explore_hero_id else "·"
-		var bar := _frag_bar(frags)
-		roster_panel.append_text("%s [color=#e6c15a]%s[/color] %s  熟练%d  %s\n" % [
-			mark, u.get("name", uid), u.get("role", "?"), mastery, bar
+	roster_panel.append_text("[b]名人花名册[/b]  %d/%d\n" % [unlocked, total])
+	if pending.silver + pending.xiuwei + pending.materials > 0:
+		roster_panel.append_text("[color=#e6c15a]Idle 待领[/color] 银%d 修为%d 材料%d\n" % [
+			pending.silver, pending.xiuwei, pending.materials
 		])
+	for u in ContentDB.unit_list:
+		var uid := str(u.get("id", ""))
+		var is_on: bool = uid in GameState.unlocked_units
+		var frags := int(GameState.unit_fragments.get(uid, 0))
+		var need := int(u.get("unlock_fragments", 3))
+		var mastery := GameState.effective_mastery(uid)
+		var mark := "★" if uid == GameState.explore_hero_id else "·"
+		if is_on:
+			var bar := _frag_bar(frags)
+			roster_panel.append_text("%s [color=#e6c15a]%s[/color] %s  熟练%d  %s\n" % [
+				mark, u.get("name", uid), u.get("role", "?"), mastery, bar
+			])
+		else:
+			roster_panel.append_text("· [color=#5a6a68]%s[/color] 碎片%d/%d\n" % [
+				u.get("historical_tag", u.get("name", uid)), frags, need
+			])
 	gear_panel.clear()
 	gear_panel.append_text("[b]装备[/b]  器 / 衣 / 饰\n")
 	var slot_names := ["器", "衣", "饰"]
@@ -100,10 +123,9 @@ func _refresh() -> void:
 			gear_panel.append_text("%s %s — %s\n" % [
 				"✓" if equipped else "○", g.get("name", gid), g.get("bonus", "")
 			])
-	status_label.text = "知识 %d/15 · 待复习 %d · 银两仓 %d · TD通关 %d · 探索 %d%s" % [
-		seen, review, GameState.silver_bank,
-		GameState.total_td_clears, GameState.total_explore_clears,
-		" · 晨课 buff" if GameState.morning_buff_active else "",
+	status_label.text = "知识 %d/15 · 待复习 %d · 银两 %d · 修为 %d · 材料 %d · TD通关 %d" % [
+		seen, review, GameState.silver_bank, GameState.xiuwei_bank, GameState.materials_draft,
+		GameState.total_td_clears,
 	]
 	knowledge_btn.text = "知识本 / 晨课" + (" ✦" if GameState.can_morning_quiz() else "")
 	_rebuild_hero_bar()
@@ -124,12 +146,12 @@ func _rebuild_hero_bar() -> void:
 		var unlocked: bool = uid in GameState.unlocked_units
 		var selected: bool = unlocked and uid == GameState.explore_hero_id
 		var wrap := Button.new()
-		wrap.custom_minimum_size = Vector2(92, 118)
+		wrap.custom_minimum_size = Vector2(84, 118)
 		wrap.focus_mode = Control.FOCUS_NONE
 		wrap.clip_contents = true
 		wrap.text = ""
 		wrap.disabled = selected or not unlocked
-		var card := VF.portrait_card(u, Vector2(96, 120), selected)
+		var card := VF.portrait_card(u, Vector2(88, 120), selected)
 		card.position = Vector2(2, 2)
 		card.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		if not unlocked:

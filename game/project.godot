@@ -1,12 +1,12 @@
 ; Engine configuration file.
-; Kongfu Roguelike v0.4.0 — M1 TD graft (infinite waves + flank)
+; Kongfu Roguelike v0.5.0 — M2 Idle celebrity roster
 config_version=5
 
 [application]
 
 config/name="Kongfu Roguelike"
-config/description="竖屏武侠：无限波塔防 + 探索支线 + 健身知识"
-config/version="0.4.0"
+config/description="竖屏武侠：无限波塔防 + Idle 名人花名册 + 探索支线 + 健身知识"
+config/version="0.5.0"
 run/main_scene="res://scenes/shell/title_screen.tscn"
 config/features=PackedStringArray("4.3", "Forward Plus")
 config/icon="res://icon.svg"

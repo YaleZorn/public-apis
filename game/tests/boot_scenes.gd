@@ -3,6 +3,7 @@ extends SceneTree
 var _scenes := [
 	"res://scenes/shell/title_screen.tscn",
 	"res://scenes/lobby/lobby.tscn",
+	"res://scenes/idle/idle_hub.tscn",
 	"res://scenes/td/td_battle.tscn",
 	"res://scenes/explore/explore_run.tscn",
 	"res://scenes/knowledge/knowledge_hub.tscn",

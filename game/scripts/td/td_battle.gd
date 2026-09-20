@@ -516,7 +516,7 @@ func _tick_combat(delta: float) -> void:
 			deployed[slot] = info
 			continue
 		var atk := float(td.get("atk", 10))
-		atk *= 1.0 + 0.02 * int(GameState.hero_mastery.get(info.unit_id, 0))
+		atk *= 1.0 + 0.02 * GameState.effective_mastery(info.unit_id)
 		atk *= _atk_buff_multiplier(info.pos)
 		var armor: float = float(target.get_meta("armor"))
 		var dmg := maxf(1.0, atk - armor * 0.5)

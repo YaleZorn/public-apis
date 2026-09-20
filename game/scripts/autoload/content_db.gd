@@ -1,5 +1,5 @@
 extends Node
-## Loads data-driven content packs (units/enemies/waves/rooms/knowledge).
+## Loads data-driven content packs (units/enemies/waves/rooms/knowledge/idle).
 
 const PACK_ROOT := "res://data/content_pack_core"
 
@@ -14,6 +14,7 @@ var knowledge_list: Array = []
 var knowledge_disclaimer: String = ""
 var gear: Dictionary = {} ## id -> gear dict
 var gear_list: Array = []
+var idle_cfg: Dictionary = {}
 
 
 func _ready() -> void:
@@ -47,6 +48,7 @@ func reload() -> void:
 	for item in g_data.get("gear", []):
 		gear[item["id"]] = item
 		gear_list.append(item)
+	idle_cfg = _load_json("%s/idle.json" % PACK_ROOT)
 
 
 func get_unit(id: String) -> Dictionary:

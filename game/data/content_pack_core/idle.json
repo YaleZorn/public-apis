@@ -1,0 +1,14 @@
+{
+  "content_pack": "core",
+  "title": "名人花名册 · 挂机练功",
+  "subtitle": "离线积攒银两 / 修为 / 材料草稿；训练槽喂 TD 被动",
+  "offline_cap_hours": 8.0,
+  "base_silver_per_hour": 20,
+  "base_xiuwei_per_hour": 6,
+  "base_material_per_hour": 1,
+  "training_slot_count": 2,
+  "claim_min_seconds": 30,
+  "mastery_per_train_level": 2,
+  "fragment_chance_per_train": 0.35,
+  "notes": "无 IAP；产出纯本地计时。数值为草稿，可随 M3 探索回流调参。"
+}
