@@ -87,22 +87,45 @@ func _ready() -> void:
 			hero_id = GameState.unlocked_units[0]
 		_init_hero_stats()
 		node_id = str(ContentDB.rooms_cfg.get("start_node", "settle"))
-		shield = 25 if GameState.morning_buff_active else 0
+		shield = 25 if GameState.is_morning_buff_live() else 0
+		shield += int(GameState.knowledge_meta_bonuses().get("explore_shield", 0))
 		if "gear_bamboo_cup" in GameState.gear_equipped:
 			shield += 10
+		if "gear_demo_trail_charm" in GameState.gear_equipped:
+			shield += 8
 		_apply_explore_hooks()
 		_enter_node()
 	_refresh()
 
 
 func _apply_explore_hooks() -> void:
-	# Knowledge explore_hook: start_shield_small if card seen correctly.
+	## Light knowledge explore_hooks — only once each, subway-friendly numbers.
+	var applied: Dictionary = {}
 	for kid in GameState.knowledge_seen:
-		var entry: Dictionary = ContentDB.get_knowledge(str(kid))
-		if str(entry.get("explore_hook", "")) == "start_shield_small":
-			if int(GameState.knowledge_correct.get(kid, 0)) > 0:
+		if int(GameState.knowledge_correct.get(kid, 0)) <= 0:
+			continue
+		var hook := ContentDB.knowledge_hook(str(kid), "explore")
+		if hook == "" or applied.has(hook):
+			continue
+		applied[hook] = true
+		match hook:
+			"start_shield_small":
 				shield += 12
-				break
+			"heal_on_enter":
+				# Applied as small max-hp pad so first room feels safer.
+				max_hp += 8
+				hp = mini(hp + 8, max_hp)
+			"atk_buff_room":
+				atk *= 1.04
+			"max_hp_small":
+				max_hp += 10
+				hp = mini(hp + 10, max_hp)
+			"energy_room":
+				shield += 6
+			_:
+				pass
+	max_hp += float(GameState.knowledge_meta_bonuses().get("explore_max_hp", 0))
+	hp = mini(hp + float(GameState.knowledge_meta_bonuses().get("explore_max_hp", 0)), max_hp)
 
 
 func _init_hero_stats() -> void:

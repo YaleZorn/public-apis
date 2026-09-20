@@ -107,9 +107,12 @@ func _refresh() -> void:
 	var unlocked := GameState.unlocked_units.size()
 	var total := ContentDB.unit_list.size()
 	var seen := GameState.knowledge_seen.size()
-	var review := GameState.knowledge_review_queue.size()
+	var total_k := ContentDB.knowledge_list.size()
+	var review := GameState.knowledge_due_ids().size()
 	if seen >= 5 and "gear_jade_token" not in GameState.gear_unlocked:
 		GameState.unlock_gear("gear_jade_token")
+	if GameState.owns_content_pack("demo_mountain") and ContentDB.gear.has("gear_demo_trail_charm"):
+		GameState.unlock_gear("gear_demo_trail_charm")
 	var pending := GameState.pending_claim_totals()
 	roster_panel.clear()
 	roster_panel.append_text("[b]名人花名册[/b]  %d/%d\n" % [unlocked, total])
@@ -151,12 +154,15 @@ func _refresh() -> void:
 			gear_panel.append_text("%s %s%s — %s\n" % [
 				"✓" if equipped else "○", g.get("name", gid), exclusive, g.get("bonus", "")
 			])
-	status_label.text = "知识 %d/15 · 银 %d · 修为 %d · 材料 %s · TD%d · 探%d · 演武%d · 塔%d" % [
-		seen, GameState.silver_bank, GameState.xiuwei_bank, GameState.materials_summary(),
+	status_label.text = "知识 %d/%d · 待复 %d · 银 %d · 修为 %d · 材料 %s · TD%d · 探%d · 演武%d · 塔%d · 包[%s]" % [
+		seen, total_k, review, GameState.silver_bank, GameState.xiuwei_bank, GameState.materials_summary(),
 		GameState.total_td_clears, GameState.total_explore_clears,
 		GameState.total_arena_runs, GameState.tower_floor_cleared,
+		",".join(ContentDB.loaded_pack_ids),
 	]
 	knowledge_btn.text = "知识本 / 晨课" + (" ✦" if GameState.can_morning_quiz() else "")
+	if review > 0:
+		knowledge_btn.text += " ·复%d" % review
 	_rebuild_hero_bar()
 	_rebuild_gear_buttons()
 

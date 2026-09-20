@@ -10,104 +10,231 @@
       "id": "settle",
       "type": "settle",
       "label": "山门据点",
-      "map_pos": [0.5, 0.88],
-      "exits": ["herb_slope", "scrap_trail", "bandit_pass"],
+      "map_pos": [
+        0.5,
+        0.88
+      ],
+      "exits": [
+        "herb_slope",
+        "scrap_trail",
+        "bandit_pass"
+      ],
       "blurb": "搜打后回此结算。可打造 / 撤离回大厅。"
     },
     {
       "id": "herb_slope",
       "type": "gather",
       "label": "药草坡",
-      "map_pos": [0.18, 0.62],
-      "materials": { "mat_herb": 2, "mat_wood": 1 },
-      "exits": ["settle", "tea_hut", "narrow_bridge"],
+      "map_pos": [
+        0.18,
+        0.62
+      ],
+      "materials": {
+        "mat_herb": 2,
+        "mat_wood": 1
+      },
+      "exits": [
+        "settle",
+        "tea_hut",
+        "narrow_bridge"
+      ],
       "once": true
     },
     {
       "id": "scrap_trail",
       "type": "gather",
       "label": "弃械小径",
-      "map_pos": [0.82, 0.62],
-      "materials": { "mat_iron": 2, "mat_silk": 1 },
-      "exits": ["settle", "iron_gate", "supply_post"],
+      "map_pos": [
+        0.82,
+        0.62
+      ],
+      "materials": {
+        "mat_iron": 2,
+        "mat_silk": 1
+      },
+      "exits": [
+        "settle",
+        "iron_gate",
+        "supply_post"
+      ],
       "once": true
     },
     {
       "id": "bandit_pass",
       "type": "combat",
       "label": "山口流寇",
-      "map_pos": [0.5, 0.68],
-      "enemies": ["enemy_bandit", "enemy_bandit"],
-      "loot": { "mat_iron": 1 },
+      "map_pos": [
+        0.5,
+        0.68
+      ],
+      "enemies": [
+        "enemy_bandit",
+        "enemy_bandit"
+      ],
+      "loot": {
+        "mat_iron": 1
+      },
       "fragments": 1,
-      "exits": ["settle", "tea_hut", "narrow_bridge"]
+      "exits": [
+        "settle",
+        "tea_hut",
+        "narrow_bridge"
+      ]
     },
     {
       "id": "tea_hut",
       "type": "event",
       "label": "茶棚歇脚",
-      "map_pos": [0.22, 0.38],
+      "map_pos": [
+        0.22,
+        0.38
+      ],
       "knowledge_card": "k_carbs_timing",
-      "exits": ["herb_slope", "narrow_bridge", "cliff_breath"]
+      "exits": [
+        "herb_slope",
+        "narrow_bridge",
+        "cliff_breath",
+        "scroll_stone"
+      ]
     },
     {
       "id": "narrow_bridge",
       "type": "combat",
       "label": "窄桥快刀",
-      "map_pos": [0.5, 0.42],
-      "enemies": ["enemy_runner", "enemy_bandit"],
-      "loot": { "mat_silk": 1, "mat_herb": 1 },
+      "map_pos": [
+        0.5,
+        0.42
+      ],
+      "enemies": [
+        "enemy_runner",
+        "enemy_bandit"
+      ],
+      "loot": {
+        "mat_silk": 1,
+        "mat_herb": 1
+      },
       "fragments": 1,
-      "exits": ["tea_hut", "cliff_breath", "iron_gate"]
+      "exits": [
+        "tea_hut",
+        "cliff_breath",
+        "iron_gate"
+      ]
     },
     {
       "id": "cliff_breath",
       "type": "train",
       "label": "崖边吐纳",
-      "map_pos": [0.28, 0.18],
+      "map_pos": [
+        0.28,
+        0.18
+      ],
       "heal": 30,
-      "exits": ["tea_hut", "jade_cache", "supply_post"]
+      "exits": [
+        "tea_hut",
+        "jade_cache",
+        "supply_post",
+        "scroll_stone"
+      ]
     },
     {
       "id": "iron_gate",
       "type": "combat",
       "label": "关前铁盾",
-      "map_pos": [0.78, 0.38],
-      "enemies": ["enemy_shield", "enemy_bandit"],
-      "loot": { "mat_iron": 2 },
+      "map_pos": [
+        0.78,
+        0.38
+      ],
+      "enemies": [
+        "enemy_shield",
+        "enemy_bandit"
+      ],
+      "loot": {
+        "mat_iron": 2
+      },
       "fragments": 1,
-      "exits": ["scrap_trail", "narrow_bridge", "supply_post"]
+      "exits": [
+        "scrap_trail",
+        "narrow_bridge",
+        "supply_post"
+      ]
     },
     {
       "id": "supply_post",
       "type": "supply",
       "label": "驿站补给",
-      "map_pos": [0.72, 0.18],
+      "map_pos": [
+        0.72,
+        0.18
+      ],
       "heal": 35,
       "silver": 20,
-      "materials": { "mat_wood": 1 },
-      "exits": ["iron_gate", "jade_cache", "settle"]
+      "materials": {
+        "mat_wood": 1
+      },
+      "exits": [
+        "iron_gate",
+        "jade_cache",
+        "settle"
+      ]
     },
     {
       "id": "jade_cache",
       "type": "loot",
       "label": "玉屑密龛",
-      "map_pos": [0.5, 0.12],
-      "materials": { "mat_jade_chip": 1, "mat_silk": 1 },
+      "map_pos": [
+        0.5,
+        0.12
+      ],
+      "materials": {
+        "mat_jade_chip": 1,
+        "mat_silk": 1
+      },
       "fragments": 2,
-      "exits": ["cliff_breath", "supply_post", "foregate"],
+      "exits": [
+        "cliff_breath",
+        "supply_post",
+        "foregate"
+      ],
       "once": true
     },
     {
       "id": "foregate",
       "type": "combat",
       "label": "剑阁前哨",
-      "map_pos": [0.5, 0.02],
-      "enemies": ["enemy_runner", "enemy_shield", "enemy_bandit"],
-      "loot": { "mat_jade_chip": 1, "mat_iron": 1 },
+      "map_pos": [
+        0.5,
+        0.02
+      ],
+      "enemies": [
+        "enemy_runner",
+        "enemy_shield",
+        "enemy_bandit"
+      ],
+      "loot": {
+        "mat_jade_chip": 1,
+        "mat_iron": 1
+      },
       "fragments": 2,
-      "exits": ["jade_cache", "settle"],
+      "exits": [
+        "jade_cache",
+        "settle"
+      ],
       "boss": true
+    },
+    {
+      "id": "scroll_stone",
+      "type": "event",
+      "label": "石上功法笺",
+      "map_pos": [
+        0.08,
+        0.28
+      ],
+      "knowledge_card": "k_sleep",
+      "exits": [
+        "tea_hut",
+        "cliff_breath",
+        "herb_slope"
+      ]
     }
   ]
 }

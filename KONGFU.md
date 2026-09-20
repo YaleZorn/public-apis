@@ -1,3 +1,3 @@
-# Kongfu Roguelike (Godot) — M4 演武 + M5 爬塔 v0.8.0
+# Kongfu Roguelike (Godot) — M6 知识 + content_pack v0.9.0
 
-See `game/README.md` and `game/THIRD_PARTY.md` for run / smoke / OSS attribution.
+See `game/README.md`, `game/data/CONTENT_PACKS.md`, and `game/THIRD_PARTY.md`.

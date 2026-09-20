@@ -2,7 +2,7 @@ extends Node
 ## Local single-slot save with version migration. Checkpoints at wave/room/lobby.
 
 const SAVE_PATH := "user://kongfu_save_v0.json"
-const SAVE_VERSION := 4
+const SAVE_VERSION := 5
 
 signal save_written
 signal save_loaded
@@ -89,4 +89,16 @@ func _migrate(data: Dictionary) -> Dictionary:
 		if not data.has("tower_checkpoint"):
 			data["tower_checkpoint"] = {}
 		data["save_version"] = 4
+		v = 4
+	if v < 5:
+		# M6 knowledge spaced review + content_pack ownership list.
+		var meta5: Dictionary = data.get("meta", {})
+		if not meta5.has("knowledge_due"):
+			meta5["knowledge_due"] = {}
+		if not meta5.has("morning_buff_day"):
+			meta5["morning_buff_day"] = int(meta5.get("morning_quiz_done_day", -1))
+		if not meta5.has("owned_content_packs"):
+			meta5["owned_content_packs"] = ["demo_mountain"]
+		data["meta"] = meta5
+		data["save_version"] = 5
 	return data

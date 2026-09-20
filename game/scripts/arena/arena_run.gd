@@ -1,7 +1,6 @@
 extends Control
 ## M4 演武场：生存 ramp · 复用自动战环 · 随时下场结算修为/熟练度。
 
-const KnowledgeCardScene := preload("res://scenes/knowledge/knowledge_card.tscn")
 const ResultOverlayScene := preload("res://scenes/ui/result_overlay.tscn")
 const AutoCombatRing := preload("res://scripts/combat/auto_combat_ring.gd")
 const Atmo := preload("res://scripts/util/atmosphere.gd")
@@ -68,10 +67,13 @@ func _ready() -> void:
 	spawn_interval = float(cfg.get("spawn_interval_start", 2.4))
 	spawn_cd = 0.6
 	var shield := 0.0
-	if GameState.morning_buff_active:
+	if GameState.is_morning_buff_live():
 		shield += float(cfg.get("morning_shield", 20))
+	shield += float(GameState.knowledge_meta_bonuses().get("explore_shield", 0))
 	if "gear_bamboo_cup" in GameState.gear_equipped:
 		shield += float(cfg.get("bamboo_shield", 10))
+	if "gear_demo_trail_charm" in GameState.gear_equipped:
+		shield += 8.0
 	var hero := GameState.explore_hero_id
 	if hero not in GameState.unlocked_units and not GameState.unlocked_units.is_empty():
 		hero = GameState.unlocked_units[0]

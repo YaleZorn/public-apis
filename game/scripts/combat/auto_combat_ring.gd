@@ -46,6 +46,10 @@ func init_hero(uid: String, start_shield: float = 0.0) -> void:
 	# Tower exclusive gear hook (data-driven; explore pool never grants this id).
 	if "gear_tower_blade" in GameState.gear_equipped:
 		atk *= 1.08
+	var kb: Dictionary = GameState.knowledge_meta_bonuses()
+	atk *= float(kb.get("auto_combat_atk_mult", 1.0))
+	max_hp += float(kb.get("explore_max_hp", 0))
+	hp = max_hp
 	attack_interval = float(ex.get("attack_interval", 0.7))
 	skill = ex.get("active", {}).duplicate(true)
 	shield = start_shield

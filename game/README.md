@@ -1,16 +1,17 @@
-# Kongfu Roguelike — M4 演武场 + M5 爬塔（v0.8.0）
+# Kongfu Roguelike — M6 知识加深 + content_pack 接缝（v0.9.0）
 
-竖屏、离线武侠健身题材。叠在 M3 搜打撤之上：
+竖屏、离线武侠健身题材。叠在 M4/M5 五模式基线之上：
 
-- **M4 演武场**：生存 ramp · 自动普攻+主动技 · 随时下场结算修为/熟练度
-- **M5 爬塔**：纵向层表 · 清层进阶 · 层间存档 · 后期专属装备（与探索池分离）
+- **知识产品化**：32+ 张可用健身卡（饮食/训练/作息）· 知识本筛选 · 晨课 · **间隔复习队列** · 进度喂微小 meta buff
+- **content_pack 接缝**：多包扫描合并 · 本地 `owned`（无 IAP）· 仓库内 **演示包 · 山野补遗**（花木兰 / 4 知识 / 行囊符）
 
 设计依据（Project store）：
 - `docs/gameplay-design.md`
 - `docs/project-context.md`
 - `docs/base-game-candidates.md`
 
-第三方声明：见 [`THIRD_PARTY.md`](./THIRD_PARTY.md)（合法 OSS only）。
+包协议说明：[`data/CONTENT_PACKS.md`](./data/CONTENT_PACKS.md)  
+第三方声明：[`THIRD_PARTY.md`](./THIRD_PARTY.md)（合法 OSS only）。
 
 ## 要求
 
@@ -26,24 +27,25 @@ godot4 --path .
 godot --path . --rendering-driver opengl3
 ```
 
-### 演武场怎么玩
+### 知识本 / 晨课 / 复习
 
-1. 大厅选英雄肖像 → **演武场 · 生存练功**
-2. 敌人持续刷出并随时间变强；自动普攻，点主动技
-3. 右上墨雾肖像 + 存活/击杀 HUD
-4. 随时 **下场结算**（或力竭）→ 熟练度 / 修为 / 少量银两入库
-5. 软存档约每 5s；大厅可续关演武
+1. 大厅 → **知识本 / 晨课**（有待复习时按钮带 ·复N）
+2. 主题筛选：全部 / 训练 / 饮食 / 作息 / 待复习
+3. **晨课测验**每日 3 题（优先抽到期/错题）；答对 ≥2 → 当日轻量 buff
+4. **间隔复习**：错题立即到期，答对按 1/3/7 天推迟；单独复习会话最多 5 题
+5. 局内：TD 波间功法笺、探索事件、爬塔层间笺；学会的 hook 给微小银两/护盾/攻击
 
-### 爬塔怎么玩
+### 演示 DLC 包
 
-1. 大厅选英雄 → **爬塔 · 纵向进度**
-2. 清当前层敌人 → 层奖（材料/碎片/武学草稿）
-3. **下一层** 或 **存档并回大厅**（层间可中断）
-4. 第 5 层起可掉 **剑阁残锋**（`pool: tower_exclusive`，不进探索掉落）
+- 路径：`data/content_pack_demo_mountain/`
+- 本地 `owned: true`，无商店计费
+- 合并后大厅花名册可见 **花木兰**（碎片解锁）、知识本出现山野主题卡、可装备 **山野行囊符**
 
-### 探索 / TD / Idle
+新增包步骤见 `data/CONTENT_PACKS.md`。
 
-仍按原路径：大厅新局塔防、探索搜打撤、名人花名册 Idle。
+### 五模式
+
+仍按原路径：TD 无限波、Idle 名人、探索搜打撤、演武场、爬塔。
 
 ## 冒烟
 
@@ -56,5 +58,4 @@ godot --headless --path . --script res://tests/gameplay_smoke.gd
 
 ## 截图
 
-- Project store `media/m4-arena/`
-- Project store `media/m5-tower/`
+- Project store `media/m6-knowledge-dlc/`
