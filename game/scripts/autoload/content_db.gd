@@ -1,5 +1,5 @@
 extends Node
-## Loads data-driven content packs (units/enemies/waves/rooms/knowledge/idle).
+## Loads data-driven content packs (units/enemies/waves/rooms/knowledge/idle/materials).
 
 const PACK_ROOT := "res://data/content_pack_core"
 
@@ -15,6 +15,9 @@ var knowledge_disclaimer: String = ""
 var gear: Dictionary = {} ## id -> gear dict
 var gear_list: Array = []
 var idle_cfg: Dictionary = {}
+var materials: Dictionary = {} ## id -> material dict
+var material_list: Array = []
+var recipes: Array = [] ## craft recipe dicts
 
 
 func _ready() -> void:
@@ -49,6 +52,15 @@ func reload() -> void:
 		gear[item["id"]] = item
 		gear_list.append(item)
 	idle_cfg = _load_json("%s/idle.json" % PACK_ROOT)
+	materials.clear()
+	material_list.clear()
+	recipes.clear()
+	var m_data: Dictionary = _load_json("%s/materials.json" % PACK_ROOT)
+	for item in m_data.get("materials", []):
+		materials[item["id"]] = item
+		material_list.append(item)
+	for r in m_data.get("recipes", []):
+		recipes.append(r)
 
 
 func get_unit(id: String) -> Dictionary:
@@ -65,6 +77,17 @@ func get_knowledge(id: String) -> Dictionary:
 
 func get_gear(id: String) -> Dictionary:
 	return gear.get(id, {})
+
+
+func get_material(id: String) -> Dictionary:
+	return materials.get(id, {})
+
+
+func get_node_cfg(node_id: String) -> Dictionary:
+	for n in rooms_cfg.get("nodes", []):
+		if str(n.get("id", "")) == node_id:
+			return n
+	return {}
 
 
 func owned_pack() -> bool:

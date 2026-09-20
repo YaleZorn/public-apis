@@ -30,9 +30,9 @@ func _ready() -> void:
 		accent.visible = false
 	title_label.text = "剑阁·大厅"
 	AP.apply_label(title_label, 44, AP.LANTERN_GOLD)
-	subtitle.text = "Idle 名人花名册 · 守卫剑阁 TD"
+	subtitle.text = "Idle 名人 · 守卫剑阁 TD · 荒山搜打撤"
 	AP.apply_label(subtitle, 15, AP.MIST_TEAL.lightened(0.22))
-	# M2: Idle hub live; 爬塔 / 演武 remain stubs for M3+.
+	# M3: Explore 搜打撤 live; 爬塔 / 演武 remain stubs for M4+.
 	var idle_btn := get_node_or_null("%IdleStubBtn") as Button
 	var tower_stub := get_node_or_null("%TowerStubBtn")
 	var arena_stub := get_node_or_null("%ArenaStubBtn")
@@ -49,6 +49,8 @@ func _ready() -> void:
 		if stub:
 			stub.disabled = true
 			stub.tooltip_text = "后续里程碑 · 大厅入口预留"
+	new_explore_btn.text = "新局 · 探索搜打撤"
+	new_explore_btn.tooltip_text = "荒山节点：搜材料 → 打遭遇 → 撤据点结算"
 	AP.apply_richtext(roster_panel, 15)
 	AP.apply_richtext(gear_panel, 14)
 	AP.apply_label(status_label, 13, Color(0.65, 0.72, 0.64, 1))
@@ -123,9 +125,9 @@ func _refresh() -> void:
 			gear_panel.append_text("%s %s — %s\n" % [
 				"✓" if equipped else "○", g.get("name", gid), g.get("bonus", "")
 			])
-	status_label.text = "知识 %d/15 · 待复习 %d · 银两 %d · 修为 %d · 材料 %d · TD通关 %d" % [
-		seen, review, GameState.silver_bank, GameState.xiuwei_bank, GameState.materials_draft,
-		GameState.total_td_clears,
+	status_label.text = "知识 %d/15 · 银 %d · 修为 %d · 材料 %s · TD%d · 探索通关 %d" % [
+		seen, GameState.silver_bank, GameState.xiuwei_bank, GameState.materials_summary(),
+		GameState.total_td_clears, GameState.total_explore_clears,
 	]
 	knowledge_btn.text = "知识本 / 晨课" + (" ✦" if GameState.can_morning_quiz() else "")
 	_rebuild_hero_bar()

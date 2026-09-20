@@ -1,5 +1,5 @@
 extends SceneTree
-## Headless gameplay smoke: Idle claim/train + TD place/wave (M1+M2).
+## Headless gameplay smoke: Idle + TD + Explore 搜打撤 (M1–M3).
 
 var _td: Node = null
 
@@ -15,6 +15,9 @@ func _start() -> void:
 	if not await _smoke_td():
 		quit(1)
 		return
+	if not await _smoke_explore():
+		quit(1)
+		return
 	print("GAMEPLAY_SMOKE_OK")
 	quit(0)
 
@@ -24,7 +27,6 @@ func _smoke_idle() -> bool:
 	if gs == null:
 		push_error("GameState missing")
 		return false
-	# Simulate offline time so claim has something to do.
 	gs.idle_last_unix = Time.get_unix_time_from_system() - 3600.0
 	gs.idle_pending_silver = 0.0
 	gs.idle_pending_xiuwei = 0.0
@@ -95,4 +97,68 @@ func _smoke_td() -> bool:
 		return false
 	print("td_ok flank_pts=", _td.flank_path_points.size())
 	_td.queue_free()
+	return true
+
+
+func _smoke_explore() -> bool:
+	var gs = root.get_node_or_null("GameState")
+	if gs == null:
+		push_error("GameState missing")
+		return false
+	gs.explore_checkpoint = {}
+	gs.explore_hero_id = "unit_feidao"
+	var packed = load("res://scenes/explore/explore_run.tscn")
+	if packed == null:
+		push_error("explore scene missing")
+		return false
+	var ex = packed.instantiate()
+	root.add_child(ex)
+	await create_timer(0.6).timeout
+	if str(ex.node_id) != "settle":
+		push_error("explore should start at settle, got %s" % ex.node_id)
+		return false
+	ex._travel_to("herb_slope")
+	await create_timer(0.55).timeout
+	if ex.bag.total_count() <= 0:
+		push_error("gather did not fill bag")
+		return false
+	var bag_before: int = int(ex.bag.total_count())
+	ex._travel_to("bandit_pass")
+	await create_timer(0.5).timeout
+	if not ex.combat_active:
+		push_error("combat did not start")
+		return false
+	for e in ex.enemies.duplicate():
+		e.hp = 0
+		if e.node:
+			e.node.queue_free()
+	ex.enemies.clear()
+	ex._on_combat_cleared()
+	await create_timer(0.25).timeout
+	if not ex.node_completed:
+		push_error("combat clear failed")
+		return false
+	ex._persist()
+	if gs.explore_checkpoint.is_empty():
+		push_error("explore checkpoint missing")
+		return false
+	if not gs.explore_checkpoint.has("bag"):
+		push_error("checkpoint missing bag")
+		return false
+	ex._settle_run(1.0, "测试撤离", "smoke", false)
+	await create_timer(0.2).timeout
+	if gs.materials_inv.is_empty() and bag_before > 0:
+		push_error("withdraw did not deposit materials")
+		return false
+	var kept: Dictionary = gs.deposit_run_bag({"mat_iron": 10}, 0.4)
+	if int(kept.get("mat_iron", 0)) != 4:
+		push_error("fail keep ratio expected 4 got %s" % kept)
+		return false
+	gs.add_material("mat_silk", 5)
+	gs.add_material("mat_herb", 5)
+	if not gs.can_craft("craft_linen_wrap") and "gear_linen_wrap" not in gs.gear_unlocked:
+		push_error("craft setup failed")
+		return false
+	print("explore_ok bag_was=", bag_before, " inv=", gs.materials_summary())
+	ex.queue_free()
 	return true

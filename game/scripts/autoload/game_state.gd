@@ -23,7 +23,9 @@ var total_td_clears: int = 0
 var total_explore_clears: int = 0
 var silver_bank: int = 0
 var xiuwei_bank: int = 0
-var materials_draft: int = 0
+var materials_draft: int = 0 ## aggregate draft count (Idle claim + explore deposit sum)
+var materials_inv: Dictionary = {} ## material_id -> int (shared meta from 搜打撤)
+var wuxue_drafts: int = 0 ## thin craft / 武学草稿 counter
 var gear_unlocked: Array = [] ## gear ids earned from clears
 var gear_equipped: Array = ["", "", ""] ## 3 slots: 器/衣/饰
 
@@ -98,6 +100,10 @@ func _apply_meta(meta: Dictionary) -> void:
 	silver_bank = int(meta.get("silver_bank", 0))
 	xiuwei_bank = int(meta.get("xiuwei_bank", 0))
 	materials_draft = int(meta.get("materials_draft", 0))
+	materials_inv = meta.get("materials_inv", {})
+	if typeof(materials_inv) != TYPE_DICTIONARY:
+		materials_inv = {}
+	wuxue_drafts = int(meta.get("wuxue_drafts", 0))
 	gear_unlocked = meta.get("gear_unlocked", gear_unlocked)
 	gear_equipped = meta.get("gear_equipped", gear_equipped)
 	if gear_equipped.size() < 3:
@@ -137,6 +143,8 @@ func export_meta() -> Dictionary:
 		"silver_bank": silver_bank,
 		"xiuwei_bank": xiuwei_bank,
 		"materials_draft": materials_draft,
+		"materials_inv": materials_inv.duplicate(),
+		"wuxue_drafts": wuxue_drafts,
 		"gear_unlocked": gear_unlocked.duplicate(),
 		"gear_equipped": gear_equipped.duplicate(),
 		"idle_last_unix": idle_last_unix,
@@ -270,6 +278,97 @@ func unlock_gear(gid: String) -> void:
 		meta_changed.emit()
 
 
+func add_material(mat_id: String, amount: int) -> void:
+	if mat_id == "" or amount == 0:
+		return
+	materials_inv[mat_id] = maxi(0, int(materials_inv.get(mat_id, 0)) + amount)
+	# Keep scalar draft in sync for lobby status line / Idle UX.
+	var total := 0
+	for k in materials_inv.keys():
+		total += int(materials_inv[k])
+	materials_draft = total
+	meta_changed.emit()
+
+
+func add_materials_dict(loot: Dictionary) -> void:
+	for k in loot.keys():
+		add_material(str(k), int(loot[k]))
+
+
+func material_count(mat_id: String) -> int:
+	return int(materials_inv.get(mat_id, 0))
+
+
+func materials_summary() -> String:
+	if materials_inv.is_empty():
+		return "无"
+	var parts: PackedStringArray = []
+	for k in materials_inv.keys():
+		var n := int(materials_inv[k])
+		if n <= 0:
+			continue
+		var name := str(ContentDB.get_material(str(k)).get("name", k))
+		parts.append("%s×%d" % [name, n])
+	return " · ".join(parts) if not parts.is_empty() else "无"
+
+
+## Deposit run bag into shared meta. keep_ratio < 1 = failure / mid-flee penalty.
+func deposit_run_bag(bag: Dictionary, keep_ratio: float = 1.0) -> Dictionary:
+	var deposited := {}
+	var r := clampf(keep_ratio, 0.0, 1.0)
+	for k in bag.keys():
+		var raw := int(bag[k])
+		var keep := int(floor(float(raw) * r)) if r < 1.0 else raw
+		if keep > 0:
+			add_material(str(k), keep)
+			deposited[str(k)] = keep
+	return deposited
+
+
+func can_craft(recipe_id: String) -> bool:
+	var recipe := _find_recipe(recipe_id)
+	if recipe.is_empty():
+		return false
+	var cost: Dictionary = recipe.get("cost", {})
+	for k in cost.keys():
+		if material_count(str(k)) < int(cost[k]):
+			return false
+	var unlock := str(recipe.get("unlock_gear", ""))
+	if unlock != "" and unlock in gear_unlocked:
+		return false
+	return true
+
+
+func craft_recipe(recipe_id: String, hero_id: String = "") -> Dictionary:
+	if not can_craft(recipe_id):
+		return {"ok": false, "reason": "缺料或已拥有"}
+	var recipe := _find_recipe(recipe_id)
+	var cost: Dictionary = recipe.get("cost", {})
+	for k in cost.keys():
+		add_material(str(k), -int(cost[k]))
+	var unlock := str(recipe.get("unlock_gear", ""))
+	if unlock != "":
+		unlock_gear(unlock)
+	var xiu := int(recipe.get("add_xiuwei", 0))
+	if xiu > 0:
+		xiuwei_bank += xiu
+	var mast := int(recipe.get("add_mastery_selected", 0))
+	var hid := hero_id if hero_id != "" else explore_hero_id
+	if mast > 0 and hid != "":
+		add_mastery(hid, mast)
+		wuxue_drafts += 1
+	persist_meta_keep_checkpoints()
+	meta_changed.emit()
+	return {"ok": true, "recipe": recipe}
+
+
+func _find_recipe(recipe_id: String) -> Dictionary:
+	for r in ContentDB.recipes:
+		if str(r.get("id", "")) == recipe_id:
+			return r
+	return {}
+
+
 func equip_gear(slot: int, gid: String) -> void:
 	if slot < 0 or slot >= 3:
 		return
@@ -349,7 +448,9 @@ func claim_idle() -> Dictionary:
 	var got := pending_claim_totals()
 	silver_bank += int(got.silver)
 	xiuwei_bank += int(got.xiuwei)
-	materials_draft += int(got.materials)
+	# Idle forage → typed wood so explore craft / meta share one inventory.
+	if int(got.materials) > 0:
+		add_material("mat_wood", int(got.materials))
 	idle_pending_silver -= float(got.silver)
 	idle_pending_xiuwei -= float(got.xiuwei)
 	idle_pending_materials -= float(got.materials)

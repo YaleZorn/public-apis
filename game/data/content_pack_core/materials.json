@@ -1,0 +1,64 @@
+{
+  "content_pack": "core",
+  "materials": [
+    {
+      "id": "mat_herb",
+      "name": "药草",
+      "tag": "采",
+      "blurb": "山坡野草，喂装备与武学草稿。",
+      "color": "#6a9a5a"
+    },
+    {
+      "id": "mat_wood",
+      "name": "枯枝",
+      "tag": "采",
+      "blurb": "篝火与简易木甲的底料。",
+      "color": "#8a6a3a"
+    },
+    {
+      "id": "mat_iron",
+      "name": "废铁",
+      "tag": "搜",
+      "blurb": "流寇弃械碎片，打造器类。",
+      "color": "#7a8490"
+    },
+    {
+      "id": "mat_silk",
+      "name": "残帛",
+      "tag": "搜",
+      "blurb": "衣饰缝补与护腕草稿。",
+      "color": "#c8b070"
+    },
+    {
+      "id": "mat_jade_chip",
+      "name": "玉屑",
+      "tag": "稀",
+      "blurb": "武学定稿与饰品钩子。",
+      "color": "#5a9a90"
+    }
+  ],
+  "recipes": [
+    {
+      "id": "craft_linen_wrap",
+      "name": "麻布护腕",
+      "cost": { "mat_silk": 2, "mat_herb": 1 },
+      "unlock_gear": "gear_linen_wrap",
+      "blurb": "衣槽装备 · 探索材料打造"
+    },
+    {
+      "id": "craft_wuxue_draft",
+      "name": "武学草稿·吐纳",
+      "cost": { "mat_herb": 3, "mat_wood": 1 },
+      "add_xiuwei": 25,
+      "add_mastery_selected": 1,
+      "blurb": "修为 +25 · 当前探索英雄熟练 +1"
+    },
+    {
+      "id": "craft_jade_chip_token",
+      "name": "玉屑信物草稿",
+      "cost": { "mat_jade_chip": 2, "mat_iron": 1 },
+      "unlock_gear": "gear_jade_token",
+      "blurb": "饰槽 · 稀有材料合成"
+    }
+  ]
+}
