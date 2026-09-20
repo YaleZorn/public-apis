@@ -1,3 +1,3 @@
-# Kongfu Roguelike (Godot) — art ship v0.3.5
+# Kongfu Roguelike (Godot) — M1 TD graft v0.4.0
 
-See `game/README.md` for run / smoke / art notes.
+See `game/README.md` and `game/THIRD_PARTY.md` for run / smoke / OSS attribution.
