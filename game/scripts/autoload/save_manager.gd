@@ -2,7 +2,7 @@ extends Node
 ## Local single-slot save with version migration. Checkpoints at wave/room/lobby.
 
 const SAVE_PATH := "user://kongfu_save_v0.json"
-const SAVE_VERSION := 1
+const SAVE_VERSION := 2
 
 signal save_written
 signal save_loaded
@@ -41,5 +41,26 @@ func _migrate(data: Dictionary) -> Dictionary:
 	var v := int(data.get("save_version", 0))
 	if v < 1:
 		data["save_version"] = 1
-	# Future migrations chain here by content_pack / schema version.
+		v = 1
+	if v < 2:
+		# M2 Idle: ensure meta keys exist; accrual starts from saved_at or now.
+		var meta: Dictionary = data.get("meta", {})
+		if not meta.has("xiuwei_bank"):
+			meta["xiuwei_bank"] = 0
+		if not meta.has("materials_draft"):
+			meta["materials_draft"] = 0
+		if not meta.has("training_level"):
+			meta["training_level"] = {}
+		if not meta.has("training_slots"):
+			meta["training_slots"] = []
+		if not meta.has("idle_last_unix"):
+			meta["idle_last_unix"] = float(data.get("saved_at", Time.get_unix_time_from_system()))
+		if not meta.has("idle_pending_silver"):
+			meta["idle_pending_silver"] = 0.0
+		if not meta.has("idle_pending_xiuwei"):
+			meta["idle_pending_xiuwei"] = 0.0
+		if not meta.has("idle_pending_materials"):
+			meta["idle_pending_materials"] = 0.0
+		data["meta"] = meta
+		data["save_version"] = 2
 	return data

@@ -18,11 +18,13 @@ func _check_files() -> bool:
 	var paths := [
 		"res://project.godot",
 		"res://scenes/lobby/lobby.tscn",
+		"res://scenes/idle/idle_hub.tscn",
 		"res://scenes/td/td_battle.tscn",
 		"res://scenes/explore/explore_run.tscn",
 		"res://scenes/knowledge/knowledge_hub.tscn",
 		"res://scenes/knowledge/knowledge_card.tscn",
 		"res://data/content_pack_core/units.json",
+		"res://data/content_pack_core/idle.json",
 		"res://data/content_pack_core/enemies.json",
 		"res://data/content_pack_core/waves.json",
 		"res://data/content_pack_core/rooms.json",
@@ -32,6 +34,7 @@ func _check_files() -> bool:
 		"res://resources/kongfu_theme.tres",
 		"res://THIRD_PARTY.md",
 		"res://scripts/td/wave_director.gd",
+		"res://scripts/idle/idle_hub.gd",
 		"res://third_party/ape1121-godot-4-tower-defense-template/LICENSE",
 	]
 	for p in paths:
@@ -50,6 +53,28 @@ func _check_json() -> bool:
 	var knowledge = JSON.parse_string(FileAccess.get_file_as_string("res://data/content_pack_core/knowledge.json"))
 	if units["units"].size() < 6:
 		push_error("Need 6 units")
+		return false
+	# M2: named celebrities (not anonymous blobs) + idle rates.
+	var named := 0
+	for u in units["units"]:
+		var n := str(u.get("name", ""))
+		if n == "" or "护卫" in n or "弟子" in n or "学徒" in n:
+			# Allow only if historical_tag present — but prefer real names.
+			pass
+		if str(u.get("historical_tag", "")) != "" and u.has("idle"):
+			named += 1
+		if not u.has("idle"):
+			push_error("Unit missing idle block: %s" % u.get("id", "?"))
+			return false
+	if named < 6:
+		push_error("Need >=6 named celebrities with historical_tag+idle, got %d" % named)
+		return false
+	var idle = JSON.parse_string(FileAccess.get_file_as_string("res://data/content_pack_core/idle.json"))
+	if typeof(idle) != TYPE_DICTIONARY or float(idle.get("offline_cap_hours", 0)) <= 0:
+		push_error("idle.json missing or invalid cap")
+		return false
+	if int(idle.get("training_slot_count", 0)) < 1:
+		push_error("Need training slots")
 		return false
 	if enemies["enemies"].size() < 3:
 		push_error("Need 3 enemies")
@@ -77,8 +102,8 @@ func _check_json() -> bool:
 	if knowledge["entries"].size() < 15:
 		push_error("Need 15 knowledge entries")
 		return false
-	print("json_ok units=%d enemies=%d waves=%d rooms=%d knowledge=%d infinite=%s flank=%s" % [
-		units["units"].size(), enemies["enemies"].size(), waves["waves"].size(),
+	print("json_ok units=%d named_idle=%d enemies=%d waves=%d rooms=%d knowledge=%d infinite=%s flank=%s" % [
+		units["units"].size(), named, enemies["enemies"].size(), waves["waves"].size(),
 		rooms["rooms"].size(), knowledge["entries"].size(),
 		str(waves.get("infinite", false)), str(has_flank)
 	])
