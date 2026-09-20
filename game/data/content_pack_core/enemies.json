@@ -9,6 +9,7 @@
       "armor": 0,
       "reward": 12,
       "leak_damage": 1,
+      "difficulty": 1.0,
       "color": "#a0522d",
       "tags": ["melee", "swarm"]
     },
@@ -20,6 +21,7 @@
       "armor": 8,
       "reward": 22,
       "leak_damage": 2,
+      "difficulty": 3.0,
       "color": "#5d6d7e",
       "tags": ["armored", "slow"]
     },
@@ -31,6 +33,7 @@
       "armor": 0,
       "reward": 16,
       "leak_damage": 1,
+      "difficulty": 2.0,
       "color": "#e74c3c",
       "tags": ["fast", "priority"]
     }

@@ -1,12 +1,12 @@
 ; Engine configuration file.
-; Kongfu Roguelike v0.3.5 — art ship
+; Kongfu Roguelike v0.4.0 — M1 TD graft (infinite waves + flank)
 config_version=5
 
 [application]
 
 config/name="Kongfu Roguelike"
-config/description="竖屏武侠：塔防主线 + 探索支线 + 健身知识"
-config/version="0.3.5"
+config/description="竖屏武侠：无限波塔防 + 探索支线 + 健身知识"
+config/version="0.4.0"
 run/main_scene="res://scenes/shell/title_screen.tscn"
 config/features=PackedStringArray("4.3", "Forward Plus")
 config/icon="res://icon.svg"

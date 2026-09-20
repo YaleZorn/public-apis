@@ -30,8 +30,16 @@ func _ready() -> void:
 		accent.visible = false
 	title_label.text = "剑阁·大厅"
 	AP.apply_label(title_label, 44, AP.LANTERN_GOLD)
-	subtitle.text = ContentDB.waves_cfg.get("chapter_title", "守卫剑阁 · 栈道夜行")
+	subtitle.text = ContentDB.waves_cfg.get("chapter_title", "守卫剑阁 · 无限波")
 	AP.apply_label(subtitle, 15, AP.MIST_TEAL.lightened(0.22))
+	# M1 stubs: Idle / 爬塔 / 演武 — disabled placeholders (modes land M3–M5).
+	var idle_stub := get_node_or_null("%IdleStubBtn")
+	var tower_stub := get_node_or_null("%TowerStubBtn")
+	var arena_stub := get_node_or_null("%ArenaStubBtn")
+	for stub in [idle_stub, tower_stub, arena_stub]:
+		if stub:
+			stub.disabled = true
+			stub.tooltip_text = "M1 范围外 · 大厅入口预留"
 	AP.apply_richtext(roster_panel, 15)
 	AP.apply_richtext(gear_panel, 14)
 	AP.apply_label(status_label, 13, Color(0.65, 0.72, 0.64, 1))
