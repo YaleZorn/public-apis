@@ -21,6 +21,8 @@ func _check_files() -> bool:
 		"res://scenes/idle/idle_hub.tscn",
 		"res://scenes/td/td_battle.tscn",
 		"res://scenes/explore/explore_run.tscn",
+		"res://scenes/arena/arena_run.tscn",
+		"res://scenes/tower/tower_run.tscn",
 		"res://scenes/knowledge/knowledge_hub.tscn",
 		"res://scenes/knowledge/knowledge_card.tscn",
 		"res://data/content_pack_core/units.json",
@@ -29,6 +31,8 @@ func _check_files() -> bool:
 		"res://data/content_pack_core/waves.json",
 		"res://data/content_pack_core/rooms.json",
 		"res://data/content_pack_core/materials.json",
+		"res://data/content_pack_core/arena.json",
+		"res://data/content_pack_core/tower.json",
 		"res://data/content_pack_core/knowledge.json",
 		"res://data/content_pack_core/gear.json",
 		"res://scenes/shell/title_screen.tscn",
@@ -37,6 +41,9 @@ func _check_files() -> bool:
 		"res://scripts/td/wave_director.gd",
 		"res://scripts/idle/idle_hub.gd",
 		"res://scripts/explore/run_bag.gd",
+		"res://scripts/combat/auto_combat_ring.gd",
+		"res://scripts/arena/arena_run.gd",
+		"res://scripts/tower/tower_run.gd",
 		"res://third_party/ape1121-godot-4-tower-defense-template/LICENSE",
 	]
 	for p in paths:
@@ -115,12 +122,38 @@ func _check_json() -> bool:
 	if mats.get("recipes", []).size() < 1:
 		push_error("Need at least one craft recipe")
 		return false
+	var arena = JSON.parse_string(FileAccess.get_file_as_string("res://data/content_pack_core/arena.json"))
+	if typeof(arena) != TYPE_DICTIONARY or not arena.has("enemy_pool"):
+		push_error("arena.json missing enemy_pool")
+		return false
+	var tower = JSON.parse_string(FileAccess.get_file_as_string("res://data/content_pack_core/tower.json"))
+	if typeof(tower) != TYPE_DICTIONARY or tower.get("floors", []).size() < 5:
+		push_error("tower.json need >=5 floors")
+		return false
+	var has_exclusive_floor := false
+	for f in tower.get("floors", []):
+		var roll = f.get("exclusive_roll", null)
+		if typeof(roll) == TYPE_DICTIONARY and str(roll.get("gear_id", "")) != "":
+			has_exclusive_floor = true
+			break
+	if not has_exclusive_floor:
+		push_error("tower needs an exclusive_roll floor")
+		return false
+	var gear = JSON.parse_string(FileAccess.get_file_as_string("res://data/content_pack_core/gear.json"))
+	var exclusive_gear := 0
+	for item in gear.get("gear", []):
+		if bool(item.get("exclusive", false)) or str(item.get("pool", "")) == "tower_exclusive":
+			exclusive_gear += 1
+	if exclusive_gear < 1:
+		push_error("Need >=1 tower exclusive gear")
+		return false
 	if knowledge["entries"].size() < 15:
 		push_error("Need 15 knowledge entries")
 		return false
-	print("json_ok units=%d named_idle=%d enemies=%d waves=%d nodes=%d mats=%d knowledge=%d infinite=%s flank=%s" % [
+	print("json_ok units=%d named_idle=%d enemies=%d waves=%d nodes=%d mats=%d knowledge=%d arena_pool=%d tower_floors=%d exclusive_gear=%d infinite=%s flank=%s" % [
 		units["units"].size(), named, enemies["enemies"].size(), waves["waves"].size(),
 		rooms.get("nodes", []).size(), mats["materials"].size(), knowledge["entries"].size(),
+		arena.get("enemy_pool", []).size(), tower.get("floors", []).size(), exclusive_gear,
 		str(waves.get("infinite", false)), str(has_flank)
 	])
 	return true

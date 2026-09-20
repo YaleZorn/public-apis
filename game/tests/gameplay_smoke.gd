@@ -1,5 +1,5 @@
 extends SceneTree
-## Headless gameplay smoke: Idle + TD + Explore 搜打撤 (M1–M3).
+## Headless gameplay smoke: Idle + TD + Explore + Arena + Tower (M1–M5).
 
 var _td: Node = null
 
@@ -16,6 +16,12 @@ func _start() -> void:
 		quit(1)
 		return
 	if not await _smoke_explore():
+		quit(1)
+		return
+	if not await _smoke_arena():
+		quit(1)
+		return
+	if not await _smoke_tower():
 		quit(1)
 		return
 	print("GAMEPLAY_SMOKE_OK")
@@ -161,4 +167,126 @@ func _smoke_explore() -> bool:
 		return false
 	print("explore_ok bag_was=", bag_before, " inv=", gs.materials_summary())
 	ex.queue_free()
+	return true
+
+
+func _smoke_arena() -> bool:
+	var gs = root.get_node_or_null("GameState")
+	if gs == null:
+		push_error("GameState missing")
+		return false
+	gs.arena_checkpoint = {}
+	gs.explore_hero_id = "unit_feidao"
+	var mastery_before: int = int(gs.hero_mastery.get("unit_feidao", 0))
+	var xiu_before: int = int(gs.xiuwei_bank)
+	var packed = load("res://scenes/arena/arena_run.tscn")
+	if packed == null:
+		push_error("arena scene missing")
+		return false
+	var ar = packed.instantiate()
+	root.add_child(ar)
+	await create_timer(0.8).timeout
+	if ar.ring == null:
+		push_error("arena ring missing")
+		return false
+	# Force a kill + survival ticks.
+	ar.survival_sec = 12.0
+	ar.mastery_earned = 0
+	ar.xiuwei_earned = 0
+	ar._on_kill("enemy_bandit")
+	ar.kills = 1
+	ar.mastery_earned = 2
+	ar.xiuwei_earned = 3
+	if gs.arena_checkpoint.is_empty():
+		push_error("arena soft checkpoint missing")
+		return false
+	ar._settle(true, "smoke", "test")
+	await create_timer(0.25).timeout
+	var mastery_after: int = int(gs.hero_mastery.get("unit_feidao", 0))
+	if mastery_after < mastery_before + 2:
+		push_error("arena mastery not applied %d→%d" % [mastery_before, mastery_after])
+		return false
+	if int(gs.xiuwei_bank) < xiu_before + 3:
+		push_error("arena xiuwei not applied")
+		return false
+	if int(gs.total_arena_runs) < 1:
+		push_error("arena run counter not bumped")
+		return false
+	print("arena_ok mastery=", mastery_after, " xiu=", gs.xiuwei_bank, " best=", gs.arena_best_sec)
+	ar.queue_free()
+	await create_timer(0.1).timeout
+	return true
+
+
+func _smoke_tower() -> bool:
+	var gs = root.get_node_or_null("GameState")
+	if gs == null:
+		push_error("GameState missing")
+		return false
+	gs.tower_checkpoint = {}
+	gs.tower_floor_cleared = 0
+	gs.explore_hero_id = "unit_feidao"
+	# Ensure exclusive not already unlocked for drop test.
+	var cleaned: Array = []
+	for g in gs.gear_unlocked:
+		if str(g) != "gear_tower_blade":
+			cleaned.append(g)
+	gs.gear_unlocked = cleaned
+	var packed = load("res://scenes/tower/tower_run.tscn")
+	if packed == null:
+		push_error("tower scene missing")
+		return false
+	var tw = packed.instantiate()
+	root.add_child(tw)
+	await create_timer(0.7).timeout
+	if tw.floor_index != 1:
+		push_error("tower should start floor 1 got %d" % tw.floor_index)
+		return false
+	if not tw.ring.combat_active:
+		push_error("tower combat did not start")
+		return false
+	# Clear floor 1.
+	for e in tw.ring.enemies.duplicate():
+		e.hp = 0
+		if e.node:
+			e.node.queue_free()
+	tw.ring.enemies.clear()
+	tw.ring.combat_active = false
+	tw._on_floor_cleared()
+	await create_timer(0.2).timeout
+	if not tw.between_floors:
+		push_error("tower not between floors after clear")
+		return false
+	if int(gs.tower_floor_cleared) < 1:
+		push_error("tower_floor_cleared not set")
+		return false
+	if gs.tower_checkpoint.is_empty():
+		push_error("tower checkpoint missing at floor boundary")
+		return false
+	# Jump to floor 5 exclusive roll (chance 1.0).
+	tw.floor_index = 5
+	tw.between_floors = false
+	tw.ring.clear_enemies()
+	tw.ring.spawn_enemies(["enemy_bandit"], 0.1, 0.1)
+	for e2 in tw.ring.enemies.duplicate():
+		e2.hp = 0
+		if e2.node:
+			e2.node.queue_free()
+	tw.ring.enemies.clear()
+	tw.ring.combat_active = false
+	tw._on_floor_cleared()
+	await create_timer(0.2).timeout
+	if "gear_tower_blade" not in gs.gear_unlocked:
+		push_error("tower exclusive gear not unlocked")
+		return false
+	var cdb = root.get_node_or_null("ContentDB")
+	if cdb == null:
+		push_error("ContentDB missing")
+		return false
+	var g: Dictionary = cdb.get_gear("gear_tower_blade")
+	if not bool(g.get("exclusive", false)):
+		push_error("exclusive flag missing on tower blade")
+		return false
+	print("tower_ok floor_cleared=", gs.tower_floor_cleared, " exclusive=", gs.gear_unlocked)
+	tw.queue_free()
 	return true
