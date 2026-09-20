@@ -23,42 +23,48 @@ layout_mode = 1
 anchors_preset = 10
 anchor_right = 1.0
 offset_left = 20.0
-offset_top = 16.0
+offset_top = 12.0
 offset_right = -20.0
-offset_bottom = 130.0
-theme_override_constants/separation = 6
+offset_bottom = 128.0
+theme_override_constants/separation = 4
 
 [node name="RoomLabel" type="Label" parent="Top"]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_colors/font_color = Color(0.9, 0.76, 0.36, 1)
-theme_override_font_sizes/font_size = 24
-text = "房间"
+theme_override_font_sizes/font_size = 22
+text = "荒山搜打撤"
 
 [node name="RoomStrip" type="HBoxContainer" parent="Top"]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_constants/separation = 4
+theme_override_constants/separation = 3
 
 [node name="HpLabel" type="Label" parent="Top"]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_font_sizes/font_size = 18
+theme_override_font_sizes/font_size = 16
 text = "HP"
 
 [node name="HpBar" type="ProgressBar" parent="Top"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 14)
+custom_minimum_size = Vector2(0, 12)
 layout_mode = 2
 max_value = 120.0
 value = 120.0
 show_percentage = false
 
+[node name="BagLabel" type="Label" parent="Top"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "背包"
+
 [node name="LootLabel" type="Label" parent="Top"]
 unique_name_in_owner = true
 visible = false
 layout_mode = 2
-theme_override_font_sizes/font_size = 16
+theme_override_font_sizes/font_size = 15
 text = "战利品"
 
 [node name="Arena" type="Control" parent="."]
@@ -69,9 +75,9 @@ anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 offset_left = 20.0
-offset_top = 140.0
+offset_top = 132.0
 offset_right = -20.0
-offset_bottom = -250.0
+offset_bottom = -320.0
 
 [node name="ArenaBg" type="ColorRect" parent="Arena"]
 layout_mode = 1
@@ -92,12 +98,25 @@ color = Color(0.08, 0.1, 0.12, 0.5)
 [node name="Hero" type="Control" parent="Arena"]
 unique_name_in_owner = true
 offset_left = 72.0
-offset_top = 250.0
+offset_top = 200.0
 offset_right = 136.0
-offset_bottom = 314.0
+offset_bottom = 264.0
 
 [node name="EnemiesLayer" type="Node2D" parent="Arena"]
 unique_name_in_owner = true
+
+[node name="MapLayer" type="Control" parent="."]
+unique_name_in_owner = true
+visible = false
+clip_contents = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 20.0
+offset_top = 400.0
+offset_right = -20.0
+offset_bottom = -320.0
 
 [node name="Bottom" type="VBoxContainer" parent="."]
 layout_mode = 1
@@ -105,24 +124,34 @@ anchors_preset = 12
 anchor_top = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = 20.0
-offset_top = -238.0
-offset_right = -20.0
-offset_bottom = -16.0
-theme_override_constants/separation = 10
+offset_left = 16.0
+offset_top = -308.0
+offset_right = -16.0
+offset_bottom = -12.0
+theme_override_constants/separation = 8
 
 [node name="StatusLabel" type="Label" parent="Bottom"]
 unique_name_in_owner = true
 layout_mode = 2
 autowrap_mode = 3
-theme_override_font_sizes/font_size = 15
+theme_override_font_sizes/font_size = 14
 text = "状态"
+
+[node name="CraftRow" type="HBoxContainer" parent="Bottom"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="ExitRow" type="HBoxContainer" parent="Bottom"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 6
 
 [node name="SkillBtn" type="Button" parent="Bottom"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 72)
+custom_minimum_size = Vector2(0, 64)
 layout_mode = 2
-theme_override_font_sizes/font_size = 26
+theme_override_font_sizes/font_size = 24
 text = "主动技"
 
 [node name="Row" type="HBoxContainer" parent="Bottom"]
@@ -131,20 +160,20 @@ theme_override_constants/separation = 8
 
 [node name="NextBtn" type="Button" parent="Bottom/Row"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 52)
+custom_minimum_size = Vector2(0, 48)
 layout_mode = 2
 size_flags_horizontal = 3
-text = "下一房"
+text = "选路"
 
 [node name="FleeBtn" type="Button" parent="Bottom/Row"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 52)
+custom_minimum_size = Vector2(0, 48)
 layout_mode = 2
 size_flags_horizontal = 3
-text = "撤离"
+text = "撤离结算"
 
 [node name="LobbyBtn" type="Button" parent="Bottom"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 48)
+custom_minimum_size = Vector2(0, 44)
 layout_mode = 2
 text = "存档并回大厅"

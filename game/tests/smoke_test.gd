@@ -28,6 +28,7 @@ func _check_files() -> bool:
 		"res://data/content_pack_core/enemies.json",
 		"res://data/content_pack_core/waves.json",
 		"res://data/content_pack_core/rooms.json",
+		"res://data/content_pack_core/materials.json",
 		"res://data/content_pack_core/knowledge.json",
 		"res://data/content_pack_core/gear.json",
 		"res://scenes/shell/title_screen.tscn",
@@ -35,6 +36,7 @@ func _check_files() -> bool:
 		"res://THIRD_PARTY.md",
 		"res://scripts/td/wave_director.gd",
 		"res://scripts/idle/idle_hub.gd",
+		"res://scripts/explore/run_bag.gd",
 		"res://third_party/ape1121-godot-4-tower-defense-template/LICENSE",
 	]
 	for p in paths:
@@ -96,15 +98,29 @@ func _check_json() -> bool:
 	if not has_flank:
 		push_error("Need at least one flank spawn in seed waves")
 		return false
-	if rooms["rooms"].size() < 6:
-		push_error("Need >=6 rooms")
+	if rooms.get("nodes", rooms.get("rooms", [])).size() < 6:
+		push_error("Need >=6 explore nodes")
+		return false
+	var node_types := {}
+	for n in rooms.get("nodes", []):
+		node_types[str(n.get("type", ""))] = true
+	for need_t in ["settle", "gather", "combat"]:
+		if not node_types.has(need_t):
+			push_error("Need node type %s for 搜打撤" % need_t)
+			return false
+	var mats = JSON.parse_string(FileAccess.get_file_as_string("res://data/content_pack_core/materials.json"))
+	if typeof(mats) != TYPE_DICTIONARY or mats.get("materials", []).size() < 3:
+		push_error("Need materials.json with >=3 materials")
+		return false
+	if mats.get("recipes", []).size() < 1:
+		push_error("Need at least one craft recipe")
 		return false
 	if knowledge["entries"].size() < 15:
 		push_error("Need 15 knowledge entries")
 		return false
-	print("json_ok units=%d named_idle=%d enemies=%d waves=%d rooms=%d knowledge=%d infinite=%s flank=%s" % [
+	print("json_ok units=%d named_idle=%d enemies=%d waves=%d nodes=%d mats=%d knowledge=%d infinite=%s flank=%s" % [
 		units["units"].size(), named, enemies["enemies"].size(), waves["waves"].size(),
-		rooms["rooms"].size(), knowledge["entries"].size(),
+		rooms.get("nodes", []).size(), mats["materials"].size(), knowledge["entries"].size(),
 		str(waves.get("infinite", false)), str(has_flank)
 	])
 	return true

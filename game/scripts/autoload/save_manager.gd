@@ -2,7 +2,7 @@ extends Node
 ## Local single-slot save with version migration. Checkpoints at wave/room/lobby.
 
 const SAVE_PATH := "user://kongfu_save_v0.json"
-const SAVE_VERSION := 2
+const SAVE_VERSION := 3
 
 signal save_written
 signal save_loaded
@@ -63,4 +63,14 @@ func _migrate(data: Dictionary) -> Dictionary:
 			meta["idle_pending_materials"] = 0.0
 		data["meta"] = meta
 		data["save_version"] = 2
+		v = 2
+	if v < 3:
+		# M3 explore: typed materials inventory + craft flags.
+		var meta3: Dictionary = data.get("meta", {})
+		if not meta3.has("materials_inv"):
+			meta3["materials_inv"] = {}
+		if not meta3.has("wuxue_drafts"):
+			meta3["wuxue_drafts"] = 0
+		data["meta"] = meta3
+		data["save_version"] = 3
 	return data

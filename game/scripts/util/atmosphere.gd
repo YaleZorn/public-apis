@@ -12,6 +12,8 @@ const EXPLORE_ROOM := {
 	"train": "res://assets/textures/explore/room_train.jpg",
 	"supply": "res://assets/textures/explore/room_supply.jpg",
 	"loot": "res://assets/textures/explore/room_loot.jpg",
+	"gather": "res://assets/textures/explore/room_loot.jpg",
+	"settle": "res://assets/textures/explore/room_supply.jpg",
 }
 
 
