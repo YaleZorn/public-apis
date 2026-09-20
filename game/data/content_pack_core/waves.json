@@ -2,18 +2,31 @@
   "content_pack": "core",
   "map_id": "jiange_pass",
   "map_name": "剑阁栈道",
-  "chapter_title": "第一章 · 栈道夜雨",
+  "chapter_title": "守卫剑阁 · 无限波",
   "starting_silver": 220,
   "starting_lives": 12,
   "slot_count": 6,
+  "infinite": true,
+  "milestone_wave": 10,
+  "escalation": {
+    "infinite": true,
+    "max_wave_cap": 9999,
+    "difficulty_initial": 1.0,
+    "difficulty_increase": 1.18,
+    "difficulty_multiplies": true,
+    "base_spawn_count": 6,
+    "flank_every_n": 3,
+    "silver_bonus_base": 35,
+    "silver_bonus_growth": 5
+  },
   "waves": [
     {
       "id": 1,
       "label": "前哨试探",
-      "hint": "流寇探路，先布远程与控场。",
+      "hint": "流寇探路上↓下，先布远程与控场。",
       "silver_bonus": 40,
       "spawns": [
-        { "enemy": "enemy_bandit", "count": 5, "interval": 1.0 }
+        { "enemy": "enemy_bandit", "count": 5, "interval": 1.0, "lane": "main" }
       ],
       "knowledge_card": "k_warmup"
     },
@@ -23,19 +36,20 @@
       "hint": "两路压力上升，注意回收换阵。",
       "silver_bonus": 45,
       "spawns": [
-        { "enemy": "enemy_bandit", "count": 6, "interval": 0.85 },
-        { "enemy": "enemy_bandit", "count": 2, "interval": 1.2, "delay": 3.0 }
+        { "enemy": "enemy_bandit", "count": 6, "interval": 0.85, "lane": "main" },
+        { "enemy": "enemy_bandit", "count": 2, "interval": 1.2, "delay": 3.0, "lane": "main" }
       ],
       "knowledge_card": null
     },
     {
       "id": 3,
-      "label": "快刀穿插",
-      "hint": "快刀手绕后，轻功弟子减速。",
+      "label": "侧翼伏击",
+      "hint": "主路压迫 + 左侧伏击！分兵守侧翼。",
       "silver_bonus": 50,
       "spawns": [
-        { "enemy": "enemy_bandit", "count": 4, "interval": 0.9 },
-        { "enemy": "enemy_runner", "count": 4, "interval": 0.75 }
+        { "enemy": "enemy_bandit", "count": 4, "interval": 0.9, "lane": "main" },
+        { "enemy": "enemy_runner", "count": 3, "interval": 0.75, "lane": "main" },
+        { "enemy": "enemy_runner", "count": 3, "interval": 0.7, "delay": 1.5, "lane": "flank" }
       ],
       "knowledge_card": "k_hydration"
     },
@@ -45,8 +59,8 @@
       "hint": "盾兵顶前，飞刀/明王破甲。",
       "silver_bonus": 55,
       "spawns": [
-        { "enemy": "enemy_shield", "count": 3, "interval": 1.3 },
-        { "enemy": "enemy_bandit", "count": 5, "interval": 0.8 }
+        { "enemy": "enemy_shield", "count": 3, "interval": 1.3, "lane": "main" },
+        { "enemy": "enemy_bandit", "count": 5, "interval": 0.8, "lane": "main" }
       ],
       "knowledge_card": null
     },
@@ -56,20 +70,21 @@
       "hint": "混合快攻，药师保续航。",
       "silver_bonus": 60,
       "spawns": [
-        { "enemy": "enemy_runner", "count": 5, "interval": 0.7 },
-        { "enemy": "enemy_bandit", "count": 4, "interval": 0.85 },
-        { "enemy": "enemy_runner", "count": 2, "interval": 0.6, "delay": 4.0 }
+        { "enemy": "enemy_runner", "count": 5, "interval": 0.7, "lane": "main" },
+        { "enemy": "enemy_bandit", "count": 4, "interval": 0.85, "lane": "main" },
+        { "enemy": "enemy_runner", "count": 2, "interval": 0.6, "delay": 4.0, "lane": "main" }
       ],
       "knowledge_card": "k_protein"
     },
     {
       "id": 6,
-      "label": "盾阵合围",
-      "hint": "双前排，需高伤或光环配合。",
+      "label": "伏击合围",
+      "hint": "侧翼再次切入，双前排守门。",
       "silver_bonus": 65,
       "spawns": [
-        { "enemy": "enemy_shield", "count": 4, "interval": 1.1 },
-        { "enemy": "enemy_runner", "count": 3, "interval": 0.9 }
+        { "enemy": "enemy_shield", "count": 3, "interval": 1.1, "lane": "main" },
+        { "enemy": "enemy_runner", "count": 3, "interval": 0.9, "lane": "main" },
+        { "enemy": "enemy_bandit", "count": 4, "interval": 0.8, "delay": 1.2, "lane": "flank" }
       ],
       "knowledge_card": null
     },
@@ -79,45 +94,47 @@
       "hint": "波峰来袭，可开 x2 速清场。",
       "silver_bonus": 70,
       "spawns": [
-        { "enemy": "enemy_bandit", "count": 7, "interval": 0.65 },
-        { "enemy": "enemy_shield", "count": 2, "interval": 1.2 },
-        { "enemy": "enemy_runner", "count": 3, "interval": 0.75 }
+        { "enemy": "enemy_bandit", "count": 7, "interval": 0.65, "lane": "main" },
+        { "enemy": "enemy_shield", "count": 2, "interval": 1.2, "lane": "main" },
+        { "enemy": "enemy_runner", "count": 3, "interval": 0.75, "lane": "main" }
       ],
       "knowledge_card": "k_sleep"
     },
     {
       "id": 8,
       "label": "精英夜行",
-      "hint": "盾+快组合，守住剑阁门。",
+      "hint": "盾+快组合，侧翼再扰。",
       "silver_bonus": 80,
       "spawns": [
-        { "enemy": "enemy_shield", "count": 4, "interval": 1.0 },
-        { "enemy": "enemy_runner", "count": 5, "interval": 0.65 },
-        { "enemy": "enemy_bandit", "count": 4, "interval": 0.7 }
+        { "enemy": "enemy_shield", "count": 4, "interval": 1.0, "lane": "main" },
+        { "enemy": "enemy_runner", "count": 4, "interval": 0.65, "lane": "main" },
+        { "enemy": "enemy_bandit", "count": 3, "interval": 0.7, "lane": "main" },
+        { "enemy": "enemy_runner", "count": 3, "interval": 0.6, "delay": 1.8, "lane": "flank" }
       ],
       "knowledge_card": "k_breathing"
     },
     {
       "id": 9,
       "label": "总攻前奏",
-      "hint": "最后一波前攒银两换阵。",
+      "hint": "里程碑前攒银两换阵。",
       "silver_bonus": 90,
       "spawns": [
-        { "enemy": "enemy_bandit", "count": 8, "interval": 0.6 },
-        { "enemy": "enemy_shield", "count": 3, "interval": 1.0 },
-        { "enemy": "enemy_runner", "count": 4, "interval": 0.58 }
+        { "enemy": "enemy_bandit", "count": 8, "interval": 0.6, "lane": "main" },
+        { "enemy": "enemy_shield", "count": 3, "interval": 1.0, "lane": "main" },
+        { "enemy": "enemy_runner", "count": 4, "interval": 0.58, "lane": "main" }
       ],
       "knowledge_card": null
     },
     {
       "id": 10,
-      "label": "剑阁终守",
-      "hint": "全种类混合，撑过即通关第一章。",
+      "label": "剑阁里程碑",
+      "hint": "守住本波记第一章；之后无限 escalate。",
       "silver_bonus": 120,
       "spawns": [
-        { "enemy": "enemy_shield", "count": 5, "interval": 0.95 },
-        { "enemy": "enemy_runner", "count": 7, "interval": 0.55 },
-        { "enemy": "enemy_bandit", "count": 6, "interval": 0.58 }
+        { "enemy": "enemy_shield", "count": 4, "interval": 0.95, "lane": "main" },
+        { "enemy": "enemy_runner", "count": 6, "interval": 0.55, "lane": "main" },
+        { "enemy": "enemy_bandit", "count": 5, "interval": 0.58, "lane": "main" },
+        { "enemy": "enemy_shield", "count": 2, "interval": 1.0, "delay": 2.0, "lane": "flank" }
       ],
       "knowledge_card": "k_rest_day"
     }

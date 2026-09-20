@@ -30,6 +30,9 @@ func _check_files() -> bool:
 		"res://data/content_pack_core/gear.json",
 		"res://scenes/shell/title_screen.tscn",
 		"res://resources/kongfu_theme.tres",
+		"res://THIRD_PARTY.md",
+		"res://scripts/td/wave_director.gd",
+		"res://third_party/ape1121-godot-4-tower-defense-template/LICENSE",
 	]
 	for p in paths:
 		if not ResourceLoader.exists(p) and not FileAccess.file_exists(p):
@@ -54,15 +57,30 @@ func _check_json() -> bool:
 	if waves["waves"].size() < 8:
 		push_error("Need >=8 waves")
 		return false
+	if not bool(waves.get("infinite", false)):
+		push_error("M1 requires infinite waves flag")
+		return false
+	var has_flank := false
+	for w in waves["waves"]:
+		for s in w.get("spawns", []):
+			if str(s.get("lane", "")) == "flank":
+				has_flank = true
+				break
+		if has_flank:
+			break
+	if not has_flank:
+		push_error("Need at least one flank spawn in seed waves")
+		return false
 	if rooms["rooms"].size() < 6:
 		push_error("Need >=6 rooms")
 		return false
 	if knowledge["entries"].size() < 15:
 		push_error("Need 15 knowledge entries")
 		return false
-	print("json_ok units=%d enemies=%d waves=%d rooms=%d knowledge=%d" % [
+	print("json_ok units=%d enemies=%d waves=%d rooms=%d knowledge=%d infinite=%s flank=%s" % [
 		units["units"].size(), enemies["enemies"].size(), waves["waves"].size(),
-		rooms["rooms"].size(), knowledge["entries"].size()
+		rooms["rooms"].size(), knowledge["entries"].size(),
+		str(waves.get("infinite", false)), str(has_flank)
 	])
 	return true
 

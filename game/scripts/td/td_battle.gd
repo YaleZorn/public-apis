@@ -1,10 +1,12 @@
 extends Control
-## Jiange TD chapter: place/recall roster, wave defense, inter-wave knowledge + juice.
+## Jiange TD: place/recall roster cards, infinite escalating waves (ape1121-style),
+## top→down main lane + flank ambush. Shell/title/lobby/art preserved.
 
 const SLOT_COUNT := 6
 const MAX_DEPLOYED := 4
 const KnowledgeCardScene := preload("res://scenes/knowledge/knowledge_card.tscn")
 const ResultOverlayScene := preload("res://scenes/ui/result_overlay.tscn")
+const WaveDirectorScript := preload("res://scripts/td/wave_director.gd")
 const VF := preload("res://scripts/util/visual_factory.gd")
 const Atmo := preload("res://scripts/util/atmosphere.gd")
 const AP := preload("res://scripts/util/art_palette.gd")
@@ -35,6 +37,7 @@ var selected_unit_id: String = ""
 var selected_slot: int = -1
 var deployed: Dictionary = {}
 var path_points: PackedVector2Array = PackedVector2Array()
+var flank_path_points: PackedVector2Array = PackedVector2Array()
 var wave_running: bool = false
 var enemies_alive: int = 0
 var spawn_queue: Array = []
@@ -45,6 +48,9 @@ var awaiting_knowledge: bool = false
 var game_over: bool = false
 var time_scale_local: float = 1.0
 var _slot_buttons: Array[Button] = []
+var wave_director = null
+var flank_path_line: Line2D
+var milestone_cleared: bool = false
 
 
 func _ready() -> void:
@@ -58,6 +64,8 @@ func _ready() -> void:
 		Atmo.attach_field_art(field_bg)
 	AP.apply_label(chapter_label, 16, AP.LANTERN_GOLD)
 	AP.apply_label(wave_banner, 26, AP.LANTERN_GOLD)
+	wave_director = WaveDirectorScript.new()
+	wave_director.configure_from(ContentDB.waves_cfg)
 	Juice.start_battle_music()
 	knowledge_layer = KnowledgeCardScene.instantiate()
 	add_child(knowledge_layer)
@@ -84,7 +92,7 @@ func _ready() -> void:
 		_persist_prep()
 	_refresh_hud()
 	_update_wave_preview()
-	status_label.text = "点选底栏角色 → 点槽位放置。波间自动存档。"
+	status_label.text = "点选底栏角色卡 → 点槽放置。点「下一波」开战；波间自动存档。"
 
 
 func _process(delta: float) -> void:
@@ -104,8 +112,7 @@ func _build_path() -> void:
 	if w < 10:
 		w = 688
 		h = 916
-	# Painted trail centerline in 720×1280 UV (spawn → gate approach).
-	# Gate UV kept well above compact HUD so 门楼/据点 never clip.
+	# Main lane: top → down toward stronghold (Kingdom Defense feel).
 	var path_uv := [
 		Vector2(0.492, 0.090),
 		Vector2(0.500, 0.145),
@@ -128,13 +135,38 @@ func _build_path() -> void:
 		local.x = clampf(local.x, 12.0, w - 12.0)
 		local.y = clampf(local.y, 8.0, h - 8.0)
 		path_points.append(local)
-	# Soft guide over painted planks — road art carries the bulk of the look.
+	# Flank / ambush: side entry merges into main approach (not single-lane only).
+	var flank_uv := [
+		Vector2(0.02, 0.38),
+		Vector2(0.12, 0.40),
+		Vector2(0.22, 0.44),
+		Vector2(0.32, 0.50),
+		Vector2(0.40, 0.55),
+		Vector2(0.46, 0.58),
+		Vector2(0.505, 0.600),
+	]
+	flank_path_points = PackedVector2Array()
+	for uv in flank_uv:
+		var local2 := Atmo.viewport_uv_to_field(field, uv)
+		local2.x = clampf(local2.x, 8.0, w - 8.0)
+		local2.y = clampf(local2.y, 8.0, h - 8.0)
+		flank_path_points.append(local2)
 	path_outline.points = path_points
 	path_outline.width = 28
 	path_outline.default_color = Color(AP.PATH_RIM.r, AP.PATH_RIM.g, AP.PATH_RIM.b, 0.38)
 	path_line.points = path_points
 	path_line.width = 14
 	path_line.default_color = Color(AP.LANTERN_GOLD.r, AP.LANTERN_GOLD.g, AP.LANTERN_GOLD.b, 0.22)
+	if flank_path_line == null:
+		flank_path_line = Line2D.new()
+		flank_path_line.name = "FlankPathLine"
+		flank_path_line.width = 10
+		flank_path_line.default_color = Color(0.85, 0.35, 0.28, 0.38)
+		flank_path_line.z_index = 1
+		field.add_child(flank_path_line)
+		# Keep under units: move just above outline if possible
+		field.move_child(flank_path_line, path_line.get_index() + 1)
+	flank_path_line.points = flank_path_points
 	_build_decor(w, h)
 
 
@@ -153,6 +185,17 @@ func _build_decor(w: float, h: float) -> void:
 		var spawn := Atmo._spawn_marker()
 		spawn.position = path_points[0] - Vector2(14, 14)
 		decor_layer.add_child(spawn)
+	if flank_path_points.size() > 0:
+		var flank_mark := Atmo._spawn_marker()
+		flank_mark.modulate = Color(1.15, 0.55, 0.45, 1.0)
+		flank_mark.position = flank_path_points[0] - Vector2(14, 14)
+		decor_layer.add_child(flank_mark)
+		var ambush_lbl := Label.new()
+		ambush_lbl.text = "伏击"
+		ambush_lbl.position = flank_path_points[0] + Vector2(8, -6)
+		AP.apply_label(ambush_lbl, 12, Color(0.95, 0.55, 0.42))
+		ambush_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		decor_layer.add_child(ambush_lbl)
 	var mist := ColorRect.new()
 	mist.size = Vector2(w, 48)
 	mist.position = Vector2(0, h * 0.4)
@@ -350,19 +393,20 @@ func _on_recall() -> void:
 func _on_start_wave() -> void:
 	if wave_running or awaiting_knowledge or game_over:
 		return
-	var waves: Array = ContentDB.waves_cfg.get("waves", [])
-	if wave_index >= waves.size():
-		_victory()
+	if wave_director == null or not wave_director.has_more(wave_index):
+		status_label.text = "已达波次上限，可回大厅结算。"
 		return
-	var wave: Dictionary = waves[wave_index]
+	var wave: Dictionary = wave_director.build_wave(wave_index)
 	spawn_queue.clear()
 	for spawn in wave.get("spawns", []):
 		var delay := float(spawn.get("delay", 0.0))
+		var lane := str(spawn.get("lane", "main"))
 		for i in int(spawn.get("count", 1)):
 			spawn_queue.append({
 				"enemy": spawn.get("enemy", "enemy_bandit"),
 				"interval": float(spawn.get("interval", 0.8)),
 				"delay": delay if i == 0 else 0.0,
+				"lane": lane,
 			})
 	spawn_timer = 0.35
 	enemies_alive = 0
@@ -385,52 +429,72 @@ func _tick_spawns(delta: float) -> void:
 	if spawn_timer > 0:
 		return
 	var job: Dictionary = spawn_queue.pop_front()
-	_spawn_enemy(str(job.enemy))
+	_spawn_enemy(str(job.enemy), str(job.get("lane", "main")))
 	if not spawn_queue.is_empty():
 		spawn_timer = float(spawn_queue[0].get("delay", 0.0)) + float(spawn_queue[0].interval)
 
 
-func _spawn_enemy(eid: String) -> void:
+func _spawn_enemy(eid: String, lane: String = "main") -> void:
 	var e: Dictionary = ContentDB.get_enemy(eid)
 	var node := VF.enemy_node(e, Vector2(56, 70))
-	node.position = path_points[0] - node.custom_minimum_size * 0.5
+	var lane_path := _path_for_lane(lane)
+	var scale := _wave_hp_scale()
+	node.position = lane_path[0] - node.custom_minimum_size * 0.5
 	enemies_layer.add_child(node)
 	node.set_meta("eid", eid)
-	node.set_meta("hp", float(e.get("hp", 50)))
-	node.set_meta("max_hp", float(e.get("hp", 50)))
-	node.set_meta("speed", float(e.get("speed", 50)))
+	node.set_meta("hp", float(e.get("hp", 50)) * scale)
+	node.set_meta("max_hp", float(e.get("hp", 50)) * scale)
+	node.set_meta("speed", float(e.get("speed", 50)) * (1.0 + 0.02 * wave_index))
 	node.set_meta("armor", float(e.get("armor", 0)))
-	node.set_meta("reward", int(e.get("reward", 10)))
+	node.set_meta("reward", int(e.get("reward", 10)) + wave_index / 2)
 	node.set_meta("leak", int(e.get("leak_damage", 1)))
 	node.set_meta("path_i", 0)
 	node.set_meta("progress", 0.0)
+	node.set_meta("lane", lane)
+	if lane == "flank" and node is Control:
+		(node as Control).modulate = Color(1.15, 0.85, 0.8, 1.0)
 	if node is Control:
 		VF.set_enemy_hp_ratio(node as Control, 1.0)
 	enemies_alive += 1
 
 
+func _path_for_lane(lane: String) -> PackedVector2Array:
+	if lane == "flank" and flank_path_points.size() > 1:
+		return flank_path_points
+	return path_points
+
+
+func _wave_hp_scale() -> float:
+	if wave_director == null:
+		return 1.0
+	# Soft escalate like ape1121 difficulty curve without exploding early waves.
+	return 1.0 + maxf(0.0, (wave_director.difficulty_at(wave_index) - 1.0) * 0.22)
+
+
 func _tick_movement(delta: float) -> void:
 	for node in enemies_layer.get_children():
+		var lane := str(node.get_meta("lane", "main"))
+		var pts := _path_for_lane(lane)
 		var path_i: int = int(node.get_meta("path_i"))
-		if path_i >= path_points.size() - 1:
+		if path_i >= pts.size() - 1:
 			_leak(node)
 			continue
-		var a: Vector2 = path_points[path_i]
-		var b: Vector2 = path_points[path_i + 1]
+		var a: Vector2 = pts[path_i]
+		var b: Vector2 = pts[path_i + 1]
 		var dist := a.distance_to(b)
 		var prog: float = float(node.get_meta("progress"))
 		prog += float(node.get_meta("speed")) * delta
-		while prog >= dist and path_i < path_points.size() - 1:
+		while prog >= dist and path_i < pts.size() - 1:
 			prog -= dist
 			path_i += 1
 			node.set_meta("path_i", path_i)
-			if path_i >= path_points.size() - 1:
+			if path_i >= pts.size() - 1:
 				break
-			a = path_points[path_i]
-			b = path_points[path_i + 1]
+			a = pts[path_i]
+			b = pts[path_i + 1]
 			dist = a.distance_to(b)
 		node.set_meta("progress", prog)
-		if path_i >= path_points.size() - 1:
+		if path_i >= pts.size() - 1:
 			_leak(node)
 			continue
 		var t := 0.0 if dist <= 0.001 else prog / dist
@@ -561,13 +625,12 @@ func _leak(node: Node) -> void:
 func _on_wave_cleared() -> void:
 	wave_running = false
 	start_wave_btn.disabled = false
-	var waves: Array = ContentDB.waves_cfg.get("waves", [])
-	var wave: Dictionary = waves[wave_index]
+	var wave: Dictionary = wave_director.build_wave(wave_index) if wave_director else {}
 	silver += int(wave.get("silver_bonus", 30))
 	wave_index += 1
 	_refresh_hud()
 	_update_wave_preview()
-	status_label.text = "波次肃清。可调整阵容后下一波。"
+	status_label.text = "波次肃清。可调整阵容后点「下一波」。"
 	if not GameState.unlocked_units.is_empty():
 		var uid: String = GameState.unlocked_units[wave_index % GameState.unlocked_units.size()]
 		GameState.add_fragments(uid, 1)
@@ -575,9 +638,16 @@ func _on_wave_cleared() -> void:
 		GameState.unlock_unit("unit_zhaoyun")
 	if wave_index >= 8:
 		GameState.unlock_unit("unit_mingwang")
-	if wave_index >= waves.size():
-		_victory()
-		return
+	# Soft milestone (seed chapter clear) — infinite run continues until leak-out.
+	var milestone := int(ContentDB.waves_cfg.get("milestone_wave", 10))
+	if not milestone_cleared and wave_index >= milestone:
+		milestone_cleared = true
+		GameState.total_td_clears += 1
+		if GameState.total_td_clears >= 1:
+			GameState.unlock_gear("gear_bamboo_cup")
+		GameState.silver_bank += silver / 8
+		GameState.persist_meta_keep_checkpoints()
+		status_label.text = "第一章里程碑达成！无限波仍可继续，或存档回大厅。"
 	var kid = wave.get("knowledge_card", null)
 	_persist_prep()
 	if kid != null and str(kid) != "":
@@ -592,6 +662,7 @@ func _on_knowledge_resolved(_id: String, _correct: bool) -> void:
 
 
 func _victory() -> void:
+	# Retained for rare finite-mode / smoke callers; infinite default uses milestone.
 	game_over = true
 	GameState.total_td_clears += 1
 	GameState.silver_bank += silver / 5
@@ -601,7 +672,7 @@ func _victory() -> void:
 	GameState.persist_lobby()
 	result_overlay.show_result(
 		"剑阁无恙",
-		"第一章「栈道夜雨」通关。\n银两仓 +%d · 碎片已写入 · 解锁装备「竹节水壶」。" % (silver / 5),
+		"守住栈道。\n银两仓 +%d · 碎片已写入。" % (silver / 5),
 		"回大厅",
 		Color(0.55, 0.82, 0.55),
 		func(): GameState.go_lobby()
@@ -623,6 +694,20 @@ func _defeat() -> void:
 	)
 
 
+func _load_checkpoint(cp: Dictionary) -> void:
+	silver = int(cp.get("silver", 200))
+	lives = int(cp.get("lives", 12))
+	wave_index = int(cp.get("wave_index", 0))
+	milestone_cleared = bool(cp.get("milestone_cleared", wave_index >= int(ContentDB.waves_cfg.get("milestone_wave", 10))))
+	for item in cp.get("deployed", []):
+		_spawn_unit_visual(int(item.slot), str(item.unit_id))
+		if deployed.has(int(item.slot)):
+			deployed[int(item.slot)].hp = float(item.get("hp", deployed[int(item.slot)].hp))
+	status_label.text = "已从波次前存档续关。"
+	_update_wave_preview()
+	_refresh_hud()
+
+
 func _persist_prep() -> void:
 	var dep: Array = []
 	for slot in deployed.keys():
@@ -632,21 +717,8 @@ func _persist_prep() -> void:
 		"lives": lives,
 		"wave_index": wave_index,
 		"deployed": dep,
+		"milestone_cleared": milestone_cleared,
 	})
-
-
-func _load_checkpoint(cp: Dictionary) -> void:
-	silver = int(cp.get("silver", 200))
-	lives = int(cp.get("lives", 12))
-	wave_index = int(cp.get("wave_index", 0))
-	for item in cp.get("deployed", []):
-		_spawn_unit_visual(int(item.slot), str(item.unit_id))
-		if deployed.has(int(item.slot)):
-			deployed[int(item.slot)].hp = float(item.get("hp", deployed[int(item.slot)].hp))
-	status_label.text = "已从波次前存档续关。"
-	_update_wave_preview()
-	_refresh_hud()
-	# Fix silver display after load — already set above.
 
 
 func _save_and_lobby() -> void:
@@ -663,10 +735,10 @@ func _toggle_speed() -> void:
 
 
 func _update_wave_preview() -> void:
-	var waves: Array = ContentDB.waves_cfg.get("waves", [])
-	if wave_index >= waves.size():
+	if wave_director == null or not wave_director.has_more(wave_index):
+		status_label.text = "已达波次上限。"
 		return
-	var wave: Dictionary = waves[wave_index]
+	var wave: Dictionary = wave_director.build_wave(wave_index)
 	var label := str(wave.get("label", "第 %d 波" % (wave_index + 1)))
 	status_label.text = "待命：%s — %s" % [label, str(wave.get("hint", ""))]
 
@@ -674,6 +746,6 @@ func _update_wave_preview() -> void:
 func _refresh_hud() -> void:
 	hud_silver.text = "银两 %d" % silver
 	hud_lives.text = "据点 %d" % lives
-	var total: int = ContentDB.waves_cfg.get("waves", []).size()
-	hud_wave.text = "波次 %d/%d" % [mini(wave_index + 1, total), total]
-	start_wave_btn.text = "开始第 %d 波" % (wave_index + 1) if wave_index < total else "已通关"
+	hud_wave.text = "波次 %d · ∞" % (wave_index + 1)
+	start_wave_btn.text = "下一波 · 第 %d 波" % (wave_index + 1)
+	start_wave_btn.disabled = wave_running or awaiting_knowledge or game_over

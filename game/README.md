@@ -1,10 +1,13 @@
-# Kongfu Roguelike — 可玩第一章 · 画面达标（v0.3.5）
+# Kongfu Roguelike — M1 TD 嫁接（v0.4.0）
 
-竖屏、离线武侠健身题材。**第一章「栈道夜雨」** — 塔防主线 + 探索支线 + 真健身知识环，墨雾青玉夜色视觉身份；竖屏可对外截图试玩。
+竖屏、离线武侠健身题材。**M1：守卫剑阁式无限波塔防** — ape1121 MIT 战斗核思路嫁入现有 `game/` 壳（标题/大厅/美术/ContentDB/存档/知识保留）。
 
 设计依据（Project store）：
 - `docs/gameplay-design.md`
 - `docs/project-context.md`
+- `docs/base-game-candidates.md`
+
+第三方声明：见 [`THIRD_PARTY.md`](./THIRD_PARTY.md)（合法 OSS only）。
 
 ## 要求
 
@@ -20,15 +23,16 @@ godot4 --path .
 godot --path . --rendering-driver opengl3
 ```
 
-## 画面（v0.3.5 shippable bar）
+大厅 → **新局 · 塔防** → 底栏选角色卡放置 → **下一波**。波间可「存档并回大厅」。
 
-- 统一主题：墨夜青绿 + 灯笼金；霞鹜文楷字体
-- **盟友立绘**：6 张亮度/对比/取景对齐；大厅并排展示（未解锁半透）
-- **敌方立绘**：三类敌人站姿与盟友同级框饰与 midtone 权重
-- 探索：加厚房型背景 + 四层视差雾/灯笼/道具/余烬（气氛厚度 ≈ TD）
-- TD：栈道上移；据点门楼抬高 + 底雾帷，避开底栏 HUD
-- 程序化可辨主题 BGM（标题 / 大厅 / TD / 探索，pad+动机）；设置「音乐」音量
-- 知识本：玉框墨笺排版；离线无 IAP
+## M1 已交付
+
+- 无限（或极高上限）波次 escalate（`scripts/td/wave_director.gd`，源自 ape1121 spawner 曲线）
+- 玩家点按 **下一波**；波间布阵 / 回收 / 存档
+- 敌军默认 **上→下**；第 3/6/8/10… 波含 **侧翼伏击** 路
+- 阵容角色卡放置/回收（肖像映射 turret → Kongfu units）
+- 大厅入口 + Idle/爬塔/演武场灰显 stubs
+- 离线无 IAP；冒烟测试通过
 
 ## 冒烟
 
@@ -41,4 +45,4 @@ godot --headless --path . --script res://tests/gameplay_smoke.gd
 
 ## 截图
 
-Project store `media/art-ship/`。
+Project store `media/m1-td/`。
