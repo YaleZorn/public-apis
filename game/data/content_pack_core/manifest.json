@@ -3,5 +3,5 @@
   "version": 1,
   "display_name": "剑阁核心包",
   "owned": true,
-  "modules": ["units", "enemies", "waves", "rooms", "knowledge", "materials", "idle"]
+  "modules": ["units", "enemies", "waves", "rooms", "knowledge", "materials", "idle", "arena", "tower", "gear"]
 }

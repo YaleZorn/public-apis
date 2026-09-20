@@ -33,7 +33,7 @@ func _ready() -> void:
 	tagline.text = "守卫剑阁 · 栈道夜行 · 真知识"
 	AP.apply_label(tagline, 18, AP.MIST_TEAL.lightened(0.28))
 	AP.apply_label(version_label, 13, Color(0.55, 0.62, 0.56, 1))
-	version_label.text = "v0.3.5 画面达标"
+	version_label.text = "v0.8.0 演武·爬塔"
 	continue_btn.visible = GameState.has_resume()
 	continue_btn.theme_type_variation = &"ButtonPrimary"
 	start_btn.theme_type_variation = &"ButtonPrimary"
@@ -59,12 +59,17 @@ func _process(delta: float) -> void:
 func _on_continue() -> void:
 	Juice.play_sfx("tap")
 	Juice.fade_transition(func():
-		if GameState.resume_target() == "td":
-			GameState.go_td(true)
-		elif GameState.resume_target() == "explore":
-			GameState.go_explore(true)
-		else:
-			GameState.go_lobby()
+		match GameState.resume_target():
+			"td":
+				GameState.go_td(true)
+			"explore":
+				GameState.go_explore(true)
+			"arena":
+				GameState.go_arena(true)
+			"tower":
+				GameState.go_tower(true)
+			_:
+				GameState.go_lobby()
 	)
 
 

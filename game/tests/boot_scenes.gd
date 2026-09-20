@@ -6,6 +6,8 @@ var _scenes := [
 	"res://scenes/idle/idle_hub.tscn",
 	"res://scenes/td/td_battle.tscn",
 	"res://scenes/explore/explore_run.tscn",
+	"res://scenes/arena/arena_run.tscn",
+	"res://scenes/tower/tower_run.tscn",
 	"res://scenes/knowledge/knowledge_hub.tscn",
 ]
 var _i := 0

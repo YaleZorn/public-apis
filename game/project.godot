@@ -1,12 +1,12 @@
 ; Engine configuration file.
-; Kongfu Roguelike v0.6.0 — M3 explore 搜打撤
+; Kongfu Roguelike v0.8.0 — M4 演武场 + M5 爬塔
 config_version=5
 
 [application]
 
 config/name="Kongfu Roguelike"
-config/description="竖屏武侠：无限波塔防 + Idle 名人 + 探索搜打撤 + 健身知识"
-config/version="0.6.0"
+config/description="竖屏武侠：无限波塔防 + Idle 名人 + 探索搜打撤 + 演武场 + 爬塔 + 健身知识"
+config/version="0.8.0"
 run/main_scene="res://scenes/shell/title_screen.tscn"
 config/features=PackedStringArray("4.3", "Forward Plus")
 config/icon="res://icon.svg"

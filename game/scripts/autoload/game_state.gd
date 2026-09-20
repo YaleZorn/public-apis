@@ -1,7 +1,7 @@
 extends Node
 ## Shared meta + run checkpoints. Idle celebrity roster feeds TD & explore.
 
-enum Mode { LOBBY, TD, EXPLORE, KNOWLEDGE, IDLE }
+enum Mode { LOBBY, TD, EXPLORE, KNOWLEDGE, IDLE, ARENA, TOWER }
 
 signal meta_changed
 signal checkpoint_changed
@@ -21,6 +21,9 @@ var morning_quiz_done_day: int = -1
 var morning_buff_active: bool = false
 var total_td_clears: int = 0
 var total_explore_clears: int = 0
+var total_arena_runs: int = 0
+var arena_best_sec: float = 0.0
+var tower_floor_cleared: int = 0 ## highest floor cleared (1-based)
 var silver_bank: int = 0
 var xiuwei_bank: int = 0
 var materials_draft: int = 0 ## aggregate draft count (Idle claim + explore deposit sum)
@@ -40,6 +43,8 @@ var training_slots: Array = []
 # --- Active checkpoints ---
 var td_checkpoint: Dictionary = {}
 var explore_checkpoint: Dictionary = {}
+var arena_checkpoint: Dictionary = {}
+var tower_checkpoint: Dictionary = {}
 
 
 func _ready() -> void:
@@ -56,6 +61,8 @@ func _bootstrap_from_disk() -> void:
 	SettingsManager.load_from_meta(data.get("meta", {}))
 	td_checkpoint = data.get("td_checkpoint", {})
 	explore_checkpoint = data.get("explore_checkpoint", {})
+	arena_checkpoint = data.get("arena_checkpoint", {})
+	tower_checkpoint = data.get("tower_checkpoint", {})
 	_accrue_idle_offline()
 	checkpoint_changed.emit()
 
@@ -97,6 +104,9 @@ func _apply_meta(meta: Dictionary) -> void:
 	morning_buff_active = bool(meta.get("morning_buff_active", false))
 	total_td_clears = int(meta.get("total_td_clears", 0))
 	total_explore_clears = int(meta.get("total_explore_clears", 0))
+	total_arena_runs = int(meta.get("total_arena_runs", 0))
+	arena_best_sec = float(meta.get("arena_best_sec", 0.0))
+	tower_floor_cleared = int(meta.get("tower_floor_cleared", 0))
 	silver_bank = int(meta.get("silver_bank", 0))
 	xiuwei_bank = int(meta.get("xiuwei_bank", 0))
 	materials_draft = int(meta.get("materials_draft", 0))
@@ -140,6 +150,9 @@ func export_meta() -> Dictionary:
 		"morning_buff_active": morning_buff_active,
 		"total_td_clears": total_td_clears,
 		"total_explore_clears": total_explore_clears,
+		"total_arena_runs": total_arena_runs,
+		"arena_best_sec": arena_best_sec,
+		"tower_floor_cleared": tower_floor_cleared,
 		"silver_bank": silver_bank,
 		"xiuwei_bank": xiuwei_bank,
 		"materials_draft": materials_draft,
@@ -160,10 +173,14 @@ func export_meta() -> Dictionary:
 func persist_lobby() -> void:
 	td_checkpoint = {}
 	explore_checkpoint = {}
+	arena_checkpoint = {}
+	tower_checkpoint = {}
 	SaveManager.write_save({
 		"meta": export_meta(),
 		"td_checkpoint": {},
 		"explore_checkpoint": {},
+		"arena_checkpoint": {},
+		"tower_checkpoint": {},
 		"resume": "lobby",
 	})
 	checkpoint_changed.emit()
@@ -174,6 +191,8 @@ func persist_meta_keep_checkpoints() -> void:
 		"meta": export_meta(),
 		"td_checkpoint": td_checkpoint,
 		"explore_checkpoint": explore_checkpoint,
+		"arena_checkpoint": arena_checkpoint,
+		"tower_checkpoint": tower_checkpoint,
 		"resume": resume_target(),
 	})
 	meta_changed.emit()
@@ -182,10 +201,14 @@ func persist_meta_keep_checkpoints() -> void:
 func persist_td(checkpoint: Dictionary) -> void:
 	td_checkpoint = checkpoint.duplicate(true)
 	explore_checkpoint = {}
+	arena_checkpoint = {}
+	tower_checkpoint = {}
 	SaveManager.write_save({
 		"meta": export_meta(),
 		"td_checkpoint": td_checkpoint,
 		"explore_checkpoint": {},
+		"arena_checkpoint": {},
+		"tower_checkpoint": {},
 		"resume": "td",
 	})
 	checkpoint_changed.emit()
@@ -194,17 +217,58 @@ func persist_td(checkpoint: Dictionary) -> void:
 func persist_explore(checkpoint: Dictionary) -> void:
 	explore_checkpoint = checkpoint.duplicate(true)
 	td_checkpoint = {}
+	arena_checkpoint = {}
+	tower_checkpoint = {}
 	SaveManager.write_save({
 		"meta": export_meta(),
 		"td_checkpoint": {},
 		"explore_checkpoint": explore_checkpoint,
+		"arena_checkpoint": {},
+		"tower_checkpoint": {},
 		"resume": "explore",
 	})
 	checkpoint_changed.emit()
 
 
+func persist_arena(checkpoint: Dictionary) -> void:
+	arena_checkpoint = checkpoint.duplicate(true)
+	td_checkpoint = {}
+	explore_checkpoint = {}
+	tower_checkpoint = {}
+	SaveManager.write_save({
+		"meta": export_meta(),
+		"td_checkpoint": {},
+		"explore_checkpoint": {},
+		"arena_checkpoint": arena_checkpoint,
+		"tower_checkpoint": {},
+		"resume": "arena",
+	})
+	checkpoint_changed.emit()
+
+
+func persist_tower(checkpoint: Dictionary) -> void:
+	tower_checkpoint = checkpoint.duplicate(true)
+	td_checkpoint = {}
+	explore_checkpoint = {}
+	arena_checkpoint = {}
+	SaveManager.write_save({
+		"meta": export_meta(),
+		"td_checkpoint": {},
+		"explore_checkpoint": {},
+		"arena_checkpoint": {},
+		"tower_checkpoint": tower_checkpoint,
+		"resume": "tower",
+	})
+	checkpoint_changed.emit()
+
+
 func has_resume() -> bool:
-	return not td_checkpoint.is_empty() or not explore_checkpoint.is_empty()
+	return (
+		not td_checkpoint.is_empty()
+		or not explore_checkpoint.is_empty()
+		or not arena_checkpoint.is_empty()
+		or not tower_checkpoint.is_empty()
+	)
 
 
 func resume_target() -> String:
@@ -212,6 +276,10 @@ func resume_target() -> String:
 		return "td"
 	if not explore_checkpoint.is_empty():
 		return "explore"
+	if not arena_checkpoint.is_empty():
+		return "arena"
+	if not tower_checkpoint.is_empty():
+		return "tower"
 	return "lobby"
 
 
@@ -587,6 +655,20 @@ func go_explore(continue_run: bool = false) -> void:
 	if not continue_run:
 		explore_checkpoint = {}
 	get_tree().change_scene_to_file("res://scenes/explore/explore_run.tscn")
+
+
+func go_arena(continue_run: bool = false) -> void:
+	mode = Mode.ARENA
+	if not continue_run:
+		arena_checkpoint = {}
+	get_tree().change_scene_to_file("res://scenes/arena/arena_run.tscn")
+
+
+func go_tower(continue_run: bool = false) -> void:
+	mode = Mode.TOWER
+	if not continue_run:
+		tower_checkpoint = {}
+	get_tree().change_scene_to_file("res://scenes/tower/tower_run.tscn")
 
 
 func go_knowledge() -> void:

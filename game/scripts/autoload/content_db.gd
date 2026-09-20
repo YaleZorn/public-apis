@@ -18,6 +18,8 @@ var idle_cfg: Dictionary = {}
 var materials: Dictionary = {} ## id -> material dict
 var material_list: Array = []
 var recipes: Array = [] ## craft recipe dicts
+var arena_cfg: Dictionary = {}
+var tower_cfg: Dictionary = {}
 
 
 func _ready() -> void:
@@ -61,6 +63,8 @@ func reload() -> void:
 		material_list.append(item)
 	for r in m_data.get("recipes", []):
 		recipes.append(r)
+	arena_cfg = _load_json("%s/arena.json" % PACK_ROOT)
+	tower_cfg = _load_json("%s/tower.json" % PACK_ROOT)
 
 
 func get_unit(id: String) -> Dictionary:
@@ -88,6 +92,21 @@ func get_node_cfg(node_id: String) -> Dictionary:
 		if str(n.get("id", "")) == node_id:
 			return n
 	return {}
+
+
+func get_tower_floor(floor_n: int) -> Dictionary:
+	for f in tower_cfg.get("floors", []):
+		if int(f.get("floor", 0)) == floor_n:
+			return f
+	return {}
+
+
+func exclusive_gear_ids() -> Array:
+	var out: Array = []
+	for g in gear_list:
+		if bool(g.get("exclusive", false)) or str(g.get("pool", "")) == "tower_exclusive":
+			out.append(str(g.get("id", "")))
+	return out
 
 
 func owned_pack() -> bool:

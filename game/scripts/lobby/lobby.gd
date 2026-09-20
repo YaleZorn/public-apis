@@ -30,12 +30,12 @@ func _ready() -> void:
 		accent.visible = false
 	title_label.text = "剑阁·大厅"
 	AP.apply_label(title_label, 44, AP.LANTERN_GOLD)
-	subtitle.text = "Idle 名人 · 守卫剑阁 TD · 荒山搜打撤"
+	subtitle.text = "TD · Idle · 搜打撤 · 演武 · 爬塔"
 	AP.apply_label(subtitle, 15, AP.MIST_TEAL.lightened(0.22))
-	# M3: Explore 搜打撤 live; 爬塔 / 演武 remain stubs for M4+.
+	# M4/M5: Arena + Tower live (same auto-combat ring as explore).
 	var idle_btn := get_node_or_null("%IdleStubBtn") as Button
-	var tower_stub := get_node_or_null("%TowerStubBtn")
-	var arena_stub := get_node_or_null("%ArenaStubBtn")
+	var tower_btn := get_node_or_null("%TowerStubBtn") as Button
+	var arena_btn := get_node_or_null("%ArenaStubBtn") as Button
 	if idle_btn:
 		idle_btn.disabled = false
 		idle_btn.text = "名人花名册 · Idle"
@@ -45,10 +45,24 @@ func _ready() -> void:
 			Juice.play_sfx("tap")
 			Juice.fade_transition(func(): GameState.go_idle())
 		)
-	for stub in [tower_stub, arena_stub]:
-		if stub:
-			stub.disabled = true
-			stub.tooltip_text = "后续里程碑 · 大厅入口预留"
+	if arena_btn:
+		arena_btn.disabled = false
+		arena_btn.text = "演武场 · 生存练功"
+		arena_btn.theme_type_variation = &"ButtonPrimary"
+		arena_btn.tooltip_text = "敌人 ramp · 随时下场 · 修为/熟练度"
+		arena_btn.pressed.connect(func():
+			Juice.play_sfx("tap")
+			Juice.fade_transition(func(): GameState.go_arena(false))
+		)
+	if tower_btn:
+		tower_btn.disabled = false
+		tower_btn.text = "爬塔 · 纵向进度"
+		tower_btn.theme_type_variation = &"ButtonPrimary"
+		tower_btn.tooltip_text = "清层进阶 · 层间存档 · 专属装备"
+		tower_btn.pressed.connect(func():
+			Juice.play_sfx("tap")
+			Juice.fade_transition(func(): GameState.go_tower(false))
+		)
 	new_explore_btn.text = "新局 · 探索搜打撤"
 	new_explore_btn.tooltip_text = "荒山节点：搜材料 → 打遭遇 → 撤据点结算"
 	AP.apply_richtext(roster_panel, 15)
@@ -78,7 +92,18 @@ func _ready() -> void:
 func _refresh() -> void:
 	var has_resume := GameState.has_resume()
 	continue_btn.visible = has_resume
-	continue_btn.text = "续关 · %s" % ("塔防" if GameState.resume_target() == "td" else "探索")
+	var resume := GameState.resume_target()
+	var resume_label := resume
+	match resume:
+		"td":
+			resume_label = "塔防"
+		"explore":
+			resume_label = "探索"
+		"arena":
+			resume_label = "演武"
+		"tower":
+			resume_label = "爬塔"
+	continue_btn.text = "续关 · %s" % resume_label
 	var unlocked := GameState.unlocked_units.size()
 	var total := ContentDB.unit_list.size()
 	var seen := GameState.knowledge_seen.size()
@@ -122,12 +147,14 @@ func _refresh() -> void:
 		for gid in GameState.gear_unlocked:
 			var g: Dictionary = ContentDB.get_gear(gid)
 			var equipped: bool = gid in GameState.gear_equipped
-			gear_panel.append_text("%s %s — %s\n" % [
-				"✓" if equipped else "○", g.get("name", gid), g.get("bonus", "")
+			var exclusive := " [专]" if bool(g.get("exclusive", false)) else ""
+			gear_panel.append_text("%s %s%s — %s\n" % [
+				"✓" if equipped else "○", g.get("name", gid), exclusive, g.get("bonus", "")
 			])
-	status_label.text = "知识 %d/15 · 银 %d · 修为 %d · 材料 %s · TD%d · 探索通关 %d" % [
+	status_label.text = "知识 %d/15 · 银 %d · 修为 %d · 材料 %s · TD%d · 探%d · 演武%d · 塔%d" % [
 		seen, GameState.silver_bank, GameState.xiuwei_bank, GameState.materials_summary(),
 		GameState.total_td_clears, GameState.total_explore_clears,
+		GameState.total_arena_runs, GameState.tower_floor_cleared,
 	]
 	knowledge_btn.text = "知识本 / 晨课" + (" ✦" if GameState.can_morning_quiz() else "")
 	_rebuild_hero_bar()
@@ -192,10 +219,15 @@ func _rebuild_gear_buttons() -> void:
 func _on_continue() -> void:
 	Juice.play_sfx("tap")
 	Juice.fade_transition(func():
-		if GameState.resume_target() == "td":
-			GameState.go_td(true)
-		elif GameState.resume_target() == "explore":
-			GameState.go_explore(true)
+		match GameState.resume_target():
+			"td":
+				GameState.go_td(true)
+			"explore":
+				GameState.go_explore(true)
+			"arena":
+				GameState.go_arena(true)
+			"tower":
+				GameState.go_tower(true)
 	)
 
 

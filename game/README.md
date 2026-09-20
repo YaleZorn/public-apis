@@ -1,13 +1,16 @@
-# Kongfu Roguelike — M3 探索搜打撤（v0.6.0）
+# Kongfu Roguelike — M4 演武场 + M5 爬塔（v0.8.0）
 
-竖屏、离线武侠健身题材。**M3：荒山搜打撤** — 饥荒气质节点图 + 搜材料 / 打遭遇 / 撤据点结算；材料进共享 meta 与薄打造；叠在 M2 Idle 名人 + M1 无限波 TD 之上。
+竖屏、离线武侠健身题材。叠在 M3 搜打撤之上：
+
+- **M4 演武场**：生存 ramp · 自动普攻+主动技 · 随时下场结算修为/熟练度
+- **M5 爬塔**：纵向层表 · 清层进阶 · 层间存档 · 后期专属装备（与探索池分离）
 
 设计依据（Project store）：
 - `docs/gameplay-design.md`
 - `docs/project-context.md`
 - `docs/base-game-candidates.md`
 
-第三方声明：见 [`THIRD_PARTY.md`](./THIRD_PARTY.md)（合法 OSS only · AutoCombatKit / expressobits 思路归因）。
+第三方声明：见 [`THIRD_PARTY.md`](./THIRD_PARTY.md)（合法 OSS only）。
 
 ## 要求
 
@@ -23,25 +26,24 @@ godot4 --path .
 godot --path . --rendering-driver opengl3
 ```
 
-### 搜打撤怎么玩
+### 演武场怎么玩
 
-1. 大厅选探索英雄（花名册肖像）→ **新局 · 探索搜打撤**
-2. **山门据点**：看出路 / 入库背包 / 薄打造（麻布护腕、武学草稿等）
-3. **搜**：药草坡、弃械小径、玉屑密龛 → 材料进本趟背包
-4. **打**：自动普攻 + 点主动技；清场掉材料/碎片
-5. **撤**：非战斗可「回据点」；据点「撤离回大厅」全额入库；战斗中撤离保留约半袋；力竭保留约四成
-6. 节点边界 / 非战斗「存档并回大厅」可中断续关
+1. 大厅选英雄肖像 → **演武场 · 生存练功**
+2. 敌人持续刷出并随时间变强；自动普攻，点主动技
+3. 右上墨雾肖像 + 存活/击杀 HUD
+4. 随时 **下场结算**（或力竭）→ 熟练度 / 修为 / 少量银两入库
+5. 软存档约每 5s；大厅可续关演武
 
-爬塔 / 演武仍为大厅 stubs。
+### 爬塔怎么玩
 
-## M3 已交付
+1. 大厅选英雄 → **爬塔 · 纵向进度**
+2. 清当前层敌人 → 层奖（材料/碎片/武学草稿）
+3. **下一层** 或 **存档并回大厅**（层间可中断）
+4. 第 5 层起可掉 **剑阁残锋**（`pool: tower_exclusive`，不进探索掉落）
 
-- 节点图 `rooms.json`（settle / gather / combat / event / supply / loot）
-- 本趟背包 `run_bag.gd` + 共享 `materials_inv` + `materials.json` 配方
-- 自动战 + 主动技；夜压（访节点过多后敌攻↑）
-- 撤离结算比例；存档 v3（材料库存迁移）
-- 大厅探索为真实模式文案；墨雾肖像保留
-- 离线无 IAP；冒烟含 explore gather/combat/withdraw
+### 探索 / TD / Idle
+
+仍按原路径：大厅新局塔防、探索搜打撤、名人花名册 Idle。
 
 ## 冒烟
 
@@ -54,4 +56,5 @@ godot --headless --path . --script res://tests/gameplay_smoke.gd
 
 ## 截图
 
-Project store `media/m3-explore/`。
+- Project store `media/m4-arena/`
+- Project store `media/m5-tower/`

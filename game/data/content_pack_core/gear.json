@@ -24,6 +24,18 @@
       "tag": "饰",
       "bonus": "晨课答对额外 +5 HP",
       "unlock": "knowledge_5"
+    },
+    {
+      "id": "gear_tower_blade",
+      "name": "剑阁残锋",
+      "slot": 0,
+      "tag": "器",
+      "bonus": "爬塔专属 · 自动战攻击 +8%",
+      "unlock": "tower_exclusive",
+      "pool": "tower_exclusive",
+      "exclusive": true,
+      "source": "tower",
+      "content_pack": "core"
     }
   ]
 }

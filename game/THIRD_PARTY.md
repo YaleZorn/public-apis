@@ -10,11 +10,11 @@
 
 Full MIT text: [`third_party/ape1121-godot-4-tower-defense-template/LICENSE`](./third_party/ape1121-godot-4-tower-defense-template/LICENSE)
 
-## Explore auto-combat ideas (M3)
+## Explore auto-combat ideas (M3+)
 
 | Project | License | Upstream | Usage in Kongfu |
 | --- | --- | --- | --- |
-| [yuuki4180/GodotAutoCombatKit](https://github.com/yuuki4180/GodotAutoCombatKit) | **MIT** | GitHub | **Ideas only** (竖屏自动索敌普攻 + 轻触主动). Kongfu explore combat in `scripts/explore/explore_run.gd` is first-party; **no** AutoCombatKit source or assets vendored. |
+| [yuuki4180/GodotAutoCombatKit](https://github.com/yuuki4180/GodotAutoCombatKit) | **MIT** | GitHub | **Ideas only** (竖屏自动索敌普攻 + 轻触主动). Shared first-party ring: `scripts/combat/auto_combat_ring.gd` (explore / arena / tower). **No** AutoCombatKit source or assets vendored. |
 
 ## Lite inventory (M3)
 
@@ -22,6 +22,19 @@ Full MIT text: [`third_party/ape1121-godot-4-tower-defense-template/LICENSE`](./
 | --- | --- | --- | --- |
 | [expressobits/inventory-system](https://github.com/expressobits/inventory-system) | **MIT** | GitHub | **API / bag+craft shape inspiration** for first-party `scripts/explore/run_bag.gd` + `materials.json` recipes. Plugin **not** vendored; craft UI is thin settle hooks. |
 | [seloc0des/godot-inventory-lite](https://github.com/seloc0des/godot-inventory-lite) | **MIT** | GitHub | Mentioned as lighter alternative; not vendored. |
+
+## Arena ramp ideas (M4)
+
+| Project | License | Upstream | Usage in Kongfu |
+| --- | --- | --- | --- |
+| [DarkRewar/SurvivorsStarterKit](https://github.com/DarkRewar/SurvivorsStarterKit) | **MIT** | GitHub | **Ideas only** (survival timer / escalate spawn pressure). Kongfu arena is first-party GDScript on the shared auto-combat ring; **no** C# survivors kit vendored. |
+| GDScript survivors clones (e.g. migalvalm / bektaskemal — MIT) | **MIT** | GitHub | Optional escalate/timer reference; not vendored. |
+
+## Tower layer UX (M5)
+
+| Project | License | Upstream | Usage in Kongfu |
+| --- | --- | --- | --- |
+| [MadAvidCoder/Ascendancy](https://github.com/MadAvidCoder/Ascendancy) | **MIT** | GitHub | **Layer-progress UX inspiration only**. Floor table + exclusive drop pool are first-party (`tower.json` / `gear_tower_blade`). No platformer combat fork. |
 
 ## Engine
 
@@ -31,12 +44,11 @@ Full MIT text: [`third_party/ape1121-godot-4-tower-defense-template/LICENSE`](./
 
 ## Shell / content (first-party)
 
-Title, lobby, art (ink-mist), ContentDB, SaveManager, knowledge pipeline, Idle hub, explore 搜打撤 — Kongfu project original under the repository license. Offline, **no IAP**.
+Title, lobby, art (ink-mist), ContentDB, SaveManager, knowledge pipeline, Idle hub, explore 搜打撤, arena 演武场, tower 爬塔 — Kongfu project original under the repository license. Offline, **no IAP**. Content-pack seam: `manifest.content_pack` + gear `content_pack` field for future DLC packs.
 
-## Future mode grafts (not in M3 binary)
+## Future grafts
 
-- scottpetrovic/godot-4-idleclicker (MIT) — idle upgrade reference (Idle already first-party in M2)
-- DarkRewar/SurvivorsStarterKit or GDScript survivors clones (MIT) — arena ramp (M4+)
-- Ascendancy / room-chain refs — tower climb layer table (M5)
+- Knowledge morning-quiz polish / content_pack demo pack (M7-ish)
+- Optional vendor expressobits full inventory
 
-When those land, append LICENSE copies under `third_party/` and update this file.
+When vendoring LICENSE files: append under `third_party/` and update this file.
