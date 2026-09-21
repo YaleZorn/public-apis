@@ -50,6 +50,10 @@ var time_scale_local: float = 1.0
 var _slot_buttons: Array[Button] = []
 var wave_director = null
 var flank_path_line: Line2D
+var _threat_armed: bool = false
+var _gate_node_ref: Control = null
+var _ambush_lbl: Label = null
+var _lives_low_warned: bool = false
 var milestone_cleared: bool = false
 
 
@@ -108,8 +112,34 @@ func _process(delta: float) -> void:
 	_tick_spawns(d)
 	_tick_combat(d)
 	_tick_movement(d)
+	_tick_stronghold_threat()
 	if enemies_alive <= 0 and spawn_queue.is_empty():
 		_on_wave_cleared()
+
+
+func _tick_stronghold_threat() -> void:
+	## Pulse gate + HUD when enemies near stronghold or lives critically low.
+	if path_points.is_empty():
+		return
+	var gate_pt: Vector2 = path_points[path_points.size() - 1]
+	var near := false
+	for node in enemies_layer.get_children():
+		var pos: Vector2 = node.position + node.custom_minimum_size * 0.5
+		if pos.distance_to(gate_pt) < 120.0:
+			near = true
+			break
+	if near and not _threat_armed:
+		_threat_armed = true
+		Juice.play_sfx("threat")
+		Juice.threaten(hud_lives, 2)
+		if _gate_node_ref:
+			Juice.threaten(_gate_node_ref, 2)
+	elif not near:
+		_threat_armed = false
+	if lives <= 3 and not _lives_low_warned:
+		_lives_low_warned = true
+		Juice.play_sfx("threat")
+		Juice.threaten(hud_lives, 3)
 
 
 func _build_path() -> void:
@@ -188,6 +218,7 @@ func _build_decor(w: float, h: float) -> void:
 		gate_pos.y = maxf(gate_pos.y, 24.0)
 		gate.position = gate_pos
 		decor_layer.add_child(gate)
+		_gate_node_ref = gate
 		var spawn := Atmo._spawn_marker()
 		spawn.position = path_points[0] - Vector2(14, 14)
 		decor_layer.add_child(spawn)
@@ -202,6 +233,7 @@ func _build_decor(w: float, h: float) -> void:
 		AP.apply_label(ambush_lbl, 12, Color(0.95, 0.55, 0.42))
 		ambush_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		decor_layer.add_child(ambush_lbl)
+		_ambush_lbl = ambush_lbl
 	var mist := ColorRect.new()
 	mist.size = Vector2(w, 48)
 	mist.position = Vector2(0, h * 0.4)
@@ -342,8 +374,13 @@ func _on_slot_pressed(slot: int) -> void:
 		return
 	silver -= cost
 	_spawn_unit_visual(slot, selected_unit_id)
+	var center := _slot_center(slot)
+	VF.placement_ring(units_layer, center, Color(AP.LANTERN_GOLD.r, AP.LANTERN_GOLD.g, AP.LANTERN_GOLD.b, 0.8))
+	Juice.float_number(center + Vector2(0, -28), "-%d" % cost, Color(0.95, 0.78, 0.45))
 	Juice.play_sfx("place")
 	Juice.pulse(_slot_buttons[slot])
+	if deployed.has(slot) and deployed[slot].node:
+		Juice.pulse(deployed[slot].node, 1.14, 0.16)
 	_refresh_hud()
 	_persist_prep()
 
@@ -419,15 +456,30 @@ func _on_start_wave() -> void:
 	spawn_timer = 0.35
 	enemies_alive = 0
 	wave_running = true
+	_threat_armed = false
 	start_wave_btn.disabled = true
 	var label := str(wave.get("label", "第 %d 波" % (wave_index + 1)))
 	wave_banner.text = "— %s —" % label
-	wave_banner.visible = true
 	status_label.text = str(wave.get("hint", "敌军来袭！"))
+	VF.room_wipe(self, Color(0.05, 0.12, 0.10, 0.55))
 	Juice.play_sfx("wave")
 	Juice.screen_shake(field, 5.0)
+	Juice.banner_pop(wave_banner, 1.8)
+	Juice.pulse(start_wave_btn, 1.08, 0.18)
+	# Flank telegraph when this wave includes ambush spawns
+	var has_flank := false
+	for spawn in wave.get("spawns", []):
+		if str(spawn.get("lane", "main")) == "flank":
+			has_flank = true
+			break
+	if has_flank and flank_path_points.size() > 1:
+		VF.flank_telegraph(field, flank_path_points)
+		Juice.play_sfx("flank")
+		if _ambush_lbl:
+			Juice.flash_modulate(_ambush_lbl, Color(1.4, 0.85, 0.7, 1.0), 0.35)
+			Juice.pulse(_ambush_lbl, 1.2, 0.22)
+		status_label.text = str(wave.get("hint", "敌军来袭！")) + " · 侧翼伏击！"
 	_refresh_hud()
-	get_tree().create_timer(2.2).timeout.connect(func(): wave_banner.visible = false)
 
 
 func _tick_spawns(delta: float) -> void:
@@ -627,6 +679,10 @@ func _leak(node: Node) -> void:
 	enemies_alive = max(0, enemies_alive - 1)
 	Juice.screen_shake(field, 8.0)
 	Juice.play_sfx("lose")
+	Juice.threaten(hud_lives, 2)
+	if _gate_node_ref:
+		Juice.threaten(_gate_node_ref, 2)
+	VF.hit_flash(enemies_layer, path_points[path_points.size() - 1] if path_points.size() > 0 else Vector2.ZERO, Color(0.95, 0.4, 0.3, 0.9))
 	node.queue_free()
 	_refresh_hud()
 	if lives <= 0:
@@ -635,6 +691,7 @@ func _leak(node: Node) -> void:
 
 func _on_wave_cleared() -> void:
 	wave_running = false
+	_threat_armed = false
 	start_wave_btn.disabled = false
 	var wave: Dictionary = wave_director.build_wave(wave_index) if wave_director else {}
 	silver += int(wave.get("silver_bonus", 30))
@@ -642,6 +699,8 @@ func _on_wave_cleared() -> void:
 	_refresh_hud()
 	_update_wave_preview()
 	status_label.text = "波次肃清。可调整阵容后点「下一波」。"
+	Juice.play_sfx("win")
+	Juice.pulse(hud_wave, 1.08, 0.16)
 	if not GameState.unlocked_units.is_empty():
 		var uid: String = GameState.unlocked_units[wave_index % GameState.unlocked_units.size()]
 		GameState.add_fragments(uid, 1)
@@ -766,6 +825,10 @@ func _update_wave_preview() -> void:
 func _refresh_hud() -> void:
 	hud_silver.text = "银两 %d" % silver
 	hud_lives.text = "据点 %d" % lives
+	if lives <= 3:
+		hud_lives.add_theme_color_override("font_color", Color(0.95, 0.45, 0.35))
+	else:
+		hud_lives.add_theme_color_override("font_color", AP.PAPER_INK)
 	hud_wave.text = "波次 %d · ∞" % (wave_index + 1)
 	start_wave_btn.text = "下一波 · 第 %d 波" % (wave_index + 1)
 	start_wave_btn.disabled = wave_running or awaiting_knowledge or game_over

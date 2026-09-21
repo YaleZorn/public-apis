@@ -154,10 +154,10 @@ func _refresh() -> void:
 			gear_panel.append_text("%s %s%s — %s\n" % [
 				"✓" if equipped else "○", g.get("name", gid), exclusive, g.get("bonus", "")
 			])
-	status_label.text = "知识 %d/%d · 待复 %d · 银 %d · 修为 %d · 材料 %s · TD%d · 探%d · 演武%d · 塔%d · 包[%s]" % [
-		seen, total_k, review, GameState.silver_bank, GameState.xiuwei_bank, GameState.materials_summary(),
-		GameState.total_td_clears, GameState.total_explore_clears,
-		GameState.total_arena_runs, GameState.tower_floor_cleared,
+	status_label.text = "银%d · 修为%d · 材 %s · 知识%d/%d%s · 包[%s]" % [
+		GameState.silver_bank, GameState.xiuwei_bank, GameState.materials_summary(),
+		seen, total_k,
+		(" ·复%d" % review) if review > 0 else "",
 		",".join(ContentDB.loaded_pack_ids),
 	]
 	knowledge_btn.text = "知识本 / 晨课" + (" ✦" if GameState.can_morning_quiz() else "")
@@ -186,7 +186,7 @@ func _rebuild_hero_bar() -> void:
 		wrap.clip_contents = true
 		wrap.text = ""
 		wrap.disabled = selected or not unlocked
-		var card := VF.portrait_card(u, Vector2(88, 120), selected)
+		var card := VF.portrait_card(u, Vector2(88, 120), selected, not unlocked)
 		card.position = Vector2(2, 2)
 		card.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		if not unlocked:
@@ -197,6 +197,7 @@ func _rebuild_hero_bar() -> void:
 				GameState.explore_hero_id = uid
 				GameState.persist_meta_keep_checkpoints()
 				Juice.play_sfx("tap")
+				Juice.pulse(wrap, 1.06, 0.12)
 				_refresh()
 			)
 		hero_bar.add_child(wrap)

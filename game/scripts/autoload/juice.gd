@@ -146,6 +146,46 @@ func pulse(node: CanvasItem, scale_up: float = 1.12, duration: float = 0.12) -> 
 	tw.tween_property(node, "scale", base, duration * 0.55)
 
 
+func flash_modulate(node: CanvasItem, to: Color = Color(1.35, 1.2, 0.95, 1.0), duration: float = 0.14) -> void:
+	if node == null or not is_instance_valid(node):
+		return
+	var base := node.modulate
+	node.modulate = to
+	var tw := node.create_tween()
+	tw.tween_property(node, "modulate", base, duration)
+
+
+func banner_pop(label: Control, hold: float = 1.6) -> void:
+	## Wave / floor banner: fade+scale in, hold, fade out.
+	if label == null:
+		return
+	label.visible = true
+	label.modulate.a = 0.0
+	label.pivot_offset = label.size * 0.5
+	label.scale = Vector2(0.86, 0.86)
+	var tw := create_tween()
+	tw.tween_property(label, "modulate:a", 1.0, 0.16)
+	tw.parallel().tween_property(label, "scale", Vector2.ONE, 0.22).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tw.tween_interval(hold)
+	tw.tween_property(label, "modulate:a", 0.0, 0.28)
+	tw.tween_callback(func():
+		if is_instance_valid(label):
+			label.visible = false
+			label.scale = Vector2.ONE
+	)
+
+
+func threaten(node: CanvasItem, pulses: int = 3) -> void:
+	## Stronghold / low-HP attention pulse (no layout change).
+	if node == null or not is_instance_valid(node):
+		return
+	var base := node.modulate
+	var tw := create_tween()
+	for i in pulses:
+		tw.tween_property(node, "modulate", Color(1.35, 0.55, 0.45, 1.0), 0.1)
+		tw.tween_property(node, "modulate", base, 0.14)
+
+
 func _setup_fade() -> void:
 	_fade_layer = CanvasLayer.new()
 	_fade_layer.layer = 100
@@ -213,6 +253,12 @@ func _build_streams() -> void:
 		"card": _make_chime([523.0, 659.0], 0.08, 0.14),
 		"room": _make_chime([247.0, 311.0, 370.0], 0.16, 0.16),
 		"lantern": _make_chime([523.0, 784.0], 0.1, 0.12),
+		"claim": _make_chime([392.0, 523.0, 659.0, 784.0], 0.2, 0.2),
+		"train": _make_chime([311.0, 392.0, 466.0], 0.14, 0.18),
+		"quiz_ok": _make_chime([523.0, 659.0, 784.0], 0.14, 0.18),
+		"quiz_bad": _make_chime([247.0, 196.0], 0.12, 0.18),
+		"threat": _make_noise_hit(0.07, 0.22),
+		"flank": _make_chime([185.0, 233.0, 311.0], 0.2, 0.22),
 	}
 
 

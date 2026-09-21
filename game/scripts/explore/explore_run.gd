@@ -142,6 +142,8 @@ func _init_hero_stats() -> void:
 	_hero_visual.position = hero_node.position
 	hero_node.visible = false
 	arena.add_child(_hero_visual)
+	VF.attach_hero_hp(_hero_visual)
+	VF.set_hero_hp_ratio(_hero_visual, hp / maxf(max_hp, 1.0), shield / maxf(max_hp, 1.0))
 	VF.idle_bob(_hero_visual, 4.0, 2.6)
 
 
@@ -558,6 +560,7 @@ func _tick_enemies(delta: float) -> void:
 		Juice.float_number(_hero_visual.position, "-%d" % int(dmg), Color(0.95, 0.45, 0.4))
 		Juice.play_sfx("hit")
 		Juice.screen_shake(arena, 5.0)
+		Juice.flash_modulate(_hero_visual, Color(1.45, 0.7, 0.65, 1.0), 0.12)
 		_pulse(enemy.node)
 		if hp <= 0:
 			_defeat()
@@ -780,6 +783,15 @@ func _refresh() -> void:
 	hp_label.text = "HP %d/%d%s" % [int(hp), int(max_hp), (" ·盾%d" % int(shield)) if shield > 0 else ""]
 	hp_bar.max_value = max_hp
 	hp_bar.value = hp
+	var ratio: float = hp / maxf(max_hp, 1.0)
+	if ratio < 0.35:
+		hp_bar.modulate = Color(1.15, 0.65, 0.55)
+	elif ratio < 0.65:
+		hp_bar.modulate = Color(1.05, 0.95, 0.7)
+	else:
+		hp_bar.modulate = Color(0.85, 1.05, 0.9)
+	if _hero_visual and is_instance_valid(_hero_visual):
+		VF.set_hero_hp_ratio(_hero_visual, ratio, shield / maxf(max_hp, 1.0))
 	bag_label.text = "背包 %s" % bag.summary_text(ContentDB.materials)
 	_refresh_skill_btn()
 

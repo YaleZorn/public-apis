@@ -177,7 +177,8 @@ func _try_assign(slot_index: int) -> void:
 		Juice.play_sfx("tap")
 		return
 	if GameState.assign_training(slot_index, _selected_id):
-		Juice.play_sfx("place")
+		Juice.play_sfx("train")
+		Juice.pulse(train_box, 1.04, 0.14)
 		status_label.text = "%s 入训练槽 %d（-%d 银两）" % [
 			ContentDB.get_unit(_selected_id).get("name", _selected_id), slot_index + 1, cost
 		]
@@ -228,7 +229,16 @@ func _rebuild_detail() -> void:
 
 func _on_claim() -> void:
 	var got := GameState.claim_idle()
-	Juice.play_sfx("place")
+	Juice.play_sfx("claim")
+	Juice.pulse(claim_btn, 1.12, 0.18)
+	Juice.flash_modulate(claim_btn, Color(1.25, 1.15, 0.85, 1.0), 0.2)
+	var anchor := claim_btn.global_position + claim_btn.size * 0.5
+	if got.silver > 0:
+		Juice.float_number(anchor + Vector2(-40, -20), "+银%d" % got.silver, Color(0.95, 0.82, 0.45))
+	if got.xiuwei > 0:
+		Juice.float_number(anchor + Vector2(20, -36), "+修为%d" % got.xiuwei, Color(0.65, 0.88, 0.75))
+	if got.materials > 0:
+		Juice.float_number(anchor + Vector2(-10, -52), "+材%d" % got.materials, Color(0.75, 0.82, 0.55))
 	status_label.text = "领取 +银两%d · +修为%d · +材料%d" % [
 		got.silver, got.xiuwei, got.materials
 	]

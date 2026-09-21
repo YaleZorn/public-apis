@@ -48,6 +48,10 @@ func _ready() -> void:
 	if old_bg:
 		old_bg.visible = false
 	Atmo.apply_explore_room(arena, "combat")
+	# Arena: warmer lantern wash for survival grind feel (same palette family).
+	var veil := arena.get_node_or_null("ArenaBg") as ColorRect
+	if veil:
+		veil.color = Color(0.14, 0.11, 0.08, 0.16)
 	AP.apply_label(room_label, 22, AP.LANTERN_GOLD)
 	AP.apply_label(hp_label, 15, AP.PAPER_DIM)
 	AP.apply_label(status_label, 14, AP.PAPER_DIM)
@@ -229,6 +233,15 @@ func _refresh() -> void:
 	hp_label.text = ring.hp_label_text()
 	hp_bar.max_value = ring.max_hp
 	hp_bar.value = ring.hp
+	var ratio: float = ring.hp / maxf(ring.max_hp, 1.0)
+	if ratio < 0.35:
+		hp_bar.modulate = Color(1.15, 0.65, 0.55)
+	elif ratio < 0.65:
+		hp_bar.modulate = Color(1.05, 0.95, 0.7)
+	else:
+		hp_bar.modulate = Color(0.85, 1.05, 0.9)
+	if ring.hero_visual:
+		VF.set_hero_hp_ratio(ring.hero_visual, ratio, ring.shield / maxf(ring.max_hp, 1.0))
 	skill_btn.text = ring.skill_button_text()
 	skill_btn.disabled = ring.skill_disabled()
 	stats_label.text = "存活 %.0fs · 杀 %d · 攒熟练%d / 修为%d" % [
