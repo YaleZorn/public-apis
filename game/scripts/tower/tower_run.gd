@@ -46,6 +46,10 @@ func _ready() -> void:
 	if old_bg:
 		old_bg.visible = false
 	Atmo.apply_explore_room(arena, "combat")
+	# Tower: cooler mist wash vs arena lantern — still ink-jade family.
+	var veil := arena.get_node_or_null("ArenaBg") as ColorRect
+	if veil:
+		veil.color = Color(0.08, 0.12, 0.16, 0.18)
 	AP.apply_label(room_label, 22, AP.LANTERN_GOLD)
 	AP.apply_label(hp_label, 15, AP.PAPER_DIM)
 	AP.apply_label(status_label, 14, AP.PAPER_DIM)
@@ -181,6 +185,8 @@ func _on_floor_cleared() -> void:
 	loot_label.visible = true
 	Juice.play_sfx("win")
 	Juice.pulse(loot_label, 1.08, 0.2)
+	Juice.pulse(room_label, 1.06, 0.18)
+	Juice.flash_modulate(room_label, Color(1.25, 1.15, 0.85, 1.0), 0.25)
 	status_label.text = "第%d层已清。进下一层或存档回大厅。" % floor_index
 	next_btn.visible = true
 	var next_f := _floor_cfg(floor_index + 1)
@@ -325,6 +331,15 @@ func _refresh() -> void:
 	hp_label.text = ring.hp_label_text()
 	hp_bar.max_value = ring.max_hp
 	hp_bar.value = ring.hp
+	var ratio: float = ring.hp / maxf(ring.max_hp, 1.0)
+	if ratio < 0.35:
+		hp_bar.modulate = Color(1.15, 0.65, 0.55)
+	elif ratio < 0.65:
+		hp_bar.modulate = Color(1.05, 0.95, 0.7)
+	else:
+		hp_bar.modulate = Color(0.85, 1.05, 0.9)
+	if ring.hero_visual:
+		VF.set_hero_hp_ratio(ring.hero_visual, ratio, ring.shield / maxf(ring.max_hp, 1.0))
 	skill_btn.text = ring.skill_button_text()
 	skill_btn.disabled = ring.skill_disabled() or between_floors or awaiting_knowledge
 	lobby_btn.disabled = (ring.combat_active and not between_floors) or awaiting_knowledge

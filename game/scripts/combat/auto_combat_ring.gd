@@ -63,6 +63,8 @@ func init_hero(uid: String, start_shield: float = 0.0) -> void:
 	if hero_anchor:
 		hero_anchor.visible = false
 	arena.add_child(hero_visual)
+	VF.attach_hero_hp(hero_visual)
+	_sync_hero_hp_bar()
 	VF.idle_bob(hero_visual, 4.0, 2.6)
 
 
@@ -161,6 +163,7 @@ func cast_skill() -> bool:
 	VF.skill_burst(arena, burst_at, burst_col)
 	Juice.play_sfx("skill")
 	Juice.screen_shake(arena, 5.0)
+	_sync_hero_hp_bar()
 	if enemies.is_empty() and combat_active:
 		combat_active = false
 		enemies_cleared.emit()
@@ -179,6 +182,12 @@ func skill_disabled() -> bool:
 
 func hp_label_text() -> String:
 	return "HP %d/%d%s" % [int(hp), int(max_hp), (" ·盾%d" % int(shield)) if shield > 0 else ""]
+
+
+func _sync_hero_hp_bar() -> void:
+	if hero_visual == null or not is_instance_valid(hero_visual):
+		return
+	VF.set_hero_hp_ratio(hero_visual, hp / maxf(max_hp, 1.0), shield / maxf(max_hp, 1.0))
 
 
 func _hero_auto_attack() -> void:
@@ -202,6 +211,7 @@ func _damage_enemy(enemy: Dictionary, dmg: float, flash: Color) -> void:
 	_pulse(enemy.node)
 	if enemy.hp <= 0:
 		VF.death_puff(enemies_layer, pos, Color(0.95, 0.5, 0.35, 0.85))
+		VF.placement_ring(enemies_layer, pos, Color(0.95, 0.7, 0.4, 0.7))
 		var eid := str(enemy.get("id", ""))
 		enemy.node.queue_free()
 		enemies.erase(enemy)
@@ -224,9 +234,11 @@ func _tick_enemies(delta: float) -> void:
 		hp -= dmg
 		if hero_visual:
 			Juice.float_number(hero_visual.position, "-%d" % int(dmg), Color(0.95, 0.45, 0.4))
+			Juice.flash_modulate(hero_visual, Color(1.45, 0.7, 0.65, 1.0), 0.12)
 		Juice.play_sfx("hit")
 		Juice.screen_shake(arena, 5.0)
 		_pulse(enemy.node)
+		_sync_hero_hp_bar()
 		if hp <= 0:
 			combat_active = false
 			hero_defeated.emit()

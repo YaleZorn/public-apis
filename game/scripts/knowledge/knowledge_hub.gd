@@ -286,9 +286,15 @@ func _show_quiz_question(is_review: bool = false) -> void:
 
 
 func _answer(correct: bool, kid: String, is_review: bool = false) -> void:
-	Juice.play_sfx("tap")
 	if correct:
 		_quiz_score += 1
+		Juice.play_sfx("quiz_ok")
+		Juice.pulse(quiz_title, 1.08, 0.14)
+		Juice.float_number(quiz_box.global_position + Vector2(quiz_box.size.x * 0.5, 24), "正", Color(0.6, 0.9, 0.65))
+	else:
+		Juice.play_sfx("quiz_bad")
+		Juice.flash_modulate(quiz_title, Color(1.3, 0.7, 0.6, 1.0), 0.18)
+		Juice.float_number(quiz_box.global_position + Vector2(quiz_box.size.x * 0.5, 24), "误", Color(0.95, 0.5, 0.4))
 	GameState.mark_knowledge_delivered(kid, correct)
 	_quiz_index += 1
 	_show_quiz_question(is_review)
@@ -312,6 +318,12 @@ func _finish_quiz(is_review: bool = false) -> void:
 		tip.text = "答对 ≥2 获得轻量 buff（TD 开局银两 / 探索护盾）。错题进间隔复习。" if _quiz_score >= 2 else "明日再来。错题已进复习队列。"
 	AP.apply_label(tip, 15, AP.MIST_TEAL.lightened(0.2))
 	quiz_box.add_child(tip)
+	Juice.slide_in(tip, 12.0, 0.22)
+	if _quiz_score >= 2:
+		Juice.play_sfx("win")
+		Juice.pulse(quiz_title, 1.1, 0.2)
+	else:
+		Juice.play_sfx("card")
 	start_quiz_btn.visible = true
 	if _review_btn:
 		_review_btn.visible = true

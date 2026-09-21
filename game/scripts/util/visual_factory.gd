@@ -151,7 +151,7 @@ static func unit_node(unit: Dictionary, size: Vector2 = Vector2(64, 72)) -> Cont
 
 
 ## Lobby / roster: taller portrait card with faction + role chip.
-static func portrait_card(unit: Dictionary, size: Vector2 = Vector2(96, 120), selected: bool = false) -> Control:
+static func portrait_card(unit: Dictionary, size: Vector2 = Vector2(96, 120), selected: bool = false, locked: bool = false) -> Control:
 	var role := str(unit.get("role", "dps"))
 	var root := Control.new()
 	root.custom_minimum_size = size
@@ -181,7 +181,8 @@ static func portrait_card(unit: Dictionary, size: Vector2 = Vector2(96, 120), se
 		spr.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 		spr.size = Vector2(size.x - 6, size.y - 28)
 		spr.position = Vector2(3, 3)
-		spr.modulate = Color(1.05, 1.03, 1.02, 1.0)
+		# Unified midtone lift across roster (portraits normalized offline)
+		spr.modulate = Color(1.04, 1.03, 1.02, 1.0)
 		root.add_child(spr)
 
 	var role_chip := ColorRect.new()
@@ -207,6 +208,13 @@ static func portrait_card(unit: Dictionary, size: Vector2 = Vector2(96, 120), se
 		AP.apply_label(star, 14, AP.LANTERN_GOLD)
 		star.position = Vector2(4, 4)
 		root.add_child(star)
+	elif locked:
+		var lock := Label.new()
+		lock.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		lock.text = "锁"
+		AP.apply_label(lock, 13, Color(0.72, 0.76, 0.7, 0.92))
+		lock.position = Vector2(4, 4)
+		root.add_child(lock)
 	return root
 
 
@@ -323,6 +331,99 @@ static func set_enemy_hp_ratio(node: Control, ratio: float) -> void:
 		fill.color = Color(0.95, 0.7, 0.3, 0.95)
 	else:
 		fill.color = Color(0.85, 0.35, 0.28, 0.95)
+
+
+static func attach_hero_hp(node: Control) -> void:
+	## Thin HP strip above ally stand — shared combat ring readability.
+	if node == null or node.get_node_or_null("HeroHpFill") != null:
+		return
+	var w := node.custom_minimum_size.x if node.custom_minimum_size.x > 0 else node.size.x
+	var hp_bg := ColorRect.new()
+	hp_bg.name = "HeroHpBg"
+	hp_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	hp_bg.size = Vector2(w, 6)
+	hp_bg.position = Vector2(0, -10)
+	hp_bg.color = Color(0.05, 0.07, 0.06, 0.85)
+	node.add_child(hp_bg)
+	var hp_fill := ColorRect.new()
+	hp_fill.name = "HeroHpFill"
+	hp_fill.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	hp_fill.size = Vector2(w, 6)
+	hp_fill.position = Vector2(0, -10)
+	hp_fill.color = Color(0.45, 0.82, 0.58, 0.95)
+	node.add_child(hp_fill)
+	var shield := ColorRect.new()
+	shield.name = "HeroShieldFill"
+	shield.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	shield.size = Vector2(0, 3)
+	shield.position = Vector2(0, -14)
+	shield.color = Color(0.55, 0.75, 0.95, 0.9)
+	node.add_child(shield)
+
+
+static func set_hero_hp_ratio(node: Control, hp_ratio: float, shield_ratio: float = 0.0) -> void:
+	if node == null:
+		return
+	var fill := node.get_node_or_null("HeroHpFill") as ColorRect
+	var w := node.custom_minimum_size.x if node.custom_minimum_size.x > 0 else node.size.x
+	if fill:
+		fill.size.x = maxf(1.0, w * clampf(hp_ratio, 0.0, 1.0))
+		if hp_ratio < 0.35:
+			fill.color = Color(0.95, 0.35, 0.28, 0.95)
+		elif hp_ratio < 0.65:
+			fill.color = Color(0.92, 0.78, 0.4, 0.95)
+		else:
+			fill.color = Color(0.45, 0.82, 0.58, 0.95)
+	var sh := node.get_node_or_null("HeroShieldFill") as ColorRect
+	if sh:
+		sh.size.x = maxf(0.0, w * clampf(shield_ratio, 0.0, 1.0))
+
+
+static func placement_ring(parent: Node, at: Vector2, color: Color = Color(0.9, 0.76, 0.42, 0.75)) -> void:
+	if parent == null:
+		return
+	var ring := ColorRect.new()
+	ring.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	ring.size = Vector2(28, 28)
+	ring.position = at - ring.size * 0.5
+	ring.color = color
+	parent.add_child(ring)
+	var tw := ring.create_tween()
+	tw.tween_property(ring, "scale", Vector2(3.2, 3.2), 0.28).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	tw.parallel().tween_property(ring, "modulate:a", 0.0, 0.28)
+	tw.tween_callback(ring.queue_free)
+	# Soft gold dust
+	for i in 4:
+		var d := ColorRect.new()
+		d.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		d.size = Vector2(6, 6)
+		d.position = at - d.size * 0.5
+		d.color = Color(AP.LANTERN_GOLD.r, AP.LANTERN_GOLD.g, AP.LANTERN_GOLD.b, 0.9)
+		parent.add_child(d)
+		var ang := TAU * float(i) / 4.0
+		var dest := at + Vector2(cos(ang), sin(ang)) * 36.0 - d.size * 0.5
+		var dtw := d.create_tween()
+		dtw.tween_property(d, "position", dest, 0.26)
+		dtw.parallel().tween_property(d, "modulate:a", 0.0, 0.26)
+		dtw.tween_callback(d.queue_free)
+
+
+static func flank_telegraph(parent: Node, points: PackedVector2Array) -> void:
+	## Brief bright pulse along flank path when ambush wave starts.
+	if parent == null or points.size() < 2:
+		return
+	var line := Line2D.new()
+	line.width = 14
+	line.default_color = Color(1.0, 0.45, 0.32, 0.0)
+	line.z_index = 8
+	line.points = points
+	parent.add_child(line)
+	var tw := line.create_tween()
+	tw.tween_property(line, "default_color:a", 0.72, 0.18)
+	tw.tween_property(line, "default_color:a", 0.0, 0.55)
+	tw.tween_callback(line.queue_free)
+	# Origin flare
+	placement_ring(parent, points[0], Color(1.0, 0.5, 0.35, 0.85))
 
 
 static func gate_marker(size: Vector2 = Vector2(84, 56)) -> Control:
