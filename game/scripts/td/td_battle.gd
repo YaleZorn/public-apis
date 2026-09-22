@@ -124,6 +124,8 @@ func _tick_stronghold_threat() -> void:
 	var gate_pt: Vector2 = path_points[path_points.size() - 1]
 	var near := false
 	for node in enemies_layer.get_children():
+		if not node.has_meta("eid"):
+			continue
 		var pos: Vector2 = node.position + node.custom_minimum_size * 0.5
 		if pos.distance_to(gate_pt) < 120.0:
 			near = true
@@ -307,11 +309,11 @@ func _build_roster_bar() -> void:
 	for uid in GameState.unlocked_units:
 		var u: Dictionary = ContentDB.get_unit(uid)
 		var wrap := Button.new()
-		wrap.custom_minimum_size = Vector2(72, 56)
+		wrap.custom_minimum_size = Vector2(68, 88)
 		wrap.focus_mode = Control.FOCUS_NONE
 		wrap.clip_contents = true
 		wrap.text = ""
-		var card := VF.portrait_card(u, Vector2(72, 56), false)
+		var card := VF.portrait_card(u, Vector2(64, 84), false)
 		card.position = Vector2(2, 2)
 		card.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		wrap.add_child(card)
@@ -319,7 +321,7 @@ func _build_roster_bar() -> void:
 		cost.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		cost.text = "%d两" % int(u.get("cost", 50))
 		AP.apply_label(cost, 10, AP.LANTERN_GOLD)
-		cost.position = Vector2(4, 38)
+		cost.position = Vector2(4, 68)
 		wrap.add_child(cost)
 		wrap.pressed.connect(func():
 			selected_unit_id = uid
@@ -375,12 +377,13 @@ func _on_slot_pressed(slot: int) -> void:
 	silver -= cost
 	_spawn_unit_visual(slot, selected_unit_id)
 	var center := _slot_center(slot)
-	VF.placement_ring(units_layer, center, Color(AP.LANTERN_GOLD.r, AP.LANTERN_GOLD.g, AP.LANTERN_GOLD.b, 0.8))
+	VF.placement_burst(units_layer, center, Color(AP.LANTERN_GOLD.r, AP.LANTERN_GOLD.g, AP.LANTERN_GOLD.b, 0.9))
 	Juice.float_number(center + Vector2(0, -28), "-%d" % cost, Color(0.95, 0.78, 0.45))
 	Juice.play_sfx("place")
 	Juice.pulse(_slot_buttons[slot])
 	if deployed.has(slot) and deployed[slot].node:
-		Juice.pulse(deployed[slot].node, 1.14, 0.16)
+		Juice.pulse(deployed[slot].node, 1.18, 0.18)
+		Juice.flash_modulate(deployed[slot].node, Color(1.35, 1.2, 0.9, 1.0), 0.2)
 	_refresh_hud()
 	_persist_prep()
 
@@ -466,7 +469,9 @@ func _on_start_wave() -> void:
 	Juice.screen_shake(field, 5.0)
 	Juice.banner_pop(wave_banner, 1.8)
 	Juice.pulse(start_wave_btn, 1.08, 0.18)
-	# Flank telegraph when this wave includes ambush spawns
+	# Main-lane wave telegraph always; flank when ambush spawns present
+	if path_points.size() > 1:
+		VF.wave_telegraph(field, path_points)
 	var has_flank := false
 	for spawn in wave.get("spawns", []):
 		if str(spawn.get("lane", "main")) == "flank":
@@ -500,6 +505,7 @@ func _spawn_enemy(eid: String, lane: String = "main") -> void:
 	var lane_path := _path_for_lane(lane)
 	var scale := _wave_hp_scale()
 	node.position = lane_path[0] - node.custom_minimum_size * 0.5
+	node.modulate.a = 0.0
 	enemies_layer.add_child(node)
 	node.set_meta("eid", eid)
 	node.set_meta("hp", float(e.get("hp", 50)) * scale)
@@ -512,9 +518,13 @@ func _spawn_enemy(eid: String, lane: String = "main") -> void:
 	node.set_meta("progress", 0.0)
 	node.set_meta("lane", lane)
 	if lane == "flank" and node is Control:
-		(node as Control).modulate = Color(1.15, 0.85, 0.8, 1.0)
+		(node as Control).modulate = Color(1.15, 0.85, 0.8, 0.0)
 	if node is Control:
 		VF.set_enemy_hp_ratio(node as Control, 1.0)
+		var spawn_at: Vector2 = lane_path[0]
+		VF.placement_ring(enemies_layer, spawn_at, Color(0.95, 0.55, 0.4, 0.7) if lane == "flank" else Color(0.85, 0.75, 0.45, 0.65))
+		var tw := (node as Control).create_tween()
+		tw.tween_property(node, "modulate:a", 1.0, 0.16)
 	enemies_alive += 1
 
 
@@ -533,6 +543,8 @@ func _wave_hp_scale() -> float:
 
 func _tick_movement(delta: float) -> void:
 	for node in enemies_layer.get_children():
+		if not node.has_meta("eid"):
+			continue
 		var lane := str(node.get_meta("lane", "main"))
 		var pts := _path_for_lane(lane)
 		var path_i: int = int(node.get_meta("path_i"))
@@ -587,8 +599,13 @@ func _tick_combat(delta: float) -> void:
 		info.cooldown = float(td.get("attack_interval", 1.0))
 		deployed[slot] = info
 		var hit_pos: Vector2 = target.position + target.custom_minimum_size * 0.5
+		var flash := Color(1.0, 0.9, 0.55, 0.9)
+		var unit_node: Control = info.node if info.node is Control else null
+		if unit_node and target is Control:
+			VF.td_attack_fx(enemies_layer, unit_node, target as Control, flash)
+		else:
+			VF.hit_impact(enemies_layer, hit_pos, flash)
 		Juice.float_number(hit_pos, str(int(dmg)), Color(1, 0.85, 0.45))
-		VF.hit_flash(enemies_layer, hit_pos)
 		var hp_now := float(target.get_meta("hp"))
 		var hp_max := float(target.get_meta("max_hp"))
 		if target is Control:
@@ -611,6 +628,8 @@ func _apply_team_auras(delta: float) -> void:
 		var value := float(aura.get("value", 0))
 		if t == "slow":
 			for node in enemies_layer.get_children():
+				if not node.has_meta("eid"):
+					continue
 				var pos: Vector2 = node.position + node.custom_minimum_size * 0.5
 				if info.pos.distance_to(pos) <= radius:
 					node.set_meta("speed_factor", 1.0 - value)
@@ -640,6 +659,8 @@ func _find_target(from: Vector2, rng: float):
 	var best = null
 	var best_hp := INF
 	for node in enemies_layer.get_children():
+		if not node.has_meta("eid"):
+			continue
 		var factor := float(node.get_meta("speed_factor", 1.0))
 		var base_speed := float(ContentDB.get_enemy(str(node.get_meta("eid"))).get("speed", 50))
 		node.set_meta("speed", base_speed * factor)
@@ -660,6 +681,7 @@ func _kill_enemy(node: Node) -> void:
 	var at: Vector2 = node.position + (node.custom_minimum_size * 0.5 if node is Control else Vector2.ZERO)
 	Juice.float_number(at, "+%d" % reward, Color(0.7, 0.95, 0.65))
 	VF.death_puff(enemies_layer, at)
+	VF.placement_ring(enemies_layer, at, Color(0.95, 0.7, 0.4, 0.7))
 	Juice.play_sfx("kill")
 	node.queue_free()
 	_refresh_hud()
@@ -682,7 +704,9 @@ func _leak(node: Node) -> void:
 	Juice.threaten(hud_lives, 2)
 	if _gate_node_ref:
 		Juice.threaten(_gate_node_ref, 2)
-	VF.hit_flash(enemies_layer, path_points[path_points.size() - 1] if path_points.size() > 0 else Vector2.ZERO, Color(0.95, 0.4, 0.3, 0.9))
+	var gate_pt: Vector2 = path_points[path_points.size() - 1] if path_points.size() > 0 else Vector2.ZERO
+	VF.hit_impact(enemies_layer, gate_pt, Color(0.95, 0.4, 0.3, 0.9))
+	VF.slash_arc(enemies_layer, gate_pt, Color(0.95, 0.4, 0.3, 0.9), 1.1)
 	node.queue_free()
 	_refresh_hud()
 	if lives <= 0:

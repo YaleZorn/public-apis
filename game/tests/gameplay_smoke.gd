@@ -98,6 +98,10 @@ func _smoke_td() -> bool:
 	if _td.flank_path_points.size() < 2:
 		push_error("flank path missing")
 		return false
+	var juice = root.get_node_or_null("Juice")
+	if juice == null or str(juice.get("_bgm_kind")) != "td":
+		push_error("td should play td BGM got %s" % (str(juice.get("_bgm_kind")) if juice else "nojuice"))
+		return false
 	_td._on_start_wave()
 	await create_timer(2.5).timeout
 	print("wave_running=", _td.wave_running, " enemies=", _td.enemies_alive, " lives=", _td.lives)
@@ -251,6 +255,10 @@ func _smoke_tower() -> bool:
 		return false
 	if not tw.ring.combat_active:
 		push_error("tower combat did not start")
+		return false
+	var juice = root.get_node_or_null("Juice")
+	if juice == null or str(juice.get("_bgm_kind")) != "tower":
+		push_error("tower should play tower BGM got %s" % (str(juice.get("_bgm_kind")) if juice else "nojuice"))
 		return false
 	# Clear floor 1.
 	for e in tw.ring.enemies.duplicate():

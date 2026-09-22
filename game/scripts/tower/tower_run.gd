@@ -54,7 +54,7 @@ func _ready() -> void:
 	AP.apply_label(hp_label, 15, AP.PAPER_DIM)
 	AP.apply_label(status_label, 14, AP.PAPER_DIM)
 	AP.apply_label(loot_label, 15, AP.LANTERN_GOLD)
-	Juice.start_explore_music()
+	Juice.start_tower_music()
 	result_overlay = ResultOverlayScene.instantiate()
 	add_child(result_overlay)
 	knowledge_layer = KnowledgeCardScene.instantiate()

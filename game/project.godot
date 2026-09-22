@@ -1,12 +1,12 @@
 ; Engine configuration file.
-; Kongfu Roguelike v0.9.2 — 手感续抠（共享战环 + 攻击特效 + 主题 BGM）
+; Kongfu Roguelike v0.9.3 — TD 汁水追平 + 爬塔专属 BGM
 config_version=5
 
 [application]
 
 config/name="Kongfu Roguelike"
 config/description="竖屏武侠：无限波塔防 + Idle 名人 + 探索搜打撤 + 演武场 + 爬塔 + 健身知识 + content_pack"
-config/version="0.9.2"
+config/version="0.9.3"
 run/main_scene="res://scenes/shell/title_screen.tscn"
 config/features=PackedStringArray("4.3", "Forward Plus")
 config/icon="res://icon.svg"
