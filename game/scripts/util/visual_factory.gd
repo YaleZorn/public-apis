@@ -750,14 +750,12 @@ static func skill_cast_fx(parent: Node, at: Vector2, effect: String, color: Colo
 				band.default_color = Color(color.r, color.g, color.b, 0.75)
 				band.z_index = 14
 				var y := at.y - 20.0 + float(i) * 18.0
-				band.points = PackedVector2Array([Vector2(at.x - 60, y), Vector2(at.x + 60, y)])
+				var cx := at.x
+				band.points = PackedVector2Array([Vector2(cx - 60, y), Vector2(cx + 60, y)])
 				parent.add_child(band)
 				var btw := band.create_tween()
-				btw.tween_method(func(w: float):
-					if is_instance_valid(band):
-						band.points = PackedVector2Array([Vector2(at.x - w * 0.5, y), Vector2(at.x + w * 0.5, y)])
-				, 120.0, 180.0, 0.28)
-				btw.parallel().tween_property(band, "modulate:a", 0.0, 0.3)
+				btw.tween_property(band, "modulate:a", 0.0, 0.3)
+				btw.parallel().tween_property(band, "width", 2.0, 0.28)
 				btw.tween_callback(band.queue_free)
 			skill_burst(parent, at, color)
 		_:
