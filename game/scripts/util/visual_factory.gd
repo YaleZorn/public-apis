@@ -239,18 +239,18 @@ static func unit_node(unit: Dictionary, size: Vector2 = Vector2(64, 80)) -> Cont
 		spr.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 		spr.size = Vector2(size.x, size.y - 12.0)
 		spr.position = Vector2(0, 0)
-		spr.modulate = Color(1.05, 1.03, 1.02, 1.0)
+		spr.modulate = Color(1.12, 1.08, 1.05, 1.0)
 		anim.add_child(spr)
 	else:
 		_draw_unit_body(anim, role, Color(str(unit.get("color", "#6a8f71"))), size)
 
-	# Role accent sash — secondary motion target for limb bob.
+	# Soft ground accent under figure — not a portrait plate.
 	var sash := ColorRect.new()
 	sash.name = "SashBob"
 	sash.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	sash.size = Vector2(maxf(6.0, size.x * 0.12), maxf(14.0, size.y * 0.28))
-	sash.position = Vector2(size.x * 0.72, size.y * 0.32)
-	sash.color = Color(AP.role_accent(role).r, AP.role_accent(role).g, AP.role_accent(role).b, 0.55)
+	sash.size = Vector2(maxf(4.0, size.x * 0.08), maxf(10.0, size.y * 0.22))
+	sash.position = Vector2(size.x * 0.78, size.y * 0.28)
+	sash.color = Color(AP.role_accent(role).r, AP.role_accent(role).g, AP.role_accent(role).b, 0.4)
 	anim.add_child(sash)
 
 	var label := Label.new()
@@ -385,7 +385,7 @@ static func enemy_node(enemy: Dictionary, size: Vector2 = Vector2(48, 64)) -> Co
 		spr.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 		spr.size = Vector2(size.x, size.y - 12.0)
 		spr.position = Vector2(0, 0)
-		spr.modulate = Color(1.08, 1.05, 1.03, 1.0)
+		spr.modulate = Color(1.18, 1.12, 1.08, 1.0)
 		anim.add_child(spr)
 	else:
 		var body := ColorRect.new()

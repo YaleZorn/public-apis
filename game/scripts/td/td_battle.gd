@@ -400,9 +400,11 @@ func _highlight_slot(slot: int) -> void:
 
 func _spawn_unit_visual(slot: int, unit_id: String) -> void:
 	var u: Dictionary = ContentDB.get_unit(unit_id)
-	var node := VF.unit_node(u)
+	# Larger frameless figure so it reads as a mini-character, not a card in the slot chrome.
+	var node := VF.unit_node(u, Vector2(78, 100))
 	var center := _slot_center(slot)
-	node.position = center - node.custom_minimum_size * 0.5
+	# Feet near pad center — figure hangs upward from ground point.
+	node.position = center - Vector2(node.custom_minimum_size.x * 0.5, node.custom_minimum_size.y * 0.82)
 	units_layer.add_child(node)
 	deployed[slot] = {
 		"unit_id": unit_id,
@@ -412,9 +414,33 @@ func _spawn_unit_visual(slot: int, unit_id: String) -> void:
 		"node": node,
 		"pos": center,
 	}
-	_slot_buttons[slot].modulate = Color(1, 1, 1, 0.15)
-	_slot_buttons[slot].text = ""
+	# Strip ornate themed slot chrome so the figure stands free (keep hit target for select/recall).
+	_flatten_slot_chrome(slot)
 	VF.idle_bob(node, 2.5, 2.2 + randf() * 0.6)
+
+
+func _flatten_slot_chrome(slot: int) -> void:
+	var btn := _slot_buttons[slot]
+	btn.text = ""
+	btn.modulate = Color(1, 1, 1, 1)
+	var empty := StyleBoxEmpty.new()
+	btn.add_theme_stylebox_override("normal", empty)
+	btn.add_theme_stylebox_override("hover", empty)
+	btn.add_theme_stylebox_override("pressed", empty)
+	btn.add_theme_stylebox_override("focus", empty)
+	btn.add_theme_stylebox_override("disabled", empty)
+
+
+func _restore_slot_chrome(slot: int) -> void:
+	var btn := _slot_buttons[slot]
+	btn.visible = true
+	btn.remove_theme_stylebox_override("normal")
+	btn.remove_theme_stylebox_override("hover")
+	btn.remove_theme_stylebox_override("pressed")
+	btn.remove_theme_stylebox_override("focus")
+	btn.remove_theme_stylebox_override("disabled")
+	btn.modulate = Color(0.85, 0.9, 0.8, 0.85)
+	btn.text = "槽%d" % (slot + 1)
 
 
 func _on_recall() -> void:
@@ -433,8 +459,7 @@ func _on_recall() -> void:
 	silver += refund
 	info.node.queue_free()
 	deployed.erase(selected_slot)
-	_slot_buttons[selected_slot].modulate = Color(0.85, 0.9, 0.8, 0.85)
-	_slot_buttons[selected_slot].text = "槽%d" % (selected_slot + 1)
+	_restore_slot_chrome(selected_slot)
 	status_label.text = "回收 +%d 银两" % refund
 	Juice.play_sfx("recall")
 	Juice.float_number(_slot_center(selected_slot), "+%d" % refund, Color(0.75, 0.9, 0.65))
@@ -505,10 +530,10 @@ func _tick_spawns(delta: float) -> void:
 
 func _spawn_enemy(eid: String, lane: String = "main") -> void:
 	var e: Dictionary = ContentDB.get_enemy(eid)
-	var node := VF.enemy_node(e, Vector2(56, 70))
+	var node := VF.enemy_node(e, Vector2(64, 84))
 	var lane_path := _path_for_lane(lane)
 	var scale := _wave_hp_scale()
-	node.position = lane_path[0] - node.custom_minimum_size * 0.5
+	node.position = lane_path[0] - Vector2(node.custom_minimum_size.x * 0.5, node.custom_minimum_size.y * 0.78)
 	node.modulate.a = 0.0
 	enemies_layer.add_child(node)
 	node.set_meta("eid", eid)

@@ -100,11 +100,14 @@ func _shot_closeups() -> void:
 	bg.color = Color(0.04, 0.09, 0.08, 1.0)
 	host.add_child(bg)
 	root.add_child(host)
+	var cdb = root.get_node_or_null("ContentDB")
 	var ids := ["unit_qinggong", "unit_mulan", "unit_feidao", "unit_zhaoyun"]
 	var x0 := 70.0
 	for i in ids.size():
-		var u: Dictionary = ContentDB.get_unit(ids[i])
-		var fig := VF.unit_node(u, Vector2(140, 180))
+		var u: Dictionary = {}
+		if cdb:
+			u = cdb.get_unit(ids[i])
+		var fig := VF.unit_node(u if not u.is_empty() else {"id": ids[i], "name": "?", "role": "dps", "color": "#6a8f71"}, Vector2(140, 180))
 		fig.position = Vector2(x0 + (i % 2) * 260.0, 180.0 + int(i / 2) * 420.0)
 		host.add_child(fig)
 		VF.idle_bob(fig, 4.0, 2.0)
