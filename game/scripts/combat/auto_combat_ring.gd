@@ -180,7 +180,7 @@ func cast_skill() -> bool:
 
 func skill_button_text() -> String:
 	if skill_cd > 0.05:
-		return "%s (%.1fs)" % [skill.get("name", "技能"), skill_cd]
+		return "%s · %.1fs" % [skill.get("name", "技能"), skill_cd]
 	return str(skill.get("name", "技能"))
 
 
@@ -189,7 +189,7 @@ func skill_disabled() -> bool:
 
 
 func hp_label_text() -> String:
-	return "HP %d/%d%s" % [int(hp), int(max_hp), (" ·盾%d" % int(shield)) if shield > 0 else ""]
+	return "气血 · %d/%d%s" % [int(hp), int(max_hp), (" · 盾%d" % int(shield)) if shield > 0 else ""]
 
 
 func _sync_hero_hp_bar() -> void:

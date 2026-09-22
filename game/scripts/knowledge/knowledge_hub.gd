@@ -29,7 +29,7 @@ func _ready() -> void:
 	AP.apply_label(quiz_title, 26, AP.LANTERN_GOLD)
 	AP.apply_label(status, 15, AP.PAPER_DIM)
 	AP.apply_richtext(book, 15)
-	Juice.start_ambient()
+	Juice.start_knowledge_music()
 	_polish_book_panel()
 	_build_filter_bar()
 	_ensure_demo_gear()

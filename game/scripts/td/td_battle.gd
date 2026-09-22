@@ -68,6 +68,10 @@ func _ready() -> void:
 		Atmo.attach_field_art(field_bg)
 	AP.apply_label(chapter_label, 16, AP.LANTERN_GOLD)
 	AP.apply_label(wave_banner, 26, AP.LANTERN_GOLD)
+	AP.apply_label(hud_silver, 15, AP.PAPER_INK)
+	AP.apply_label(hud_lives, 15, AP.PAPER_INK)
+	AP.apply_label(hud_wave, 15, AP.MIST_TEAL.lightened(0.2))
+	AP.apply_label(status_label, 13, AP.PAPER_DIM)
 	wave_director = WaveDirectorScript.new()
 	wave_director.configure_from(ContentDB.waves_cfg)
 	Juice.start_battle_music()
@@ -847,12 +851,12 @@ func _update_wave_preview() -> void:
 
 
 func _refresh_hud() -> void:
-	hud_silver.text = "银两 %d" % silver
-	hud_lives.text = "据点 %d" % lives
+	hud_silver.text = "银两 · %d" % silver
+	hud_lives.text = "据点 · %d" % lives
 	if lives <= 3:
 		hud_lives.add_theme_color_override("font_color", Color(0.95, 0.45, 0.35))
 	else:
 		hud_lives.add_theme_color_override("font_color", AP.PAPER_INK)
-	hud_wave.text = "波次 %d · ∞" % (wave_index + 1)
+	hud_wave.text = "波次 · %d · ∞" % (wave_index + 1)
 	start_wave_btn.text = "下一波 · 第 %d 波" % (wave_index + 1)
 	start_wave_btn.disabled = wave_running or awaiting_knowledge or game_over
