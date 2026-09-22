@@ -83,6 +83,10 @@ func start_explore_music() -> void:
 	play_bgm("explore")
 
 
+func start_arena_music() -> void:
+	play_bgm("arena")
+
+
 func play_bgm(kind: String = "lobby") -> void:
 	if _ambient_player == null:
 		return
@@ -199,12 +203,13 @@ func _setup_fade() -> void:
 
 
 func _setup_ambient() -> void:
-	# Identifiable theme beds — title / lobby / TD / explore (legacy aliases kept).
+	# Identifiable theme beds — title / lobby / TD / explore / arena.
 	_bgm_streams = {
 		"title": _compose_theme("title"),
 		"lobby": _compose_theme("lobby"),
 		"td": _compose_theme("td"),
 		"explore": _compose_theme("explore"),
+		"arena": _compose_theme("arena"),
 		"ambient": null,
 		"battle": null,
 	}
@@ -315,51 +320,80 @@ func _make_noise_hit(dur: float, vol: float) -> AudioStreamWAV:
 
 
 func _compose_theme(kind: String) -> AudioStreamWAV:
-	## Distinct musical looping beds (title / lobby / td / explore).
-	## Fuller than thin beep beds: pad + drone + lead + motif bells. Volume via 音乐.
+	## Musical looping beds with clear motifs (title / lobby / td / explore / arena).
+	## Phrase-based AABA-ish contours + harmony; volume still via Settings 音乐.
 	var wav := AudioStreamWAV.new()
 	wav.format = AudioStreamWAV.FORMAT_16_BITS
 	wav.mix_rate = 22050
 	wav.stereo = false
 	wav.loop_mode = AudioStreamWAV.LOOP_FORWARD
 	wav.loop_begin = 0
-	var dur := 24.0
+	var dur := 32.0
 	var count := int(wav.mix_rate * dur)
 	wav.loop_end = count
 	var data := PackedByteArray()
 	data.resize(count * 2)
-	# Theme motifs (Hz) — identifiable without scored OST assets
+	# Motifs in Hz — pentatonic / minor wuxia flavor, distinct per scene
 	var title_lead := [
-		392.0, 440.0, 523.25, 587.33, 523.25, 440.0, 392.0, 349.23,
-		329.63, 349.23, 392.0, 440.0, 493.88, 440.0, 392.0, 329.63,
+		392.0, 440.0, 523.25, 587.33, 659.25, 587.33, 523.25, 440.0,
+		392.0, 349.23, 329.63, 349.23, 392.0, 440.0, 493.88, 523.25,
+		587.33, 523.25, 440.0, 392.0, 349.23, 329.63, 293.66, 329.63,
+		349.23, 392.0, 440.0, 523.25, 587.33, 523.25, 440.0, 392.0,
 	]
 	var title_harm := [
-		196.0, 220.0, 261.63, 293.66, 261.63, 220.0, 196.0, 174.61,
-		164.81, 174.61, 196.0, 220.0, 246.94, 220.0, 196.0, 164.81,
+		261.63, 293.66, 329.63, 349.23, 392.0, 349.23, 329.63, 293.66,
+		261.63, 246.94, 220.0, 246.94, 261.63, 293.66, 329.63, 349.23,
+		392.0, 349.23, 293.66, 261.63, 246.94, 220.0, 196.0, 220.0,
+		233.08, 261.63, 293.66, 329.63, 349.23, 329.63, 293.66, 261.63,
 	]
 	var lobby_lead := [
-		293.66, 349.23, 392.0, 440.0, 392.0, 349.23, 293.66, 261.63,
-		220.0, 261.63, 293.66, 349.23, 392.0, 349.23, 293.66, 220.0,
+		293.66, 329.63, 349.23, 392.0, 440.0, 392.0, 349.23, 329.63,
+		293.66, 261.63, 246.94, 261.63, 293.66, 349.23, 392.0, 440.0,
+		493.88, 440.0, 392.0, 349.23, 329.63, 293.66, 261.63, 246.94,
+		220.0, 246.94, 261.63, 293.66, 349.23, 392.0, 349.23, 293.66,
 	]
 	var lobby_harm := [
-		146.83, 174.61, 196.0, 220.0, 196.0, 174.61, 146.83, 130.81,
-		110.0, 130.81, 146.83, 174.61, 196.0, 174.61, 146.83, 110.0,
+		146.83, 164.81, 174.61, 196.0, 220.0, 196.0, 174.61, 164.81,
+		146.83, 130.81, 123.47, 130.81, 146.83, 174.61, 196.0, 220.0,
+		246.94, 220.0, 196.0, 174.61, 164.81, 146.83, 130.81, 123.47,
+		110.0, 123.47, 130.81, 146.83, 174.61, 196.0, 174.61, 146.83,
 	]
 	var td_lead := [
-		220.0, 246.94, 293.66, 329.63, 293.66, 246.94, 220.0, 196.0,
-		164.81, 196.0, 220.0, 261.63, 293.66, 261.63, 220.0, 185.0,
+		220.0, 246.94, 261.63, 293.66, 329.63, 293.66, 261.63, 246.94,
+		220.0, 196.0, 185.0, 196.0, 220.0, 246.94, 293.66, 329.63,
+		349.23, 329.63, 293.66, 246.94, 220.0, 196.0, 164.81, 185.0,
+		196.0, 220.0, 246.94, 261.63, 293.66, 261.63, 220.0, 185.0,
 	]
 	var td_bass := [
 		110.0, 110.0, 98.0, 98.0, 82.41, 82.41, 73.42, 73.42,
+		110.0, 110.0, 92.5, 92.5, 82.41, 82.41, 73.42, 73.42,
+		98.0, 98.0, 82.41, 82.41, 73.42, 73.42, 65.41, 65.41,
 		82.41, 82.41, 98.0, 98.0, 110.0, 110.0, 92.5, 92.5,
 	]
 	var explore_lead := [
-		261.63, 293.66, 329.63, 349.23, 392.0, 349.23, 329.63, 293.66,
-		246.94, 261.63, 293.66, 329.63, 349.23, 311.13, 293.66, 246.94,
+		261.63, 293.66, 329.63, 349.23, 392.0, 440.0, 392.0, 349.23,
+		329.63, 293.66, 261.63, 246.94, 261.63, 293.66, 329.63, 349.23,
+		392.0, 349.23, 311.13, 293.66, 261.63, 233.08, 246.94, 261.63,
+		293.66, 329.63, 349.23, 392.0, 349.23, 329.63, 293.66, 261.63,
 	]
 	var explore_harm := [
-		130.81, 146.83, 164.81, 174.61, 196.0, 174.61, 164.81, 146.83,
-		123.47, 130.81, 146.83, 164.81, 174.61, 155.56, 146.83, 123.47,
+		130.81, 146.83, 164.81, 174.61, 196.0, 220.0, 196.0, 174.61,
+		164.81, 146.83, 130.81, 123.47, 130.81, 146.83, 164.81, 174.61,
+		196.0, 174.61, 155.56, 146.83, 130.81, 116.54, 123.47, 130.81,
+		146.83, 164.81, 174.61, 196.0, 174.61, 164.81, 146.83, 130.81,
+	]
+	# Arena: tighter minor drive — survival grind identity vs explore walk
+	var arena_lead := [
+		233.08, 261.63, 277.18, 311.13, 349.23, 311.13, 277.18, 261.63,
+		233.08, 207.65, 196.0, 207.65, 233.08, 261.63, 311.13, 349.23,
+		369.99, 349.23, 311.13, 261.63, 233.08, 207.65, 185.0, 196.0,
+		207.65, 233.08, 261.63, 277.18, 311.13, 277.18, 233.08, 207.65,
+	]
+	var arena_bass := [
+		116.54, 116.54, 103.83, 103.83, 92.5, 92.5, 87.31, 87.31,
+		116.54, 116.54, 98.0, 98.0, 92.5, 92.5, 77.78, 77.78,
+		103.83, 103.83, 92.5, 92.5, 77.78, 77.78, 69.3, 69.3,
+		92.5, 92.5, 103.83, 103.83, 116.54, 116.54, 98.0, 98.0,
 	]
 	var lead: Array
 	var harm: Array
@@ -373,6 +407,9 @@ func _compose_theme(kind: String) -> AudioStreamWAV:
 		"explore":
 			lead = explore_lead
 			harm = explore_harm
+		"arena":
+			lead = arena_lead
+			harm = arena_bass
 		_:
 			lead = lobby_lead
 			harm = lobby_harm
@@ -380,84 +417,109 @@ func _compose_theme(kind: String) -> AudioStreamWAV:
 	var is_td := kind == "td" or kind == "battle"
 	var is_title := kind == "title"
 	var is_explore := kind == "explore"
-	var is_lobby := not is_td and not is_title and not is_explore
+	var is_arena := kind == "arena"
+	var is_lobby := not is_td and not is_title and not is_explore and not is_arena
 	for i in count:
 		var t := float(i) / float(wav.mix_rate)
 		var note_i := int(floor(t / step)) % lead.size()
 		var note_t := fmod(t, step)
 		var hz: float = float(lead[note_i])
 		var hz_h: float = float(harm[note_i])
-		var atk := clampf(note_t / (0.14 if is_title else 0.09), 0.0, 1.0)
-		var rel := clampf((step - note_t) / (0.36 if is_title else 0.22), 0.0, 1.0)
-		var note_env := atk * rel
-		# Warm pad bed (identifiable body, not thin beep)
-		var pad_base := 65.0 if is_title else (78.0 if is_explore else (52.0 if is_td else 70.0))
+		# Phrase envelope: longer sustain on even bars for singable contour
+		var phrase_boost := 1.12 if (note_i % 8) < 4 else 0.92
+		var atk := clampf(note_t / (0.12 if is_title else (0.07 if is_arena else 0.09)), 0.0, 1.0)
+		var rel := clampf((step - note_t) / (0.4 if is_title else (0.18 if is_arena else 0.26)), 0.0, 1.0)
+		var note_env := atk * rel * phrase_boost
+		var pad_base := 65.0 if is_title else (78.0 if is_explore else (48.0 if is_td else (58.0 if is_arena else 70.0)))
 		var pad := (
-			sin(TAU * pad_base * t) * 0.048
-			+ sin(TAU * pad_base * 1.498 * t + 0.3) * 0.034
-			+ sin(TAU * pad_base * 2.01 * t + 0.7) * 0.022
-			+ sin(TAU * pad_base * 0.5 * t) * 0.028
+			sin(TAU * pad_base * t) * 0.052
+			+ sin(TAU * pad_base * 1.498 * t + 0.3) * 0.036
+			+ sin(TAU * pad_base * 2.01 * t + 0.7) * 0.024
+			+ sin(TAU * pad_base * 0.5 * t) * 0.03
 		)
-		pad *= 0.82 + 0.18 * sin(TAU * (0.12 if is_title else 0.2) * t)
-		var drone_base := 48.0 if is_title else (62.0 if is_explore else (44.0 if is_td else 55.0))
+		pad *= 0.82 + 0.18 * sin(TAU * (0.1 if is_title else 0.18) * t)
+		var drone_base := 48.0 if is_title else (62.0 if is_explore else (40.0 if is_td else (52.0 if is_arena else 55.0)))
 		var drone := (
-			sin(TAU * drone_base * t) * 0.06
-			+ sin(TAU * drone_base * 1.5 * t + 0.2) * 0.036
-			+ sin(TAU * drone_base * 2.0 * t + 0.5) * 0.024
+			sin(TAU * drone_base * t) * 0.064
+			+ sin(TAU * drone_base * 1.5 * t + 0.2) * 0.038
+			+ sin(TAU * drone_base * 2.0 * t + 0.5) * 0.026
 		)
-		drone *= 0.85 + 0.15 * sin(TAU * (0.18 if is_title else 0.25) * t)
+		drone *= 0.85 + 0.15 * sin(TAU * (0.15 if is_title else 0.22) * t)
+		# Melodic lead with soft fifth harmony under tone
 		var lead_s := (
-			sin(TAU * hz * t) * (0.062 if is_title else 0.052)
-			+ sin(TAU * hz * 2.01 * t) * 0.02
-			+ sin(TAU * hz * 3.0 * t) * 0.01
+			sin(TAU * hz * t) * (0.068 if is_title else 0.058)
+			+ sin(TAU * hz * 2.01 * t) * 0.022
+			+ sin(TAU * hz * 3.0 * t) * 0.011
+			+ sin(TAU * hz * 1.498 * t) * 0.014
 			+ sin(TAU * hz * 0.5 * t) * 0.012
 		) * note_env
 		var harm_s := (
-			sin(TAU * hz_h * t) * 0.044
-			+ sin(TAU * hz_h * 1.5 * t) * 0.016
-			+ sin(TAU * hz_h * 2.0 * t) * 0.008
+			sin(TAU * hz_h * t) * 0.048
+			+ sin(TAU * hz_h * 1.5 * t) * 0.018
+			+ sin(TAU * hz_h * 2.0 * t) * 0.01
 		) * note_env
 		var bell := 0.0
 		if note_i % 4 == 0:
-			bell = sin(TAU * hz * 2.0 * t) * 0.026 * note_env * sin(PI * clampf(note_t / step, 0.0, 1.0))
+			bell = sin(TAU * hz * 2.0 * t) * 0.03 * note_env * sin(PI * clampf(note_t / step, 0.0, 1.0))
+		# Call-and-response echo on odd phrases
+		if note_i % 8 >= 4 and note_i % 2 == 0:
+			var echo_hz := float(lead[(note_i + 2) % lead.size()])
+			bell += sin(TAU * echo_hz * t) * 0.018 * note_env * 0.7
 		var pulse := 0.0
 		if is_td:
-			var beat := fmod(t * 2.6, 1.0)
-			pulse = exp(-beat * 12.0) * 0.078 * sin(TAU * 68.0 * t)
-			var off := fmod(t * 2.6 + 0.5, 1.0)
-			pulse += exp(-off * 20.0) * 0.028 * sin(TAU * 170.0 * t)
-			# Marching fifths under lead
-			pulse += sin(TAU * hz_h * 0.5 * t) * 0.02 * note_env
-			drone *= 1.2
-			lead_s *= 1.28
-			pad *= 1.1
-		elif is_explore:
-			var walk := fmod(t * 1.55, 1.0)
-			pulse = exp(-walk * 9.0) * 0.034 * sin(TAU * 92.0 * t)
-			var wood := fmod(t * 3.1, 1.0)
-			pulse += exp(-wood * 28.0) * 0.016 * sin(TAU * 420.0 * t)
-			var arp_hz := float(explore_lead[int(floor(t * 1.15)) % explore_lead.size()])
-			bell += sin(TAU * arp_hz * 2.0 * t) * 0.014 * (0.5 + 0.5 * sin(TAU * 0.32 * t))
-			lead_s *= 1.12
+			var beat := fmod(t * 2.8, 1.0)
+			pulse = exp(-beat * 11.0) * 0.082 * sin(TAU * 68.0 * t)
+			var off := fmod(t * 2.8 + 0.5, 1.0)
+			pulse += exp(-off * 18.0) * 0.032 * sin(TAU * 170.0 * t)
+			pulse += sin(TAU * hz_h * 0.5 * t) * 0.022 * note_env
+			drone *= 1.22
+			lead_s *= 1.3
+			pad *= 1.12
+		elif is_arena:
+			var beat2 := fmod(t * 3.2, 1.0)
+			pulse = exp(-beat2 * 10.0) * 0.07 * sin(TAU * 78.0 * t)
+			var snare := fmod(t * 3.2 + 0.5, 1.0)
+			pulse += exp(-snare * 22.0) * 0.028 * sin(TAU * 210.0 * t)
+			# Rising tension every 8 notes
+			var tension := 0.85 + 0.15 * float(note_i % 8) / 7.0
+			lead_s *= 1.25 * tension
+			drone *= 1.15
 			pad *= 1.08
+			if note_i % 4 == 0:
+				bell += sin(TAU * hz * 3.0 * t) * 0.02 * note_env
+		elif is_explore:
+			var walk := fmod(t * 1.45, 1.0)
+			pulse = exp(-walk * 9.0) * 0.036 * sin(TAU * 92.0 * t)
+			var wood := fmod(t * 2.9, 1.0)
+			pulse += exp(-wood * 26.0) * 0.018 * sin(TAU * 420.0 * t)
+			var arp_hz := float(explore_lead[int(floor(t * 1.05)) % explore_lead.size()])
+			bell += sin(TAU * arp_hz * 2.0 * t) * 0.016 * (0.5 + 0.5 * sin(TAU * 0.28 * t))
+			lead_s *= 1.15
+			pad *= 1.1
 		elif is_title:
 			if note_i % 8 == 0:
-				bell += sin(TAU * hz * 1.5 * t) * 0.034 * note_env
-			# Rising fifth swell
-			bell += sin(TAU * hz * 1.498 * t) * 0.012 * note_env * sin(TAU * 0.08 * t)
-			drone *= 1.12
-			lead_s *= 1.2
-			pad *= 1.15
+				bell += sin(TAU * hz * 1.5 * t) * 0.038 * note_env
+			bell += sin(TAU * hz * 1.498 * t) * 0.014 * note_env * sin(TAU * 0.07 * t)
+			# Opening fanfare swell every 16
+			if note_i % 16 < 2:
+				lead_s *= 1.35
+				bell += sin(TAU * hz * 2.0 * t) * 0.025 * note_env
+			drone *= 1.15
+			lead_s *= 1.22
+			pad *= 1.18
 		elif is_lobby:
-			var arp_hz2 := float(lobby_lead[int(floor(t * 1.45)) % lobby_lead.size()])
-			bell += sin(TAU * arp_hz2 * 2.0 * t) * 0.012 * (0.5 + 0.5 * sin(TAU * 0.38 * t))
-			# Soft plucked echo
+			var arp_hz2 := float(lobby_lead[int(floor(t * 1.35)) % lobby_lead.size()])
+			bell += sin(TAU * arp_hz2 * 2.0 * t) * 0.014 * (0.5 + 0.5 * sin(TAU * 0.35 * t))
 			if note_i % 2 == 0:
-				bell += sin(TAU * hz * 3.0 * t) * 0.01 * note_env
-			pad *= 1.05
+				bell += sin(TAU * hz * 3.0 * t) * 0.012 * note_env
+			# Soft cadence resolve at phrase end
+			if note_i % 8 == 7:
+				harm_s *= 1.25
+			pad *= 1.08
+			lead_s *= 1.08
 		var s := pad + drone + lead_s + harm_s + bell + pulse
 		var edge := minf(t, dur - t)
-		var env := clampf(edge / 0.8, 0.0, 1.0)
+		var env := clampf(edge / 0.9, 0.0, 1.0)
 		var v := int(clamp(s * env * 32767.0, -32768.0, 32767.0))
 		data[i * 2] = v & 0xFF
 		data[i * 2 + 1] = (v >> 8) & 0xFF

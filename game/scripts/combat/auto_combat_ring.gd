@@ -134,35 +134,43 @@ func cast_skill() -> bool:
 	var effect := str(skill.get("effect", ""))
 	var value := float(skill.get("value", 0))
 	var burst_col := Color(0.7, 0.88, 0.75, 0.8)
+	var burst_at: Vector2 = arena.size * 0.5
+	if hero_visual:
+		burst_at = hero_visual.position + hero_visual.custom_minimum_size * 0.5
 	match effect:
 		"aoe_damage":
 			burst_col = Color(0.95, 0.55, 0.35, 0.85)
+			VF.skill_cast_fx(arena, burst_at, "aoe_damage", burst_col)
 			for enemy in enemies.duplicate():
+				if enemy.node and is_instance_valid(enemy.node):
+					VF.slash_arc(enemies_layer, enemy.node.position + enemy.node.custom_minimum_size * 0.5, burst_col, 1.15)
 				_damage_enemy(enemy, value, burst_col)
 		"heal":
 			burst_col = Color(0.55, 0.9, 0.65, 0.85)
+			VF.skill_cast_fx(arena, burst_at, "heal", burst_col)
 			hp = minf(max_hp, hp + value)
 			Juice.float_number(hero_visual.position, "+%d" % int(value), Color(0.55, 0.9, 0.6))
 		"shield":
 			burst_col = Color(0.55, 0.75, 0.95, 0.85)
+			VF.skill_cast_fx(arena, burst_at, "shield", burst_col)
 			shield += value
 			Juice.float_number(hero_visual.position, "盾+%d" % int(value), Color(0.55, 0.75, 0.95))
 		"slow_all":
 			burst_col = Color(0.55, 0.75, 0.95, 0.8)
+			VF.skill_cast_fx(arena, burst_at, "slow_all", burst_col)
 			slow_all_timer = float(skill.get("duration", 2.0))
 			for enemy in enemies:
 				if enemy.node:
 					enemy.node.modulate = Color(0.65, 0.8, 1.1, 1.0)
 		_:
+			VF.skill_cast_fx(arena, burst_at, effect if effect != "" else "default", burst_col)
 			for enemy in enemies.duplicate():
 				_damage_enemy(enemy, value, burst_col)
 	skill_cd = float(skill.get("cooldown", 8.0))
-	var burst_at: Vector2 = arena.size * 0.5
-	if hero_visual:
-		burst_at = hero_visual.position + hero_visual.custom_minimum_size * 0.5
-	VF.skill_burst(arena, burst_at, burst_col)
 	Juice.play_sfx("skill")
-	Juice.screen_shake(arena, 5.0)
+	Juice.screen_shake(arena, 6.0)
+	if hero_visual:
+		Juice.pulse(hero_visual, 1.14, 0.14)
 	_sync_hero_hp_bar()
 	if enemies.is_empty() and combat_active:
 		combat_active = false
@@ -194,8 +202,10 @@ func _hero_auto_attack() -> void:
 	if enemies.is_empty():
 		return
 	var target: Dictionary = enemies[0]
-	_damage_enemy(target, atk, Color(1.0, 0.92, 0.55, 0.9))
-	_pulse(hero_visual)
+	var flash := Color(1.0, 0.92, 0.55, 0.9)
+	if hero_visual and target.has("node") and is_instance_valid(target.node):
+		VF.attack_strike(arena, hero_visual, target.node, flash)
+	_damage_enemy(target, atk, flash)
 
 
 func _damage_enemy(enemy: Dictionary, dmg: float, flash: Color) -> void:
@@ -205,7 +215,7 @@ func _damage_enemy(enemy: Dictionary, dmg: float, flash: Color) -> void:
 	enemy.hp -= dmg
 	var pos: Vector2 = enemy.node.position + enemy.node.custom_minimum_size * 0.5
 	Juice.float_number(pos, str(int(dmg)), Color(1, 0.88, 0.5))
-	VF.hit_flash(enemies_layer, pos, flash)
+	VF.hit_impact(enemies_layer, pos, flash)
 	VF.set_enemy_hp_ratio(enemy.node, enemy.hp / maxf(enemy.max_hp, 1.0))
 	Juice.play_sfx("hit")
 	_pulse(enemy.node)
@@ -232,9 +242,11 @@ func _tick_enemies(delta: float) -> void:
 			shield -= absorb
 			dmg -= absorb
 		hp -= dmg
-		if hero_visual:
+		if hero_visual and enemy.node and is_instance_valid(enemy.node):
+			VF.attack_strike(arena, enemy.node, hero_visual, Color(0.95, 0.45, 0.4, 0.9))
 			Juice.float_number(hero_visual.position, "-%d" % int(dmg), Color(0.95, 0.45, 0.4))
 			Juice.flash_modulate(hero_visual, Color(1.45, 0.7, 0.65, 1.0), 0.12)
+			VF.hit_impact(arena, hero_visual.position + hero_visual.custom_minimum_size * 0.5, Color(0.95, 0.4, 0.35, 0.85))
 		Juice.play_sfx("hit")
 		Juice.screen_shake(arena, 5.0)
 		_pulse(enemy.node)

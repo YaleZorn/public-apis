@@ -57,7 +57,7 @@ func _ready() -> void:
 	AP.apply_label(status_label, 14, AP.PAPER_DIM)
 	AP.apply_label(stats_label, 14, Color(0.72, 0.82, 0.7, 1))
 	room_label.text = str(cfg.get("display_name", "演武场"))
-	Juice.start_explore_music()
+	Juice.start_arena_music()
 	result_overlay = ResultOverlayScene.instantiate()
 	add_child(result_overlay)
 	skill_btn.pressed.connect(func():

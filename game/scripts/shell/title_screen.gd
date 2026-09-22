@@ -33,7 +33,7 @@ func _ready() -> void:
 	tagline.text = "守卫剑阁 · 栈道夜行 · 真知识"
 	AP.apply_label(tagline, 18, AP.MIST_TEAL.lightened(0.28))
 	AP.apply_label(version_label, 13, Color(0.55, 0.62, 0.56, 1))
-	version_label.text = "v0.9.1 手感·画面"
+	version_label.text = "v0.9.2 手感续抠"
 	continue_btn.visible = GameState.has_resume()
 	continue_btn.theme_type_variation = &"ButtonPrimary"
 	start_btn.theme_type_variation = &"ButtonPrimary"

@@ -209,11 +209,8 @@ static func portrait_card(unit: Dictionary, size: Vector2 = Vector2(96, 120), se
 		star.position = Vector2(4, 4)
 		root.add_child(star)
 	elif locked:
-		var lock := Label.new()
-		lock.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		lock.text = "锁"
-		AP.apply_label(lock, 13, Color(0.72, 0.76, 0.7, 0.92))
-		lock.position = Vector2(4, 4)
+		var lock := lock_badge(Vector2(16, 20))
+		lock.position = Vector2(5, 5)
 		root.add_child(lock)
 	return root
 
@@ -439,31 +436,182 @@ static func terrain_patch(col: Color, size: Vector2) -> ColorRect:
 
 
 static func hit_flash(parent: Node, at: Vector2, color: Color = Color(1, 0.9, 0.55, 0.85)) -> void:
+	hit_impact(parent, at, color)
+
+
+static func hit_impact(parent: Node, at: Vector2, color: Color = Color(1, 0.9, 0.55, 0.85)) -> void:
+	## Readable hit: core spark + slash strokes + expanding impact ring.
 	if parent == null:
 		return
-	# Core spark
 	var flash := ColorRect.new()
-	flash.size = Vector2(22, 22)
+	flash.size = Vector2(24, 24)
 	flash.position = at - flash.size * 0.5
 	flash.color = color
 	flash.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	parent.add_child(flash)
-	# Slash strokes for readable hit juice
 	for i in 3:
 		var slash := ColorRect.new()
 		slash.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		slash.size = Vector2(28 + i * 6, 3)
-		slash.position = at + Vector2(-14 - i * 2, -6 + i * 5)
-		slash.rotation = -0.55 + i * 0.35
-		slash.color = Color(color.r, color.g, color.b, 0.7 - i * 0.15)
+		slash.size = Vector2(30 + i * 8, 3)
+		slash.position = at + Vector2(-16 - i * 2, -8 + i * 6)
+		slash.rotation = -0.65 + i * 0.4
+		slash.color = Color(color.r, color.g, color.b, 0.75 - i * 0.15)
 		parent.add_child(slash)
 		var stw := slash.create_tween()
-		stw.tween_property(slash, "modulate:a", 0.0, 0.16)
+		stw.tween_property(slash, "modulate:a", 0.0, 0.18)
+		stw.parallel().tween_property(slash, "position", slash.position + Vector2(10, -4), 0.18)
 		stw.tween_callback(slash.queue_free)
+	var ring := ColorRect.new()
+	ring.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	ring.size = Vector2(18, 18)
+	ring.position = at - ring.size * 0.5
+	ring.color = Color(color.r, color.g, color.b, 0.55)
+	parent.add_child(ring)
+	var rtw := ring.create_tween()
+	rtw.tween_property(ring, "scale", Vector2(2.8, 2.8), 0.2).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	rtw.parallel().tween_property(ring, "modulate:a", 0.0, 0.2)
+	rtw.tween_callback(ring.queue_free)
 	var tw := flash.create_tween()
-	tw.tween_property(flash, "scale", Vector2(2.0, 2.0), 0.12)
+	tw.tween_property(flash, "scale", Vector2(2.2, 2.2), 0.12)
 	tw.parallel().tween_property(flash, "modulate:a", 0.0, 0.18)
 	tw.tween_callback(flash.queue_free)
+
+
+static func slash_arc(parent: Node, at: Vector2, color: Color, scale_mult: float = 1.0) -> void:
+	## Wide crescent slash — skill / heavy hit readable from subway distance.
+	if parent == null:
+		return
+	for i in 4:
+		var blade := ColorRect.new()
+		blade.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		blade.size = Vector2((42 + i * 10) * scale_mult, 4)
+		blade.pivot_offset = Vector2(0, 2)
+		blade.position = at + Vector2(-8, -12 + i * 7)
+		blade.rotation = -0.95 + i * 0.28
+		blade.color = Color(color.r, color.g, color.b, 0.85 - i * 0.12)
+		parent.add_child(blade)
+		var tw := blade.create_tween()
+		tw.tween_property(blade, "rotation", blade.rotation + 0.55, 0.16).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+		tw.parallel().tween_property(blade, "modulate:a", 0.0, 0.2)
+		tw.tween_callback(blade.queue_free)
+
+
+static func attack_strike(parent: Node, attacker: Control, target: Control, color: Color = Color(1.0, 0.92, 0.55, 0.9)) -> void:
+	## Lunge toward target + slash arc + travel spark — beyond flash/bob.
+	if parent == null or attacker == null or target == null:
+		return
+	if not is_instance_valid(attacker) or not is_instance_valid(target):
+		return
+	var from := attacker.position + attacker.custom_minimum_size * 0.5
+	var to := target.position + target.custom_minimum_size * 0.5
+	var dir := (to - from)
+	if dir.length() < 4.0:
+		dir = Vector2(40, 0)
+	var lunge := dir.normalized() * minf(28.0, dir.length() * 0.22)
+	var base := attacker.position
+	var tw := attacker.create_tween()
+	tw.tween_property(attacker, "position", base + lunge, 0.07).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	tw.tween_property(attacker, "position", base, 0.12).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	slash_arc(parent, to, color, 0.9)
+	# Travel spark along strike line
+	var spark := ColorRect.new()
+	spark.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	spark.size = Vector2(12, 12)
+	spark.position = from - spark.size * 0.5
+	spark.color = Color(color.r, color.g, color.b, 0.95)
+	parent.add_child(spark)
+	var stw := spark.create_tween()
+	stw.tween_property(spark, "position", to - spark.size * 0.5, 0.1)
+	stw.parallel().tween_property(spark, "modulate:a", 0.35, 0.1)
+	stw.tween_callback(spark.queue_free)
+
+
+static func skill_cast_fx(parent: Node, at: Vector2, effect: String, color: Color = Color(0.7, 0.85, 0.95, 0.7)) -> void:
+	## Per-effect readable skill presentation (aoe / heal / shield / slow / default).
+	if parent == null:
+		return
+	match effect:
+		"aoe_damage":
+			skill_burst(parent, at, color)
+			slash_arc(parent, at + Vector2(20, 0), color, 1.35)
+			slash_arc(parent, at + Vector2(-16, 12), color, 1.1)
+		"heal":
+			# Rising jade petals
+			for i in 5:
+				var petal := ColorRect.new()
+				petal.mouse_filter = Control.MOUSE_FILTER_IGNORE
+				petal.size = Vector2(10, 14)
+				petal.position = at + Vector2(-20 + i * 10, 8)
+				petal.color = Color(color.r, color.g, color.b, 0.9)
+				parent.add_child(petal)
+				var ptw := petal.create_tween()
+				ptw.tween_property(petal, "position:y", petal.position.y - 48.0 - i * 4.0, 0.36).set_trans(Tween.TRANS_SINE)
+				ptw.parallel().tween_property(petal, "modulate:a", 0.0, 0.36)
+				ptw.tween_callback(petal.queue_free)
+			skill_burst(parent, at, color)
+		"shield":
+			# Expanding shield plate
+			var plate := ColorRect.new()
+			plate.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			plate.size = Vector2(48, 56)
+			plate.position = at - plate.size * 0.5
+			plate.color = Color(color.r, color.g, color.b, 0.55)
+			parent.add_child(plate)
+			var ptw2 := plate.create_tween()
+			ptw2.tween_property(plate, "scale", Vector2(1.6, 1.6), 0.28).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+			ptw2.parallel().tween_property(plate, "modulate:a", 0.0, 0.32)
+			ptw2.tween_callback(plate.queue_free)
+			skill_burst(parent, at, color)
+		"slow_all":
+			# Frost wash bands
+			for i in 3:
+				var band := ColorRect.new()
+				band.mouse_filter = Control.MOUSE_FILTER_IGNORE
+				band.size = Vector2(120, 8)
+				band.position = at + Vector2(-60, -20 + i * 18)
+				band.color = Color(color.r, color.g, color.b, 0.7)
+				parent.add_child(band)
+				var btw := band.create_tween()
+				btw.tween_property(band, "size:x", 180.0, 0.28)
+				btw.parallel().tween_property(band, "modulate:a", 0.0, 0.3)
+				btw.tween_callback(band.queue_free)
+			skill_burst(parent, at, color)
+		_:
+			skill_burst(parent, at, color)
+			slash_arc(parent, at, color, 1.0)
+
+
+static func lock_badge(size: Vector2 = Vector2(18, 22)) -> Control:
+	## Painted padlock glyph (no emoji / bare「锁」text).
+	var root := Control.new()
+	root.custom_minimum_size = size
+	root.size = size
+	root.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var shackle := ColorRect.new()
+	shackle.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	shackle.size = Vector2(size.x * 0.55, size.y * 0.42)
+	shackle.position = Vector2(size.x * 0.225, size.y * 0.05)
+	shackle.color = Color(0.72, 0.76, 0.7, 0.92)
+	root.add_child(shackle)
+	var hole := ColorRect.new()
+	hole.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	hole.size = Vector2(size.x * 0.28, size.y * 0.22)
+	hole.position = Vector2(size.x * 0.36, size.y * 0.18)
+	hole.color = Color(0.08, 0.12, 0.1, 0.95)
+	root.add_child(hole)
+	var body := ColorRect.new()
+	body.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	body.size = Vector2(size.x * 0.78, size.y * 0.52)
+	body.position = Vector2(size.x * 0.11, size.y * 0.42)
+	body.color = Color(0.68, 0.72, 0.66, 0.95)
+	root.add_child(body)
+	var keyhole := ColorRect.new()
+	keyhole.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	keyhole.size = Vector2(size.x * 0.16, size.y * 0.22)
+	keyhole.position = Vector2(size.x * 0.42, size.y * 0.55)
+	keyhole.color = Color(0.1, 0.14, 0.12, 0.95)
+	root.add_child(keyhole)
+	return root
 
 
 static func skill_burst(parent: Node, at: Vector2, color: Color = Color(0.7, 0.85, 0.95, 0.7)) -> void:

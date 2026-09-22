@@ -1,9 +1,11 @@
-# Kongfu Roguelike — M6 知识加深 + content_pack 接缝（v0.9.0）
+# Kongfu Roguelike — v0.9.2 手感续抠（共享战环 + 攻击特效 + 主题 BGM）
 
-竖屏、离线武侠健身题材。叠在 M4/M5 五模式基线之上：
+竖屏、离线武侠健身题材。叠在 M6 + v0.9.1 手感打磨之上：
 
-- **知识产品化**：32+ 张可用健身卡（饮食/训练/作息）· 知识本筛选 · 晨课 · **间隔复习队列** · 进度喂微小 meta buff
-- **content_pack 接缝**：多包扫描合并 · 本地 `owned`（无 IAP）· 仓库内 **演示包 · 山野补遗**（花木兰 / 4 知识 / 行囊符）
+- **探索战斗统一**：搜打撤挂上与演武/爬塔相同的 `AutoCombatRing`
+- **攻击特效**：冲刺斩击弧、命中冲击环、按技能类型区分的施法表现
+- **主题 BGM**：title / lobby / TD / explore / arena 可辨识循环（音量仍走设置）
+- **HUD 对齐**：探索补肖像槽；锁定卡用绘制锁标替代「锁」字
 
 设计依据（Project store）：
 - `docs/gameplay-design.md`

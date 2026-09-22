@@ -1,9 +1,10 @@
 extends Control
 ## M3 搜打撤：饥荒气质节点图 · 搜材料 → 打遭遇 → 撤据点结算。
-## 自动普攻 + 点主动；单英雄接大厅花名册；节点边界可存。
+## 战斗环与演武/爬塔共用 AutoCombatRing（自动普攻 + 点主动）。
 
 const KnowledgeCardScene := preload("res://scenes/knowledge/knowledge_card.tscn")
 const ResultOverlayScene := preload("res://scenes/ui/result_overlay.tscn")
+const AutoCombatRing := preload("res://scripts/combat/auto_combat_ring.gd")
 const VF := preload("res://scripts/util/visual_factory.gd")
 const Atmo := preload("res://scripts/util/atmosphere.gd")
 const AP := preload("res://scripts/util/art_palette.gd")
@@ -26,25 +27,15 @@ const RunBag := preload("res://scripts/explore/run_bag.gd")
 @onready var map_layer: Control = %MapLayer
 @onready var exit_row: HBoxContainer = %ExitRow
 @onready var craft_row: HBoxContainer = %CraftRow
+@onready var portrait_slot: Control = %PortraitSlot
 
-var hero_id: String = "unit_feidao"
-var hp: float = 120
-var max_hp: float = 120
-var atk: float = 28
-var attack_interval: float = 0.65
-var attack_cd: float = 0.0
-var skill: Dictionary = {}
-var skill_cd: float = 0.0
-var combat_active: bool = false
-var enemies: Array = []
+var ring: RefCounted ## AutoCombatRing
 var knowledge_layer: CanvasLayer
 var result_overlay: CanvasLayer
 var awaiting_knowledge: bool = false
-var shield: float = 0.0
-var slow_all_timer: float = 0.0
 var game_done: bool = false
 var node_completed: bool = false
-var _hero_visual: Control
+var _portrait: Control
 
 # --- 搜打撤 map ---
 var bag: RefCounted ## ExploreRunBag
@@ -57,6 +48,10 @@ var night_pressure: bool = false
 
 func _ready() -> void:
 	bag = RunBag.new()
+	ring = AutoCombatRing.new()
+	ring.bind(self, arena, enemies_layer, hero_node)
+	ring.hero_defeated.connect(_defeat)
+	ring.enemies_cleared.connect(_on_combat_cleared)
 	Atmo.attach_full_bg(self, "night")
 	var old_bg := get_node_or_null("Bg")
 	if old_bg:
@@ -82,24 +77,34 @@ func _ready() -> void:
 	if not GameState.explore_checkpoint.is_empty():
 		_load_checkpoint(GameState.explore_checkpoint)
 	else:
-		hero_id = GameState.explore_hero_id
+		var hero_id := GameState.explore_hero_id
 		if hero_id not in GameState.unlocked_units and not GameState.unlocked_units.is_empty():
 			hero_id = GameState.unlocked_units[0]
-		_init_hero_stats()
-		node_id = str(ContentDB.rooms_cfg.get("start_node", "settle"))
-		shield = 25 if GameState.is_morning_buff_live() else 0
-		shield += int(GameState.knowledge_meta_bonuses().get("explore_shield", 0))
+		var shield := 25.0 if GameState.is_morning_buff_live() else 0.0
+		shield += float(GameState.knowledge_meta_bonuses().get("explore_shield", 0))
 		if "gear_bamboo_cup" in GameState.gear_equipped:
-			shield += 10
+			shield += 10.0
 		if "gear_demo_trail_charm" in GameState.gear_equipped:
-			shield += 8
+			shield += 8.0
+		ring.init_hero(hero_id, shield)
 		_apply_explore_hooks()
+		_build_portrait(hero_id)
+		node_id = str(ContentDB.rooms_cfg.get("start_node", "settle"))
 		_enter_node()
 	_refresh()
 
 
+func _build_portrait(uid: String) -> void:
+	if _portrait and is_instance_valid(_portrait):
+		_portrait.queue_free()
+	var u: Dictionary = ContentDB.get_unit(uid)
+	_portrait = VF.portrait_card(u, Vector2(100, 132), true)
+	_portrait.position = Vector2(4, 4)
+	portrait_slot.add_child(_portrait)
+
+
 func _apply_explore_hooks() -> void:
-	## Light knowledge explore_hooks — only once each, subway-friendly numbers.
+	## Per-card explore_hooks only — meta explore_max_hp already in AutoCombatRing.init_hero.
 	var applied: Dictionary = {}
 	for kid in GameState.knowledge_seen:
 		if int(GameState.knowledge_correct.get(kid, 0)) <= 0:
@@ -110,68 +115,33 @@ func _apply_explore_hooks() -> void:
 		applied[hook] = true
 		match hook:
 			"start_shield_small":
-				shield += 12
+				ring.shield += 12
 			"heal_on_enter":
-				# Applied as small max-hp pad so first room feels safer.
-				max_hp += 8
-				hp = mini(hp + 8, max_hp)
+				ring.max_hp += 8
+				ring.hp = minf(ring.hp + 8, ring.max_hp)
 			"atk_buff_room":
-				atk *= 1.04
+				ring.atk *= 1.04
 			"max_hp_small":
-				max_hp += 10
-				hp = mini(hp + 10, max_hp)
+				ring.max_hp += 10
+				ring.hp = minf(ring.hp + 10, ring.max_hp)
 			"energy_room":
-				shield += 6
+				ring.shield += 6
 			_:
 				pass
-	max_hp += float(GameState.knowledge_meta_bonuses().get("explore_max_hp", 0))
-	hp = mini(hp + float(GameState.knowledge_meta_bonuses().get("explore_max_hp", 0)), max_hp)
-
-
-func _init_hero_stats() -> void:
-	var u: Dictionary = ContentDB.get_unit(hero_id)
-	var ex: Dictionary = u.get("explore", {})
-	max_hp = float(ex.get("hp", 120))
-	hp = max_hp
-	atk = float(ex.get("atk", 20))
-	attack_interval = float(ex.get("attack_interval", 0.7))
-	skill = ex.get("active", {}).duplicate(true)
-	if _hero_visual:
-		_hero_visual.queue_free()
-	_hero_visual = VF.unit_node(u, Vector2(96, 112))
-	_hero_visual.position = hero_node.position
-	hero_node.visible = false
-	arena.add_child(_hero_visual)
-	VF.attach_hero_hp(_hero_visual)
-	VF.set_hero_hp_ratio(_hero_visual, hp / maxf(max_hp, 1.0), shield / maxf(max_hp, 1.0))
-	VF.idle_bob(_hero_visual, 4.0, 2.6)
 
 
 func _process(delta: float) -> void:
 	if game_done or awaiting_knowledge or showing_map:
 		return
-	if skill_cd > 0:
-		skill_cd = max(0, skill_cd - delta)
-		_refresh_skill_btn()
-	if slow_all_timer > 0:
-		slow_all_timer = max(0, slow_all_timer - delta)
-	if not combat_active:
-		return
-	attack_cd -= delta
-	_tick_enemies(delta)
-	if attack_cd <= 0 and not enemies.is_empty():
-		_hero_auto_attack()
-		attack_cd = attack_interval
-	if enemies.is_empty() and combat_active:
-		_on_combat_cleared()
+	ring.paused = false
+	ring.tick(delta)
+	_refresh()
 
 
 func _enter_node() -> void:
-	combat_active = false
+	ring.combat_active = false
+	ring.clear_enemies()
 	showing_map = false
-	enemies.clear()
-	for c in enemies_layer.get_children():
-		c.queue_free()
 	map_layer.visible = false
 	_clear_exit_row()
 	_clear_craft_row()
@@ -208,8 +178,8 @@ func _enter_node() -> void:
 				_show_path_choices()
 			else:
 				status_label.text = "遭遇敌人 · 自动普攻，点按主动技。" + (" 夜压↑" if night_pressure else "")
-				_spawn_room_enemies(node.get("enemies", []))
-				combat_active = true
+				var atk_scale := 1.12 if night_pressure else 1.0
+				ring.spawn_enemies(node.get("enemies", []), 1.0, atk_scale)
 		"event":
 			flee_btn.disabled = true
 			if node_completed:
@@ -234,7 +204,7 @@ func _enter_node() -> void:
 			flee_btn.disabled = true
 			if not node_completed:
 				var heal := float(node.get("heal", 20))
-				hp = minf(max_hp, hp + heal)
+				ring.hp = minf(ring.max_hp, ring.hp + heal)
 				_show_loot("吐纳 +%d HP" % int(heal), Color(0.6, 0.85, 0.65))
 				node_completed = true
 			status_label.text = "吐纳毕。选路。"
@@ -244,7 +214,7 @@ func _enter_node() -> void:
 			flee_btn.disabled = true
 			if not node_completed:
 				var heal2 := float(node.get("heal", 30))
-				hp = minf(max_hp, hp + heal2)
+				ring.hp = minf(ring.max_hp, ring.hp + heal2)
 				var sil := int(node.get("silver", 0))
 				GameState.silver_bank += sil
 				if node.has("materials"):
@@ -265,7 +235,7 @@ func _grant_node_loot(node: Dictionary) -> void:
 	bag.add_dict(mats)
 	var frags := int(node.get("fragments", 0))
 	if frags > 0:
-		GameState.add_fragments(hero_id, frags)
+		GameState.add_fragments(ring.hero_id, frags)
 	var bits: PackedStringArray = []
 	if not mats.is_empty():
 		bits.append(bag.summary_text(ContentDB.materials))
@@ -281,7 +251,6 @@ func _show_settle_ui() -> void:
 	map_layer.visible = true
 	showing_map = true
 	_rebuild_craft_row()
-	# Deposit preview — bag stays until explicit withdraw or deposit-at-settle.
 	if not bag.is_empty():
 		status_label.text = "据点可入库背包，或继续出山。当前背包：%s" % bag.summary_text(ContentDB.materials)
 		var deposit_btn := Button.new()
@@ -317,7 +286,7 @@ func _rebuild_craft_row() -> void:
 		b.disabled = not ok
 		b.tooltip_text = str(recipe.get("blurb", ""))
 		b.pressed.connect(func():
-			var res: Dictionary = GameState.craft_recipe(rid, hero_id)
+			var res: Dictionary = GameState.craft_recipe(rid, ring.hero_id)
 			if res.get("ok", false):
 				Juice.play_sfx("win")
 				_show_loot("打造完成 · %s" % recipe.get("name", rid), Color(0.75, 0.85, 0.55))
@@ -407,7 +376,7 @@ func _type_color(rtype: String) -> Color:
 
 
 func _travel_to(target: String) -> void:
-	if game_done or awaiting_knowledge or combat_active:
+	if game_done or awaiting_knowledge or ring.combat_active:
 		return
 	Juice.play_sfx("tap")
 	Juice.fade_transition(func():
@@ -424,7 +393,6 @@ func _on_next_or_map() -> void:
 	if awaiting_knowledge or game_done:
 		return
 	if str(ContentDB.get_node_cfg(node_id).get("type", "")) == "settle":
-		# Open exits from settle — prefer first gather/combat.
 		_show_path_choices()
 		status_label.text = "选一条出路：搜 / 打。"
 		return
@@ -498,140 +466,24 @@ func _rebuild_visited_strip() -> void:
 		room_strip.add_child(wrap)
 
 
-func _spawn_room_enemies(ids: Array) -> void:
-	var i := 0
-	var atk_scale := 1.12 if night_pressure else 1.0
-	for eid in ids:
-		var e: Dictionary = ContentDB.get_enemy(str(eid))
-		var node := VF.enemy_node(e, Vector2(84, 100))
-		node.position = Vector2(340 + (i % 2) * 100, 120 + i * 110)
-		node.modulate.a = 0.0
-		enemies_layer.add_child(node)
-		VF.idle_bob(node, 2.5, 2.2 + i * 0.15)
-		var tw := node.create_tween()
-		tw.tween_property(node, "modulate:a", 1.0, 0.22)
-		tw.parallel().tween_property(node, "position:x", node.position.x - 12.0, 0.22).set_trans(Tween.TRANS_BACK)
-		var emax := float(e.get("hp", 50)) * 0.85
-		VF.set_enemy_hp_ratio(node, 1.0)
-		enemies.append({
-			"id": eid,
-			"hp": emax,
-			"max_hp": emax,
-			"atk": (8.0 + float(e.get("leak_damage", 1)) * 4.0) * atk_scale,
-			"node": node,
-			"attack_cd": 1.0 + i * 0.2,
-		})
-		i += 1
-
-
-func _hero_auto_attack() -> void:
-	if enemies.is_empty():
-		return
-	var target: Dictionary = enemies[0]
-	target.hp -= atk
-	var pos: Vector2 = target.node.position + target.node.custom_minimum_size * 0.5
-	Juice.float_number(pos, str(int(atk)), Color(1, 0.88, 0.5))
-	VF.hit_flash(enemies_layer, pos, Color(1.0, 0.92, 0.55, 0.9))
-	VF.set_enemy_hp_ratio(target.node, target.hp / maxf(target.max_hp, 1.0))
-	Juice.play_sfx("hit")
-	_pulse(_hero_visual)
-	_pulse(target.node)
-	if target.hp <= 0:
-		VF.death_puff(enemies_layer, pos, Color(0.95, 0.5, 0.35, 0.85))
-		target.node.queue_free()
-		enemies.erase(target)
-		Juice.play_sfx("kill")
-	_refresh()
-
-
-func _tick_enemies(delta: float) -> void:
-	var factor := 0.55 if slow_all_timer > 0 else 1.0
-	for enemy in enemies.duplicate():
-		enemy.attack_cd -= delta * factor
-		if enemy.attack_cd > 0:
-			continue
-		enemy.attack_cd = 1.4
-		var dmg: float = enemy.atk
-		if shield > 0:
-			var absorb := minf(shield, dmg)
-			shield -= absorb
-			dmg -= absorb
-		hp -= dmg
-		Juice.float_number(_hero_visual.position, "-%d" % int(dmg), Color(0.95, 0.45, 0.4))
-		Juice.play_sfx("hit")
-		Juice.screen_shake(arena, 5.0)
-		Juice.flash_modulate(_hero_visual, Color(1.45, 0.7, 0.65, 1.0), 0.12)
-		_pulse(enemy.node)
-		if hp <= 0:
-			_defeat()
-			return
-	_refresh()
-
-
 func _cast_skill() -> void:
-	if skill_cd > 0 or awaiting_knowledge or game_done or showing_map:
+	if awaiting_knowledge or game_done or showing_map:
 		return
-	if not combat_active and enemies.is_empty():
-		return
-	var effect := str(skill.get("effect", ""))
-	var value := float(skill.get("value", 0))
-	var burst_col := Color(0.7, 0.88, 0.75, 0.8)
-	match effect:
-		"aoe_damage":
-			burst_col = Color(0.95, 0.55, 0.35, 0.85)
-			for enemy in enemies.duplicate():
-				enemy.hp -= value
-				Juice.float_number(enemy.node.position, str(int(value)), Color(0.95, 0.7, 0.45))
-				VF.hit_flash(enemies_layer, enemy.node.position + enemy.node.custom_minimum_size * 0.5, burst_col)
-				VF.set_enemy_hp_ratio(enemy.node, enemy.hp / maxf(enemy.max_hp, 1.0))
-				if enemy.hp <= 0:
-					VF.death_puff(enemies_layer, enemy.node.position + enemy.node.custom_minimum_size * 0.5)
-					enemy.node.queue_free()
-					enemies.erase(enemy)
-		"heal":
-			burst_col = Color(0.55, 0.9, 0.65, 0.85)
-			hp = minf(max_hp, hp + value)
-			Juice.float_number(_hero_visual.position, "+%d" % int(value), Color(0.55, 0.9, 0.6))
-		"shield":
-			burst_col = Color(0.55, 0.75, 0.95, 0.85)
-			shield += value
-			Juice.float_number(_hero_visual.position, "盾+%d" % int(value), Color(0.55, 0.75, 0.95))
-		"slow_all":
-			burst_col = Color(0.55, 0.75, 0.95, 0.8)
-			slow_all_timer = float(skill.get("duration", 2.0))
-			for enemy in enemies:
-				if enemy.node:
-					enemy.node.modulate = Color(0.65, 0.8, 1.1, 1.0)
-		_:
-			for enemy in enemies.duplicate():
-				enemy.hp -= value
-				VF.set_enemy_hp_ratio(enemy.node, enemy.hp / maxf(enemy.max_hp, 1.0))
-				if enemy.hp <= 0:
-					VF.death_puff(enemies_layer, enemy.node.position + enemy.node.custom_minimum_size * 0.5)
-					enemy.node.queue_free()
-					enemies.erase(enemy)
-	skill_cd = float(skill.get("cooldown", 8.0))
-	var burst_at: Vector2 = arena.size * 0.5
-	if _hero_visual:
-		burst_at = _hero_visual.position + _hero_visual.custom_minimum_size * 0.5
-	VF.skill_burst(arena, burst_at, burst_col)
-	Juice.play_sfx("skill")
-	Juice.screen_shake(arena, 5.0)
-	_refresh_skill_btn()
-	_refresh()
-	if enemies.is_empty() and combat_active:
-		_on_combat_cleared()
+	if ring.cast_skill():
+		_refresh()
 
 
 func _on_combat_cleared() -> void:
-	combat_active = false
+	if game_done or node_completed:
+		return
+	ring.combat_active = false
 	node_completed = true
 	cleared_once[node_id] = true
 	var node: Dictionary = ContentDB.get_node_cfg(node_id)
 	var loot: Dictionary = node.get("loot", {})
 	bag.add_dict(loot)
-	GameState.add_mastery(hero_id, 1)
-	GameState.add_fragments(hero_id, int(node.get("fragments", 1)))
+	GameState.add_mastery(ring.hero_id, 1)
+	GameState.add_fragments(ring.hero_id, int(node.get("fragments", 1)))
 	_show_loot("清场 · %s · 熟练+1" % bag.summary_text(ContentDB.materials), Color(0.72, 0.88, 0.62))
 	if bool(node.get("boss", false)):
 		GameState.total_explore_clears += 1
@@ -658,7 +510,7 @@ func _on_knowledge_resolved(_id: String, correct: bool) -> void:
 		var bonus := 15
 		if "gear_jade_token" in GameState.gear_equipped:
 			bonus += 5
-		hp = minf(max_hp, hp + bonus)
+		ring.hp = minf(ring.max_hp, ring.hp + bonus)
 		bag.add("mat_herb", 1)
 		status_label.text = "答对，恢复 +%d HP · 药草+1。" % bonus
 	else:
@@ -672,14 +524,12 @@ func _on_withdraw_or_flee() -> void:
 	if game_done:
 		return
 	var rtype := str(ContentDB.get_node_cfg(node_id).get("type", ""))
-	if combat_active:
-		# Mid-combat flee: keep half bag.
+	if ring.combat_active:
 		_settle_run(0.5, "战斗撤离", "半袋物资带回据点入库。\n银两仓 +5。", true)
 		return
 	if rtype == "settle":
 		_settle_run(1.0, "撤离结算", "全部背包入库 · 回大厅。", false)
 		return
-	# Non-combat: return to settle node with full bag (interrupt-friendly).
 	Juice.play_sfx("tap")
 	Juice.fade_transition(func():
 		node_id = "settle"
@@ -691,7 +541,7 @@ func _on_withdraw_or_flee() -> void:
 
 func _settle_run(keep_ratio: float, title: String, blurb: String, add_silver: bool) -> void:
 	game_done = true
-	combat_active = false
+	ring.combat_active = false
 	if add_silver:
 		GameState.silver_bank += 5
 	var got := GameState.deposit_run_bag(bag.duplicate_bag(), keep_ratio)
@@ -709,9 +559,10 @@ func _settle_run(keep_ratio: float, title: String, blurb: String, add_silver: bo
 
 
 func _defeat() -> void:
+	if game_done:
+		return
 	game_done = true
-	combat_active = false
-	# Failure carries less — keep 40%.
+	ring.combat_active = false
 	var got := GameState.deposit_run_bag(bag.duplicate_bag(), 0.4)
 	bag.clear()
 	GameState.explore_checkpoint = {}
@@ -736,12 +587,12 @@ func _dict_summary(d: Dictionary) -> String:
 
 func _persist() -> void:
 	GameState.persist_explore({
-		"hero_id": hero_id,
-		"hp": hp,
-		"max_hp": max_hp,
-		"shield": shield,
+		"hero_id": ring.hero_id,
+		"hp": ring.hp,
+		"max_hp": ring.max_hp,
+		"shield": ring.shield,
 		"node_id": node_id,
-		"skill_cd": skill_cd,
+		"skill_cd": ring.skill_cd,
 		"node_completed": node_completed,
 		"nodes_visited": nodes_visited,
 		"bag": bag.duplicate_bag(),
@@ -750,17 +601,16 @@ func _persist() -> void:
 
 
 func _load_checkpoint(cp: Dictionary) -> void:
-	hero_id = str(cp.get("hero_id", GameState.explore_hero_id))
-	_init_hero_stats()
-	hp = float(cp.get("hp", max_hp))
-	max_hp = float(cp.get("max_hp", max_hp))
-	shield = float(cp.get("shield", 0))
-	# Migrate legacy room_index checkpoints → settle.
+	var hero_id := str(cp.get("hero_id", GameState.explore_hero_id))
+	ring.init_hero(hero_id, float(cp.get("shield", 0)))
+	ring.hp = float(cp.get("hp", ring.max_hp))
+	ring.max_hp = float(cp.get("max_hp", ring.max_hp))
+	ring.skill_cd = float(cp.get("skill_cd", 0))
+	_build_portrait(hero_id)
 	if cp.has("node_id"):
 		node_id = str(cp.get("node_id", "settle"))
 	else:
 		node_id = str(ContentDB.rooms_cfg.get("start_node", "settle"))
-	skill_cd = float(cp.get("skill_cd", 0))
 	node_completed = bool(cp.get("node_completed", cp.get("room_completed", false)))
 	nodes_visited = int(cp.get("nodes_visited", 0))
 	bag.load_from(cp.get("bag", {}))
@@ -772,7 +622,7 @@ func _load_checkpoint(cp: Dictionary) -> void:
 
 
 func _save_and_lobby() -> void:
-	if combat_active:
+	if ring.combat_active:
 		status_label.text = "战斗中请先清场或战斗撤离"
 		return
 	_persist()
@@ -780,29 +630,21 @@ func _save_and_lobby() -> void:
 
 
 func _refresh() -> void:
-	hp_label.text = "HP %d/%d%s" % [int(hp), int(max_hp), (" ·盾%d" % int(shield)) if shield > 0 else ""]
-	hp_bar.max_value = max_hp
-	hp_bar.value = hp
-	var ratio: float = hp / maxf(max_hp, 1.0)
+	hp_label.text = ring.hp_label_text()
+	hp_bar.max_value = ring.max_hp
+	hp_bar.value = ring.hp
+	var ratio: float = ring.hp / maxf(ring.max_hp, 1.0)
 	if ratio < 0.35:
 		hp_bar.modulate = Color(1.15, 0.65, 0.55)
 	elif ratio < 0.65:
 		hp_bar.modulate = Color(1.05, 0.95, 0.7)
 	else:
 		hp_bar.modulate = Color(0.85, 1.05, 0.9)
-	if _hero_visual and is_instance_valid(_hero_visual):
-		VF.set_hero_hp_ratio(_hero_visual, ratio, shield / maxf(max_hp, 1.0))
+	if ring.hero_visual and is_instance_valid(ring.hero_visual):
+		VF.set_hero_hp_ratio(ring.hero_visual, ratio, ring.shield / maxf(ring.max_hp, 1.0))
 	bag_label.text = "背包 %s" % bag.summary_text(ContentDB.materials)
-	_refresh_skill_btn()
-
-
-func _refresh_skill_btn() -> void:
-	if skill_cd > 0.05:
-		skill_btn.text = "%s (%.1fs)" % [skill.get("name", "技能"), skill_cd]
-		skill_btn.disabled = true
-	else:
-		skill_btn.text = str(skill.get("name", "技能"))
-		skill_btn.disabled = (not combat_active and enemies.is_empty()) or showing_map
+	skill_btn.text = ring.skill_button_text()
+	skill_btn.disabled = ring.skill_disabled() or showing_map or awaiting_knowledge
 
 
 func _clear_exit_row() -> void:
@@ -813,13 +655,3 @@ func _clear_exit_row() -> void:
 func _clear_craft_row() -> void:
 	for c in craft_row.get_children():
 		c.queue_free()
-
-
-func _pulse(node: CanvasItem) -> void:
-	if node == null:
-		return
-	var c := node.modulate
-	node.modulate = Color(1.35, 1.35, 1.35, 1)
-	await get_tree().create_timer(0.08).timeout
-	if is_instance_valid(node):
-		node.modulate = c
