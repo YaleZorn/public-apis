@@ -98,9 +98,11 @@ func _build_portrait(uid: String) -> void:
 	if _portrait and is_instance_valid(_portrait):
 		_portrait.queue_free()
 	var u: Dictionary = ContentDB.get_unit(uid)
-	_portrait = VF.portrait_card(u, Vector2(100, 132), true)
-	_portrait.position = Vector2(4, 4)
+	# In-mode hero readout uses figure sprite (lobby keeps portrait cards).
+	_portrait = VF.unit_node(u, Vector2(72, 96))
+	_portrait.position = Vector2(8, 8)
 	portrait_slot.add_child(_portrait)
+	VF.idle_bob(_portrait, 2.0, 2.5)
 
 
 func _apply_explore_hooks() -> void:

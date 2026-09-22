@@ -1,10 +1,11 @@
 extends RefCounted
 class_name VisualFactory
-## Per-character portrait cards + role accents — subway-readable wuxia identity.
+## Lobby: portrait collection cards. In-world: frameless figure sprites + idle/attack motion.
 
 const AP := preload("res://scripts/util/art_palette.gd")
 const ATLAS_PATH := "res://assets/textures/unit-enemy-atlas.jpg"
 const PORTRAIT_DIR := "res://assets/textures/portraits/"
+const FIGURE_DIR := "res://assets/textures/figures/"
 
 # Atlas fallback (1280x720, 7 figures).
 const ATLAS_W := 1280.0
@@ -23,6 +24,7 @@ const CROP_INSETS := [
 
 static var _atlas_tex: Texture2D
 static var _portrait_cache: Dictionary = {}
+static var _figure_cache: Dictionary = {}
 
 
 ## --- Shaped FX primitives (Polygon2D / Line2D — not ColorRect blobs) ---
@@ -114,6 +116,23 @@ static func _portrait_tex(id: String) -> Texture2D:
 	return null
 
 
+static func _figure_tex(id: String) -> Texture2D:
+	## Full-body chibi / mini-figure for TD map + combat ring (not framed portrait).
+	if id == "":
+		return null
+	if _figure_cache.has(id):
+		return _figure_cache[id]
+	var path := FIGURE_DIR + id + ".png"
+	if ResourceLoader.exists(path) or FileAccess.file_exists(path):
+		var tex: Texture2D = load(path)
+		_figure_cache[id] = tex
+		return tex
+	# Fall back to standing portrait (better than blank) if figure missing.
+	var port := _portrait_tex(id)
+	_figure_cache[id] = port
+	return port
+
+
 static func _region(index: int) -> AtlasTexture:
 	var src := _atlas()
 	if src == null:
@@ -150,6 +169,7 @@ static func _enemy_index(tags: Array) -> int:
 
 
 static func _unit_tex(unit: Dictionary) -> Texture2D:
+	## Portrait path (lobby cards). Prefer authored portrait; atlas role crop fallback.
 	var tex := _portrait_tex(str(unit.get("id", "")))
 	if tex:
 		return tex
@@ -163,7 +183,31 @@ static func _enemy_tex(enemy: Dictionary) -> Texture2D:
 	return _region(_enemy_index(enemy.get("tags", [])))
 
 
-static func unit_node(unit: Dictionary, size: Vector2 = Vector2(64, 72)) -> Control:
+static func _unit_figure_tex(unit: Dictionary) -> Texture2D:
+	var tex := _figure_tex(str(unit.get("id", "")))
+	if tex:
+		return tex
+	return _region(_role_index(str(unit.get("role", "dps"))))
+
+
+static func _enemy_figure_tex(enemy: Dictionary) -> Texture2D:
+	var tex := _figure_tex(str(enemy.get("id", "")))
+	if tex:
+		return tex
+	return _region(_enemy_index(enemy.get("tags", [])))
+
+
+static func _ellipse_shadow(size: Vector2) -> ColorRect:
+	## Soft ground oval stand-in — grounds the figure without a portrait plate.
+	var r := ColorRect.new()
+	r.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	r.size = size
+	r.color = Color(0.02, 0.04, 0.03, 0.42)
+	return r
+
+
+static func unit_node(unit: Dictionary, size: Vector2 = Vector2(64, 80)) -> Control:
+	## In-world ally: small figure sprite (no framed portrait card).
 	var role := str(unit.get("role", "dps"))
 	var root := Control.new()
 	root.custom_minimum_size = size
@@ -171,49 +215,51 @@ static func unit_node(unit: Dictionary, size: Vector2 = Vector2(64, 72)) -> Cont
 	root.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	root.set_meta("unit_id", str(unit.get("id", "")))
 	root.set_meta("role", role)
+	root.set_meta("is_figure", true)
 
-	var rim := ColorRect.new()
-	rim.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	rim.size = size + Vector2(4, 4)
-	rim.position = Vector2(-2, -2)
-	rim.color = Color(AP.LANTERN_GOLD.r, AP.LANTERN_GOLD.g, AP.LANTERN_GOLD.b, 0.22)
-	root.add_child(rim)
+	var shadow := _ellipse_shadow(Vector2(size.x * 0.72, 12.0))
+	shadow.position = Vector2(size.x * 0.14, size.y - 14.0)
+	root.add_child(shadow)
 
-	var plate := ColorRect.new()
-	plate.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	plate.size = size
-	plate.color = Color(0.03, 0.06, 0.05, 0.55)
-	root.add_child(plate)
+	var anim := Control.new()
+	anim.name = "AnimRoot"
+	anim.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	anim.position = Vector2.ZERO
+	anim.size = size
+	anim.pivot_offset = Vector2(size.x * 0.5, size.y)
+	root.add_child(anim)
 
-	var tex := _unit_tex(unit)
+	var tex := _unit_figure_tex(unit)
 	if tex:
 		var spr := TextureRect.new()
+		spr.name = "FigureSpr"
 		spr.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		spr.texture = tex
 		spr.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		spr.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
-		spr.size = size - Vector2(2, 6)
-		spr.position = Vector2(1, 1)
-		# Match enemy midtone lift so TD/explore stands share visual weight
-		spr.modulate = Color(1.06, 1.04, 1.02, 1.0)
-		root.add_child(spr)
+		spr.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		spr.size = Vector2(size.x, size.y - 12.0)
+		spr.position = Vector2(0, 0)
+		spr.modulate = Color(1.12, 1.08, 1.05, 1.0)
+		anim.add_child(spr)
 	else:
-		_draw_unit_body(root, role, Color(str(unit.get("color", "#6a8f71"))), size)
+		_draw_unit_body(anim, role, Color(str(unit.get("color", "#6a8f71"))), size)
 
-	var strip := ColorRect.new()
-	strip.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	strip.size = Vector2(size.x, 5)
-	strip.position = Vector2(0, size.y - 5)
-	strip.color = AP.role_accent(role)
-	root.add_child(strip)
+	# Soft ground accent under figure — not a portrait plate.
+	var sash := ColorRect.new()
+	sash.name = "SashBob"
+	sash.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	sash.size = Vector2(maxf(4.0, size.x * 0.08), maxf(10.0, size.y * 0.22))
+	sash.position = Vector2(size.x * 0.78, size.y * 0.28)
+	sash.color = Color(AP.role_accent(role).r, AP.role_accent(role).g, AP.role_accent(role).b, 0.4)
+	anim.add_child(sash)
 
 	var label := Label.new()
 	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	label.text = str(unit.get("name", "?")).substr(0, 2)
-	AP.apply_label(label, 12, AP.PAPER_INK)
+	AP.apply_label(label, 11, Color(0.92, 0.94, 0.88, 0.95))
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	label.position = Vector2(0, size.y - 22)
-	label.size = Vector2(size.x, 18)
+	label.position = Vector2(0, size.y - 14)
+	label.size = Vector2(size.x, 14)
 	root.add_child(label)
 	root.set_meta("idle_bob", true)
 	return root
@@ -300,14 +346,15 @@ static func _draw_unit_body(root: Control, role: String, col: Color, size: Vecto
 			root.add_child(body)
 
 
-static func enemy_node(enemy: Dictionary, size: Vector2 = Vector2(48, 58)) -> Control:
-	## Standing portrait parity with ally unit_node — readable midtones, gold plate, name.
+static func enemy_node(enemy: Dictionary, size: Vector2 = Vector2(48, 64)) -> Control:
+	## In-world enemy figure — frameless mini-character with threat tint + HP bar.
 	var tags: Array = enemy.get("tags", [])
 	var root := Control.new()
 	root.custom_minimum_size = size
 	root.size = size
 	root.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	root.set_meta("enemy_id", str(enemy.get("id", "")))
+	root.set_meta("is_figure", true)
 
 	var threat := Color(0.9, 0.6, 0.35)
 	if "fast" in tags:
@@ -315,47 +362,48 @@ static func enemy_node(enemy: Dictionary, size: Vector2 = Vector2(48, 58)) -> Co
 	elif "armored" in tags:
 		threat = Color(0.72, 0.78, 0.84)
 
-	var rim := ColorRect.new()
-	rim.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	rim.size = size + Vector2(4, 4)
-	rim.position = Vector2(-2, -2)
-	rim.color = Color(threat.r, threat.g, threat.b, 0.42)
-	root.add_child(rim)
+	var shadow := _ellipse_shadow(Vector2(size.x * 0.7, 11.0))
+	shadow.position = Vector2(size.x * 0.15, size.y - 13.0)
+	shadow.color = Color(threat.r * 0.3, threat.g * 0.2, threat.b * 0.15, 0.5)
+	root.add_child(shadow)
 
-	var plate := ColorRect.new()
-	plate.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	plate.size = size
-	plate.color = Color(0.04, 0.07, 0.06, 0.62)
-	root.add_child(plate)
+	var anim := Control.new()
+	anim.name = "AnimRoot"
+	anim.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	anim.position = Vector2.ZERO
+	anim.size = size
+	anim.pivot_offset = Vector2(size.x * 0.5, size.y)
+	root.add_child(anim)
 
-	var tex := _enemy_tex(enemy)
+	var tex := _enemy_figure_tex(enemy)
 	if tex:
 		var spr := TextureRect.new()
+		spr.name = "FigureSpr"
 		spr.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		spr.texture = tex
 		spr.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		spr.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
-		spr.size = size - Vector2(2, 8)
-		spr.position = Vector2(1, 1)
-		# Parity midtone lift with ally stands (portraits already normalized)
-		spr.modulate = Color(1.08, 1.05, 1.03, 1.0)
-		root.add_child(spr)
+		spr.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		spr.size = Vector2(size.x, size.y - 12.0)
+		spr.position = Vector2(0, 0)
+		spr.modulate = Color(1.18, 1.12, 1.08, 1.0)
+		anim.add_child(spr)
 	else:
 		var body := ColorRect.new()
 		body.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		body.size = size - Vector2(8, 12)
 		body.position = Vector2(4, 4)
 		body.color = Color(str(enemy.get("color", "#a0522d")))
-		root.add_child(body)
+		anim.add_child(body)
 
-	var strip := ColorRect.new()
-	strip.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	strip.size = Vector2(size.x, 5)
-	strip.position = Vector2(0, size.y - 5)
-	strip.color = threat
-	root.add_child(strip)
+	var sash := ColorRect.new()
+	sash.name = "SashBob"
+	sash.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	sash.size = Vector2(maxf(5.0, size.x * 0.1), maxf(12.0, size.y * 0.22))
+	sash.position = Vector2(size.x * 0.7, size.y * 0.3)
+	sash.color = Color(threat.r, threat.g, threat.b, 0.5)
+	anim.add_child(sash)
 
-	# HP bar above frame
+	# HP bar above figure
 	var hp_bg := ColorRect.new()
 	hp_bg.name = "HpBg"
 	hp_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -374,9 +422,9 @@ static func enemy_node(enemy: Dictionary, size: Vector2 = Vector2(48, 58)) -> Co
 	var badge := Label.new()
 	badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	badge.text = str(enemy.get("name", "?")).substr(0, 2)
-	AP.apply_label(badge, 12, AP.PAPER_INK)
-	badge.position = Vector2(0, size.y - 22)
-	badge.size = Vector2(size.x, 18)
+	AP.apply_label(badge, 11, Color(0.95, 0.9, 0.85, 0.95))
+	badge.position = Vector2(0, size.y - 14)
+	badge.size = Vector2(size.x, 14)
 	badge.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	root.add_child(badge)
 	root.set_meta("idle_bob", true)
@@ -637,6 +685,7 @@ static func attack_strike(parent: Node, attacker: Control, target: Control, colo
 		dir = Vector2(40, 0)
 	var lunge := dir.normalized() * minf(28.0, dir.length() * 0.22)
 	var base := attacker.position
+	figure_attack_pose(attacker, dir)
 	var tw := attacker.create_tween()
 	tw.tween_property(attacker, "position", base + lunge, 0.07).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 	tw.tween_property(attacker, "position", base, 0.12).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
@@ -677,6 +726,7 @@ static func td_attack_fx(parent: Node, attacker: Control, target: Control, color
 	# Slot units: smaller lunge so they stay readable on pads
 	var lunge := dir.normalized() * minf(18.0, dist * 0.12)
 	var base := attacker.position
+	figure_attack_pose(attacker, dir)
 	var tw := attacker.create_tween()
 	tw.tween_property(attacker, "position", base + lunge, 0.06).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 	tw.tween_property(attacker, "position", base, 0.1).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
@@ -854,9 +904,53 @@ static func room_wipe(parent: Control, color: Color = Color(0.04, 0.10, 0.09, 0.
 
 
 static func idle_bob(node: Control, amp: float = 3.0, period: float = 2.4) -> void:
+	## Vertical bob + breath scale + sash limb sway for figure sprites.
 	if node == null:
 		return
 	var base := node.position
 	var tw := node.create_tween().set_loops()
 	tw.tween_property(node, "position:y", base.y - amp, period * 0.5).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 	tw.tween_property(node, "position:y", base.y + amp * 0.4, period * 0.5).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	figure_idle_anim(node, period)
+
+
+static func figure_idle_anim(node: Control, period: float = 2.4) -> void:
+	## Breath on AnimRoot + sash bob — maintainable procedural idle without SpriteFrames sheets.
+	if node == null or not is_instance_valid(node):
+		return
+	var anim := node.get_node_or_null("AnimRoot") as Control
+	if anim == null:
+		return
+	if anim.get_meta("breath_on", false):
+		return
+	anim.set_meta("breath_on", true)
+	anim.pivot_offset = Vector2(anim.size.x * 0.5, anim.size.y)
+	var btw := anim.create_tween().set_loops()
+	btw.tween_property(anim, "scale", Vector2(1.02, 0.97), period * 0.5).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	btw.tween_property(anim, "scale", Vector2(0.99, 1.03), period * 0.5).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	var sash := anim.get_node_or_null("SashBob") as Control
+	if sash:
+		var sx := sash.position.x
+		var sy := sash.position.y
+		var stw := sash.create_tween().set_loops()
+		stw.tween_property(sash, "position", Vector2(sx + 3.0, sy - 2.0), period * 0.55).set_trans(Tween.TRANS_SINE)
+		stw.tween_property(sash, "position", Vector2(sx - 2.0, sy + 1.5), period * 0.55).set_trans(Tween.TRANS_SINE)
+		stw.tween_property(sash, "rotation", 0.12, period * 0.4)
+		stw.tween_property(sash, "rotation", -0.1, period * 0.4)
+
+
+static func figure_attack_pose(node: Control, dir: Vector2 = Vector2(1, 0)) -> void:
+	## One-shot lean / squash toward strike — simple attack frame substitute.
+	if node == null or not is_instance_valid(node):
+		return
+	var anim := node.get_node_or_null("AnimRoot") as Control
+	if anim == null:
+		anim = node
+	var lean := clampf(dir.x, -1.0, 1.0) * 0.18
+	if absf(dir.x) < 0.2:
+		lean = 0.12 if dir.y < 0.0 else -0.08
+	var tw := anim.create_tween()
+	tw.tween_property(anim, "rotation", lean, 0.06).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	tw.parallel().tween_property(anim, "scale", Vector2(1.08, 0.92), 0.06)
+	tw.tween_property(anim, "rotation", 0.0, 0.14).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tw.parallel().tween_property(anim, "scale", Vector2(1.0, 1.0), 0.14)
