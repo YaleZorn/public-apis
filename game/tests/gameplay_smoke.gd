@@ -134,18 +134,22 @@ func _smoke_explore() -> bool:
 	var bag_before: int = int(ex.bag.total_count())
 	ex._travel_to("bandit_pass")
 	await create_timer(0.5).timeout
-	if not ex.combat_active:
+	if not ex.ring.combat_active:
 		push_error("combat did not start")
 		return false
-	for e in ex.enemies.duplicate():
+	for e in ex.ring.enemies.duplicate():
 		e.hp = 0
 		if e.node:
 			e.node.queue_free()
-	ex.enemies.clear()
+	ex.ring.enemies.clear()
+	ex.ring.combat_active = false
 	ex._on_combat_cleared()
 	await create_timer(0.25).timeout
 	if not ex.node_completed:
 		push_error("combat clear failed")
+		return false
+	if ex.ring == null:
+		push_error("explore should use AutoCombatRing")
 		return false
 	ex._persist()
 	if gs.explore_checkpoint.is_empty():
