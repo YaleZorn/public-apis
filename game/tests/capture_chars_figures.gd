@@ -1,0 +1,123 @@
+extends SceneTree
+## Capture figure-sprite presentation for chars-figures media.
+
+const OUT := "/cursor/stores/bc-71787b67-91e4-456d-b541-da2778721eaf/media/chars-figures"
+const VF := preload("res://scripts/util/visual_factory.gd")
+
+
+func _initialize() -> void:
+	DisplayServer.window_set_size(Vector2i(720, 1280))
+	DirAccess.make_dir_recursive_absolute(OUT)
+	call_deferred("_run")
+
+
+func _run() -> void:
+	var save_path := "user://kongfu_save_v0.json"
+	if FileAccess.file_exists(save_path):
+		DirAccess.remove_absolute(save_path)
+	var gs := root.get_node_or_null("GameState")
+	if gs:
+		gs.set("td_checkpoint", {})
+		gs.set("explore_checkpoint", {})
+		gs.set("arena_checkpoint", {})
+		gs.set("tower_checkpoint", {})
+	await _shot("res://scenes/shell/title_screen.tscn", "01-title.png", 0.85)
+	await _shot_lobby_roster()
+	await _shot_td_figures()
+	await _shot_td_wave_combat()
+	await _shot("res://scenes/explore/explore_run.tscn", "05-explore-figures.png", 1.0)
+	await _shot("res://scenes/arena/arena_run.tscn", "06-arena-figures.png", 1.1)
+	await _shot_closeups()
+	print("SCREENSHOTS_OK ", OUT)
+	quit(0)
+
+
+func _shot(scene_path: String, file: String, wait: float) -> void:
+	var packed = load(scene_path)
+	var node: Node = packed.instantiate()
+	root.add_child(node)
+	await create_timer(wait).timeout
+	_save(file)
+	node.queue_free()
+	await create_timer(0.15).timeout
+
+
+func _shot_lobby_roster() -> void:
+	var packed = load("res://scenes/lobby/lobby.tscn")
+	var node = packed.instantiate()
+	root.add_child(node)
+	await create_timer(0.9).timeout
+	_save("02-lobby-roster.png")
+	node.queue_free()
+	await create_timer(0.15).timeout
+
+
+func _shot_td_figures() -> void:
+	var packed = load("res://scenes/td/td_battle.tscn")
+	var td = packed.instantiate()
+	root.add_child(td)
+	await create_timer(0.7).timeout
+	td.selected_unit_id = "unit_tiebi"
+	td._on_slot_pressed(0)
+	td.selected_unit_id = "unit_feidao"
+	td._on_slot_pressed(1)
+	td.selected_unit_id = "unit_qinggong"
+	td._on_slot_pressed(2)
+	td.selected_unit_id = "unit_yishi"
+	td._on_slot_pressed(3)
+	await create_timer(0.55).timeout
+	_save("03-td-figures.png")
+	td.queue_free()
+	await create_timer(0.15).timeout
+
+
+func _shot_td_wave_combat() -> void:
+	var packed = load("res://scenes/td/td_battle.tscn")
+	var td = packed.instantiate()
+	root.add_child(td)
+	await create_timer(0.6).timeout
+	td.selected_unit_id = "unit_tiebi"
+	td._on_slot_pressed(0)
+	td.selected_unit_id = "unit_feidao"
+	td._on_slot_pressed(1)
+	td.selected_unit_id = "unit_qinggong"
+	td._on_slot_pressed(2)
+	if td.has_method("_on_start_wave"):
+		td._on_start_wave()
+	await create_timer(1.8).timeout
+	_save("04-td-wave-figures.png")
+	td.queue_free()
+	await create_timer(0.15).timeout
+
+
+func _shot_closeups() -> void:
+	## Isolated attractive figure close-ups on ink-mist plate.
+	var host := Control.new()
+	host.set_anchors_preset(Control.PRESET_FULL_RECT)
+	host.size = Vector2(720, 1280)
+	var bg := ColorRect.new()
+	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
+	bg.color = Color(0.04, 0.09, 0.08, 1.0)
+	host.add_child(bg)
+	root.add_child(host)
+	var ids := ["unit_qinggong", "unit_mulan", "unit_feidao", "unit_zhaoyun"]
+	var x0 := 70.0
+	for i in ids.size():
+		var u: Dictionary = ContentDB.get_unit(ids[i])
+		var fig := VF.unit_node(u, Vector2(140, 180))
+		fig.position = Vector2(x0 + (i % 2) * 260.0, 180.0 + int(i / 2) * 420.0)
+		host.add_child(fig)
+		VF.idle_bob(fig, 4.0, 2.0)
+		# Trigger attack lean once for motion evidence
+		VF.figure_attack_pose(fig, Vector2(1, -0.2))
+	await create_timer(0.9).timeout
+	_save("07-closeups-figures.png")
+	host.queue_free()
+	await create_timer(0.15).timeout
+
+
+func _save(file: String) -> void:
+	var img := root.get_viewport().get_texture().get_image()
+	var path := OUT.path_join(file)
+	img.save_png(path)
+	print("wrote ", path)
