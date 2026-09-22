@@ -205,6 +205,7 @@ func _hero_auto_attack() -> void:
 	var flash := Color(1.0, 0.92, 0.55, 0.9)
 	if hero_visual and target.has("node") and is_instance_valid(target.node):
 		VF.attack_strike(arena, hero_visual, target.node, flash)
+		Juice.pulse(hero_visual, 1.1, 0.1)
 	_damage_enemy(target, atk, flash)
 
 

@@ -1,11 +1,11 @@
-# Kongfu Roguelike — v0.9.2 手感续抠（共享战环 + 攻击特效 + 主题 BGM）
+# Kongfu Roguelike — v0.9.3 TD 汁水追平 + 爬塔专属 BGM
 
-竖屏、离线武侠健身题材。叠在 M6 + v0.9.1 手感打磨之上：
+竖屏、离线武侠健身题材。叠在 v0.9.2 手感续抠之上：
 
-- **探索战斗统一**：搜打撤挂上与演武/爬塔相同的 `AutoCombatRing`
-- **攻击特效**：冲刺斩击弧、命中冲击环、按技能类型区分的施法表现
-- **主题 BGM**：title / lobby / TD / explore / arena 可辨识循环（音量仍走设置）
-- **HUD 对齐**：探索补肖像槽；锁定卡用绘制锁标替代「锁」字
+- **TD 汁水**：布阵爆发、主路/侧翼预警、攻击弹道斩击、命中冲击、刷怪入场 — 向 `AutoCombatRing` 可读性靠齐
+- **爬塔专属 BGM**：不再共用探索曲；上升感攀登主题（音量仍走设置）
+- **HUD**：TD 底栏改为竖向肖像卡，与大厅/探索/演武一致
+- 五模式仍可玩；离线无 IAP；合法 OSS only
 
 设计依据（Project store）：
 - `docs/gameplay-design.md`
@@ -39,25 +39,12 @@ godot --path . --rendering-driver opengl3
 
 ### 演示 DLC 包
 
-- 路径：`data/content_pack_demo_mountain/`
-- 本地 `owned: true`，无商店计费
-- 合并后大厅花名册可见 **花木兰**（碎片解锁）、知识本出现山野主题卡、可装备 **山野行囊符**
-
-新增包步骤见 `data/CONTENT_PACKS.md`。
-
-### 五模式
-
-仍按原路径：TD 无限波、Idle 名人、探索搜打撤、演武场、爬塔。
+见 `data/CONTENT_PACKS.md` — `content_pack_demo_mountain` 本地挂载演示。
 
 ## 冒烟
 
 ```bash
-cd game
 godot --headless --path . --script res://tests/smoke_test.gd
 godot --headless --path . --script res://tests/boot_scenes.gd
 godot --headless --path . --script res://tests/gameplay_smoke.gd
 ```
-
-## 截图
-
-- Project store `media/m6-knowledge-dlc/`

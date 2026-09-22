@@ -87,6 +87,10 @@ func start_arena_music() -> void:
 	play_bgm("arena")
 
 
+func start_tower_music() -> void:
+	play_bgm("tower")
+
+
 func play_bgm(kind: String = "lobby") -> void:
 	if _ambient_player == null:
 		return
@@ -203,13 +207,14 @@ func _setup_fade() -> void:
 
 
 func _setup_ambient() -> void:
-	# Identifiable theme beds — title / lobby / TD / explore / arena.
+	# Identifiable theme beds — title / lobby / TD / explore / arena / tower.
 	_bgm_streams = {
 		"title": _compose_theme("title"),
 		"lobby": _compose_theme("lobby"),
 		"td": _compose_theme("td"),
 		"explore": _compose_theme("explore"),
 		"arena": _compose_theme("arena"),
+		"tower": _compose_theme("tower"),
 		"ambient": null,
 		"battle": null,
 	}
@@ -320,7 +325,7 @@ func _make_noise_hit(dur: float, vol: float) -> AudioStreamWAV:
 
 
 func _compose_theme(kind: String) -> AudioStreamWAV:
-	## Musical looping beds with clear motifs (title / lobby / td / explore / arena).
+	## Musical looping beds with clear motifs (title / lobby / td / explore / arena / tower).
 	## Phrase-based AABA-ish contours + harmony; volume still via Settings 音乐.
 	var wav := AudioStreamWAV.new()
 	wav.format = AudioStreamWAV.FORMAT_16_BITS
@@ -395,6 +400,19 @@ func _compose_theme(kind: String) -> AudioStreamWAV:
 		103.83, 103.83, 92.5, 92.5, 77.78, 77.78, 69.3, 69.3,
 		92.5, 92.5, 103.83, 103.83, 116.54, 116.54, 98.0, 98.0,
 	]
+	# Tower climb: ascending pentatonic steps — vertical progress vs explore walk
+	var tower_lead := [
+		196.0, 220.0, 246.94, 261.63, 293.66, 329.63, 349.23, 392.0,
+		349.23, 329.63, 293.66, 261.63, 246.94, 261.63, 293.66, 349.23,
+		392.0, 440.0, 493.88, 523.25, 493.88, 440.0, 392.0, 349.23,
+		329.63, 293.66, 261.63, 246.94, 220.0, 246.94, 293.66, 349.23,
+	]
+	var tower_bass := [
+		98.0, 98.0, 110.0, 110.0, 130.81, 130.81, 146.83, 146.83,
+		123.47, 123.47, 130.81, 130.81, 146.83, 146.83, 164.81, 164.81,
+		98.0, 98.0, 110.0, 110.0, 130.81, 130.81, 146.83, 146.83,
+		87.31, 87.31, 98.0, 98.0, 110.0, 110.0, 130.81, 130.81,
+	]
 	var lead: Array
 	var harm: Array
 	match kind:
@@ -410,6 +428,9 @@ func _compose_theme(kind: String) -> AudioStreamWAV:
 		"arena":
 			lead = arena_lead
 			harm = arena_bass
+		"tower":
+			lead = tower_lead
+			harm = tower_bass
 		_:
 			lead = lobby_lead
 			harm = lobby_harm
@@ -418,7 +439,8 @@ func _compose_theme(kind: String) -> AudioStreamWAV:
 	var is_title := kind == "title"
 	var is_explore := kind == "explore"
 	var is_arena := kind == "arena"
-	var is_lobby := not is_td and not is_title and not is_explore and not is_arena
+	var is_tower := kind == "tower"
+	var is_lobby := not is_td and not is_title and not is_explore and not is_arena and not is_tower
 	for i in count:
 		var t := float(i) / float(wav.mix_rate)
 		var note_i := int(floor(t / step)) % lead.size()
@@ -427,10 +449,12 @@ func _compose_theme(kind: String) -> AudioStreamWAV:
 		var hz_h: float = float(harm[note_i])
 		# Phrase envelope: longer sustain on even bars for singable contour
 		var phrase_boost := 1.12 if (note_i % 8) < 4 else 0.92
-		var atk := clampf(note_t / (0.12 if is_title else (0.07 if is_arena else 0.09)), 0.0, 1.0)
-		var rel := clampf((step - note_t) / (0.4 if is_title else (0.18 if is_arena else 0.26)), 0.0, 1.0)
+		var atk_len := 0.12 if is_title else (0.07 if is_arena else (0.08 if is_tower else 0.09))
+		var rel_len := 0.4 if is_title else (0.18 if is_arena else (0.22 if is_tower else 0.26))
+		var atk := clampf(note_t / atk_len, 0.0, 1.0)
+		var rel := clampf((step - note_t) / rel_len, 0.0, 1.0)
 		var note_env := atk * rel * phrase_boost
-		var pad_base := 65.0 if is_title else (78.0 if is_explore else (48.0 if is_td else (58.0 if is_arena else 70.0)))
+		var pad_base := 65.0 if is_title else (78.0 if is_explore else (48.0 if is_td else (58.0 if is_arena else (54.0 if is_tower else 70.0))))
 		var pad := (
 			sin(TAU * pad_base * t) * 0.052
 			+ sin(TAU * pad_base * 1.498 * t + 0.3) * 0.036
@@ -438,7 +462,7 @@ func _compose_theme(kind: String) -> AudioStreamWAV:
 			+ sin(TAU * pad_base * 0.5 * t) * 0.03
 		)
 		pad *= 0.82 + 0.18 * sin(TAU * (0.1 if is_title else 0.18) * t)
-		var drone_base := 48.0 if is_title else (62.0 if is_explore else (40.0 if is_td else (52.0 if is_arena else 55.0)))
+		var drone_base := 48.0 if is_title else (62.0 if is_explore else (40.0 if is_td else (52.0 if is_arena else (44.0 if is_tower else 55.0))))
 		var drone := (
 			sin(TAU * drone_base * t) * 0.064
 			+ sin(TAU * drone_base * 1.5 * t + 0.2) * 0.038
@@ -487,6 +511,22 @@ func _compose_theme(kind: String) -> AudioStreamWAV:
 			pad *= 1.08
 			if note_i % 4 == 0:
 				bell += sin(TAU * hz * 3.0 * t) * 0.02 * note_env
+		elif is_tower:
+			# Steady climb pulse — slower than arena, ascending vs explore stroll
+			var step_beat := fmod(t * 2.1, 1.0)
+			pulse = exp(-step_beat * 8.5) * 0.055 * sin(TAU * 72.0 * t)
+			var echo_step := fmod(t * 2.1 + 0.33, 1.0)
+			pulse += exp(-echo_step * 14.0) * 0.024 * sin(TAU * 144.0 * t)
+			# Floor-rise swell: higher over each 8-note phrase
+			var climb := 0.9 + 0.22 * float(note_i % 8) / 7.0
+			lead_s *= 1.28 * climb
+			harm_s *= 1.12
+			drone *= 1.18
+			pad *= 1.1
+			if note_i % 8 == 0:
+				bell += sin(TAU * hz * 2.0 * t) * 0.028 * note_env
+			if note_i % 4 == 2:
+				bell += sin(TAU * hz * 1.498 * t) * 0.016 * note_env
 		elif is_explore:
 			var walk := fmod(t * 1.45, 1.0)
 			pulse = exp(-walk * 9.0) * 0.036 * sin(TAU * 92.0 * t)

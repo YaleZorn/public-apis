@@ -405,22 +405,101 @@ static func placement_ring(parent: Node, at: Vector2, color: Color = Color(0.9, 
 		dtw.tween_callback(d.queue_free)
 
 
+static func placement_burst(parent: Node, at: Vector2, color: Color = Color(0.95, 0.82, 0.48, 0.9)) -> void:
+	## TD place: ring + lantern core + radial sparks — readable from subway distance.
+	if parent == null:
+		return
+	placement_ring(parent, at, color)
+	var core := ColorRect.new()
+	core.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	core.size = Vector2(22, 22)
+	core.position = at - core.size * 0.5
+	core.color = Color(AP.LANTERN_GOLD.r, AP.LANTERN_GOLD.g, AP.LANTERN_GOLD.b, 0.95)
+	parent.add_child(core)
+	var ctw := core.create_tween()
+	ctw.tween_property(core, "scale", Vector2(2.6, 2.6), 0.22).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	ctw.parallel().tween_property(core, "modulate:a", 0.0, 0.26)
+	ctw.tween_callback(core.queue_free)
+	for i in 6:
+		var spark := ColorRect.new()
+		spark.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		spark.size = Vector2(8, 8)
+		spark.position = at - spark.size * 0.5
+		spark.color = Color(color.r, color.g, color.b, 0.95)
+		parent.add_child(spark)
+		var ang := TAU * float(i) / 6.0
+		var dest := at + Vector2(cos(ang), sin(ang)) * 48.0 - spark.size * 0.5
+		var stw := spark.create_tween()
+		stw.tween_property(spark, "position", dest, 0.3).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+		stw.parallel().tween_property(spark, "modulate:a", 0.0, 0.3)
+		stw.tween_callback(spark.queue_free)
+	slash_arc(parent, at, color, 0.75)
+
+
+static func lane_telegraph(parent: Node, points: PackedVector2Array, color: Color = Color(1.0, 0.78, 0.42, 0.0), width: float = 16.0) -> void:
+	## Pulse along a path (main wave or flank) — dual-pass for subway readability.
+	if parent == null or points.size() < 2:
+		return
+	var line := Line2D.new()
+	line.width = width
+	line.default_color = Color(color.r, color.g, color.b, 0.0)
+	line.z_index = 8
+	line.points = points
+	parent.add_child(line)
+	var outline := Line2D.new()
+	outline.width = width + 10.0
+	outline.default_color = Color(color.r, color.g, color.b, 0.0)
+	outline.z_index = 7
+	outline.points = points
+	parent.add_child(outline)
+	var tw := line.create_tween()
+	tw.tween_property(line, "default_color:a", 0.78, 0.16)
+	tw.parallel().tween_property(outline, "default_color:a", 0.28, 0.16)
+	tw.tween_property(line, "default_color:a", 0.0, 0.55)
+	tw.parallel().tween_property(outline, "default_color:a", 0.0, 0.55)
+	tw.tween_callback(func():
+		if is_instance_valid(line):
+			line.queue_free()
+		if is_instance_valid(outline):
+			outline.queue_free()
+	)
+	# Chase sparks along path
+	var spark_n := mini(5, points.size())
+	for i in spark_n:
+		var idx := int(round(float(i) * float(points.size() - 1) / float(maxi(spark_n - 1, 1))))
+		var pt: Vector2 = points[idx]
+		var delay := 0.05 * float(i)
+		var spark := ColorRect.new()
+		spark.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		spark.size = Vector2(14, 14)
+		spark.position = pt - spark.size * 0.5
+		spark.color = Color(color.r, color.g, color.b, 0.0)
+		spark.z_index = 9
+		parent.add_child(spark)
+		var stw := spark.create_tween()
+		stw.tween_interval(delay)
+		stw.tween_property(spark, "modulate:a", 1.0, 0.08)
+		stw.tween_property(spark, "scale", Vector2(2.2, 2.2), 0.22)
+		stw.parallel().tween_property(spark, "modulate:a", 0.0, 0.22)
+		stw.tween_callback(spark.queue_free)
+
+
 static func flank_telegraph(parent: Node, points: PackedVector2Array) -> void:
 	## Brief bright pulse along flank path when ambush wave starts.
 	if parent == null or points.size() < 2:
 		return
-	var line := Line2D.new()
-	line.width = 14
-	line.default_color = Color(1.0, 0.45, 0.32, 0.0)
-	line.z_index = 8
-	line.points = points
-	parent.add_child(line)
-	var tw := line.create_tween()
-	tw.tween_property(line, "default_color:a", 0.72, 0.18)
-	tw.tween_property(line, "default_color:a", 0.0, 0.55)
-	tw.tween_callback(line.queue_free)
+	lane_telegraph(parent, points, Color(1.0, 0.45, 0.32, 0.0), 15.0)
 	# Origin flare
 	placement_ring(parent, points[0], Color(1.0, 0.5, 0.35, 0.85))
+	slash_arc(parent, points[0], Color(1.0, 0.5, 0.35, 0.9), 1.0)
+
+
+static func wave_telegraph(parent: Node, points: PackedVector2Array) -> void:
+	## Main-lane wave start pulse (gold) — pairs with flank_telegraph.
+	if parent == null or points.size() < 2:
+		return
+	lane_telegraph(parent, points, Color(1.0, 0.82, 0.42, 0.0), 14.0)
+	placement_ring(parent, points[0], Color(AP.LANTERN_GOLD.r, AP.LANTERN_GOLD.g, AP.LANTERN_GOLD.b, 0.85))
 
 
 static func gate_marker(size: Vector2 = Vector2(84, 56)) -> Control:
@@ -512,11 +591,11 @@ static func attack_strike(parent: Node, attacker: Control, target: Control, colo
 	var tw := attacker.create_tween()
 	tw.tween_property(attacker, "position", base + lunge, 0.07).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 	tw.tween_property(attacker, "position", base, 0.12).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	slash_arc(parent, to, color, 0.9)
+	slash_arc(parent, to, color, 1.05)
 	# Travel spark along strike line
 	var spark := ColorRect.new()
 	spark.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	spark.size = Vector2(12, 12)
+	spark.size = Vector2(14, 14)
 	spark.position = from - spark.size * 0.5
 	spark.color = Color(color.r, color.g, color.b, 0.95)
 	parent.add_child(spark)
@@ -524,6 +603,64 @@ static func attack_strike(parent: Node, attacker: Control, target: Control, colo
 	stw.tween_property(spark, "position", to - spark.size * 0.5, 0.1)
 	stw.parallel().tween_property(spark, "modulate:a", 0.35, 0.1)
 	stw.tween_callback(spark.queue_free)
+	# Secondary trail
+	var trail := ColorRect.new()
+	trail.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	trail.size = Vector2(maxf(16.0, dir.length() * 0.2), 4)
+	trail.pivot_offset = Vector2(0, 2)
+	trail.position = from
+	trail.rotation = dir.angle()
+	trail.color = Color(color.r, color.g, color.b, 0.7)
+	parent.add_child(trail)
+	var trtw := trail.create_tween()
+	trtw.tween_property(trail, "modulate:a", 0.0, 0.12)
+	trtw.tween_callback(trail.queue_free)
+
+
+static func td_attack_fx(parent: Node, attacker: Control, target: Control, color: Color = Color(1.0, 0.92, 0.55, 0.9)) -> void:
+	## TD volley: short lunge + travel bolt + impact — matches AutoCombatRing readability.
+	if parent == null or attacker == null or target == null:
+		return
+	if not is_instance_valid(attacker) or not is_instance_valid(target):
+		return
+	var from := attacker.position + attacker.custom_minimum_size * 0.5
+	var to := target.position + target.custom_minimum_size * 0.5
+	var dir := to - from
+	var dist := dir.length()
+	if dist < 4.0:
+		dir = Vector2(0, -40)
+		dist = 40.0
+	# Slot units: smaller lunge so they stay readable on pads
+	var lunge := dir.normalized() * minf(18.0, dist * 0.12)
+	var base := attacker.position
+	var tw := attacker.create_tween()
+	tw.tween_property(attacker, "position", base + lunge, 0.06).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	tw.tween_property(attacker, "position", base, 0.1).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	# Thick travel bolt
+	var bolt := ColorRect.new()
+	bolt.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	bolt.size = Vector2(maxf(18.0, dist * 0.18), 5)
+	bolt.pivot_offset = Vector2(0, 2.5)
+	bolt.position = from
+	bolt.rotation = dir.angle()
+	bolt.color = Color(color.r, color.g, color.b, 0.95)
+	parent.add_child(bolt)
+	var btw := bolt.create_tween()
+	btw.tween_property(bolt, "position", to - Vector2(bolt.size.x * 0.5, 2.5), 0.09)
+	btw.parallel().tween_property(bolt, "modulate:a", 0.25, 0.09)
+	btw.tween_callback(bolt.queue_free)
+	# Tip spark
+	var tip := ColorRect.new()
+	tip.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	tip.size = Vector2(14, 14)
+	tip.position = from - tip.size * 0.5
+	tip.color = Color(AP.LANTERN_GOLD.r, AP.LANTERN_GOLD.g, AP.LANTERN_GOLD.b, 1.0)
+	parent.add_child(tip)
+	var ttw := tip.create_tween()
+	ttw.tween_property(tip, "position", to - tip.size * 0.5, 0.09)
+	ttw.tween_callback(tip.queue_free)
+	slash_arc(parent, to, color, 0.95)
+	hit_impact(parent, to, color)
 
 
 static func skill_cast_fx(parent: Node, at: Vector2, effect: String, color: Color = Color(0.7, 0.85, 0.95, 0.7)) -> void:
