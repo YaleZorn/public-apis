@@ -1,10 +1,11 @@
-# Kongfu Roguelike — v0.9.3 TD 汁水追平 + 爬塔专属 BGM
+# Kongfu Roguelike — v0.9.4 音效·形效·锁
 
-竖屏、离线武侠健身题材。叠在 v0.9.2 手感续抠之上：
+竖屏、离线武侠健身题材。叠在 v0.9.3 TD/爬塔汁水之上：
 
-- **TD 汁水**：布阵爆发、主路/侧翼预警、攻击弹道斩击、命中冲击、刷怪入场 — 向 `AutoCombatRing` 可读性靠齐
-- **爬塔专属 BGM**：不再共用探索曲；上升感攀登主题（音量仍走设置）
-- **HUD**：TD 底栏改为竖向肖像卡，与大厅/探索/演武一致
+- **更厚主题 BGM**：各模式动机更清晰（含知识本专属床），对位应答层；SFX 分层打击（布阵木感、命中噪声+叮）
+- **形效战斗 VFX**：TD/战斗环用 Polygon2D 菱形/刃瓣 + Line2D 环，替代 ColorRect 方块火花
+- **锁标**：花名册锁定卡用真「锁」字 + 青玉印环（非几何挂锁 blob）
+- **HUD**：银两/据点/波次/气血/演武统计统一「·」分隔；技能冷却同格式
 - 五模式仍可玩；离线无 IAP；合法 OSS only
 
 设计依据（Project store）：
@@ -39,9 +40,9 @@ godot --path . --rendering-driver opengl3
 
 ### 演示 DLC 包
 
-见 `data/CONTENT_PACKS.md` — `content_pack_demo_mountain` 本地挂载演示。
+见 [`data/CONTENT_PACKS.md`](./data/CONTENT_PACKS.md)。`demo_mountain` 默认本地已挂。
 
-## 冒烟
+### 冒烟
 
 ```bash
 godot --headless --path . --script res://tests/smoke_test.gd

@@ -244,6 +244,6 @@ func _refresh() -> void:
 		VF.set_hero_hp_ratio(ring.hero_visual, ratio, ring.shield / maxf(ring.max_hp, 1.0))
 	skill_btn.text = ring.skill_button_text()
 	skill_btn.disabled = ring.skill_disabled()
-	stats_label.text = "存活 %.0fs · 杀 %d · 攒熟练%d / 修为%d" % [
+	stats_label.text = "存活 · %.0fs · 杀 %d · 熟练 %d · 修为 %d" % [
 		survival_sec, kills, mastery_earned, xiuwei_earned
 	]

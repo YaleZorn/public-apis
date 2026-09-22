@@ -347,6 +347,11 @@ func _smoke_knowledge_packs() -> bool:
 	var hub = hub_packed.instantiate()
 	root.add_child(hub)
 	await create_timer(0.45).timeout
+	var juice = root.get_node_or_null("Juice")
+	if juice == null or str(juice.get("_bgm_kind")) != "knowledge":
+		push_error("knowledge hub should play knowledge BGM got %s" % (str(juice.get("_bgm_kind")) if juice else "nojuice"))
+		hub.queue_free()
+		return false
 	hub.queue_free()
 	await create_timer(0.1).timeout
 	print("knowledge_packs_ok entries=", cdb.knowledge_list.size(), " packs=", cdb.loaded_pack_ids)

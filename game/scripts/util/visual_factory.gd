@@ -25,6 +25,75 @@ static var _atlas_tex: Texture2D
 static var _portrait_cache: Dictionary = {}
 
 
+## --- Shaped FX primitives (Polygon2D / Line2D — not ColorRect blobs) ---
+
+static func _fx_diamond(sz: Vector2, col: Color) -> Polygon2D:
+	var p := Polygon2D.new()
+	var w := sz.x * 0.5
+	var h := sz.y * 0.5
+	p.polygon = PackedVector2Array([
+		Vector2(w, 0.0), Vector2(sz.x, h), Vector2(w, sz.y), Vector2(0.0, h)
+	])
+	p.color = col
+	return p
+
+
+static func _fx_petal(sz: Vector2, col: Color) -> Polygon2D:
+	## Soft leaf / petal — heal / mist sparks.
+	var p := Polygon2D.new()
+	var w := sz.x
+	var h := sz.y
+	p.polygon = PackedVector2Array([
+		Vector2(w * 0.5, 0.0),
+		Vector2(w * 0.92, h * 0.35),
+		Vector2(w * 0.55, h),
+		Vector2(w * 0.08, h * 0.35),
+	])
+	p.color = col
+	return p
+
+
+static func _fx_blade(length: float, thickness: float, col: Color) -> Polygon2D:
+	## Tapered slash wedge — readable crescent substitute.
+	var p := Polygon2D.new()
+	p.polygon = PackedVector2Array([
+		Vector2(0.0, thickness * 0.5),
+		Vector2(length * 0.18, 0.0),
+		Vector2(length, thickness * 0.32),
+		Vector2(length * 0.18, thickness),
+	])
+	p.color = col
+	return p
+
+
+static func _fx_disc(radius: float, col: Color, segs: int = 14) -> Polygon2D:
+	var p := Polygon2D.new()
+	var pts := PackedVector2Array()
+	var c := Vector2(radius, radius)
+	for i in segs:
+		var a := TAU * float(i) / float(segs)
+		pts.append(c + Vector2(cos(a), sin(a)) * radius)
+	p.polygon = pts
+	p.color = col
+	return p
+
+
+static func _fx_ring(radius: float, width: float, col: Color, segs: int = 22) -> Line2D:
+	var line := Line2D.new()
+	line.width = width
+	line.default_color = col
+	line.closed = true
+	line.joint_mode = Line2D.LINE_JOINT_ROUND
+	line.begin_cap_mode = Line2D.LINE_CAP_ROUND
+	line.end_cap_mode = Line2D.LINE_CAP_ROUND
+	var pts := PackedVector2Array()
+	for i in (segs + 1):
+		var a := TAU * float(i) / float(segs)
+		pts.append(Vector2(cos(a), sin(a)) * radius)
+	line.points = pts
+	return line
+
+
 static func _atlas() -> Texture2D:
 	if _atlas_tex == null and ResourceLoader.exists(ATLAS_PATH):
 		_atlas_tex = load(ATLAS_PATH)
@@ -209,8 +278,8 @@ static func portrait_card(unit: Dictionary, size: Vector2 = Vector2(96, 120), se
 		star.position = Vector2(4, 4)
 		root.add_child(star)
 	elif locked:
-		var lock := lock_badge(Vector2(16, 20))
-		lock.position = Vector2(5, 5)
+		var lock := lock_badge(Vector2(22, 24))
+		lock.position = Vector2(3, 3)
 		root.add_child(lock)
 	return root
 
@@ -379,26 +448,22 @@ static func set_hero_hp_ratio(node: Control, hp_ratio: float, shield_ratio: floa
 static func placement_ring(parent: Node, at: Vector2, color: Color = Color(0.9, 0.76, 0.42, 0.75)) -> void:
 	if parent == null:
 		return
-	var ring := ColorRect.new()
-	ring.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	ring.size = Vector2(28, 28)
-	ring.position = at - ring.size * 0.5
-	ring.color = color
+	var ring := _fx_ring(14.0, 3.2, color, 20)
+	ring.position = at
+	ring.z_index = 12
 	parent.add_child(ring)
 	var tw := ring.create_tween()
-	tw.tween_property(ring, "scale", Vector2(3.2, 3.2), 0.28).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	tw.tween_property(ring, "scale", Vector2(2.8, 2.8), 0.28).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 	tw.parallel().tween_property(ring, "modulate:a", 0.0, 0.28)
 	tw.tween_callback(ring.queue_free)
-	# Soft gold dust
+	# Soft gold dust diamonds
 	for i in 4:
-		var d := ColorRect.new()
-		d.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		d.size = Vector2(6, 6)
-		d.position = at - d.size * 0.5
-		d.color = Color(AP.LANTERN_GOLD.r, AP.LANTERN_GOLD.g, AP.LANTERN_GOLD.b, 0.9)
+		var d := _fx_diamond(Vector2(8, 8), Color(AP.LANTERN_GOLD.r, AP.LANTERN_GOLD.g, AP.LANTERN_GOLD.b, 0.9))
+		d.position = at - Vector2(4, 4)
+		d.z_index = 12
 		parent.add_child(d)
 		var ang := TAU * float(i) / 4.0
-		var dest := at + Vector2(cos(ang), sin(ang)) * 36.0 - d.size * 0.5
+		var dest := at + Vector2(cos(ang), sin(ang)) * 36.0 - Vector2(4, 4)
 		var dtw := d.create_tween()
 		dtw.tween_property(d, "position", dest, 0.26)
 		dtw.parallel().tween_property(d, "modulate:a", 0.0, 0.26)
@@ -406,29 +471,25 @@ static func placement_ring(parent: Node, at: Vector2, color: Color = Color(0.9, 
 
 
 static func placement_burst(parent: Node, at: Vector2, color: Color = Color(0.95, 0.82, 0.48, 0.9)) -> void:
-	## TD place: ring + lantern core + radial sparks — readable from subway distance.
+	## TD place: ring + lantern disc + radial diamonds — readable from subway distance.
 	if parent == null:
 		return
 	placement_ring(parent, at, color)
-	var core := ColorRect.new()
-	core.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	core.size = Vector2(22, 22)
-	core.position = at - core.size * 0.5
-	core.color = Color(AP.LANTERN_GOLD.r, AP.LANTERN_GOLD.g, AP.LANTERN_GOLD.b, 0.95)
+	var core := _fx_disc(11.0, Color(AP.LANTERN_GOLD.r, AP.LANTERN_GOLD.g, AP.LANTERN_GOLD.b, 0.95), 12)
+	core.position = at - Vector2(11, 11)
+	core.z_index = 13
 	parent.add_child(core)
 	var ctw := core.create_tween()
-	ctw.tween_property(core, "scale", Vector2(2.6, 2.6), 0.22).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	ctw.tween_property(core, "scale", Vector2(2.4, 2.4), 0.22).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	ctw.parallel().tween_property(core, "modulate:a", 0.0, 0.26)
 	ctw.tween_callback(core.queue_free)
 	for i in 6:
-		var spark := ColorRect.new()
-		spark.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		spark.size = Vector2(8, 8)
-		spark.position = at - spark.size * 0.5
-		spark.color = Color(color.r, color.g, color.b, 0.95)
+		var spark := _fx_diamond(Vector2(10, 10), Color(color.r, color.g, color.b, 0.95))
+		spark.position = at - Vector2(5, 5)
+		spark.z_index = 13
 		parent.add_child(spark)
 		var ang := TAU * float(i) / 6.0
-		var dest := at + Vector2(cos(ang), sin(ang)) * 48.0 - spark.size * 0.5
+		var dest := at + Vector2(cos(ang), sin(ang)) * 48.0 - Vector2(5, 5)
 		var stw := spark.create_tween()
 		stw.tween_property(spark, "position", dest, 0.3).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 		stw.parallel().tween_property(spark, "modulate:a", 0.0, 0.3)
@@ -469,17 +530,14 @@ static func lane_telegraph(parent: Node, points: PackedVector2Array, color: Colo
 		var idx := int(round(float(i) * float(points.size() - 1) / float(maxi(spark_n - 1, 1))))
 		var pt: Vector2 = points[idx]
 		var delay := 0.05 * float(i)
-		var spark := ColorRect.new()
-		spark.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		spark.size = Vector2(14, 14)
-		spark.position = pt - spark.size * 0.5
-		spark.color = Color(color.r, color.g, color.b, 0.0)
+		var spark := _fx_diamond(Vector2(16, 16), Color(color.r, color.g, color.b, 0.0))
+		spark.position = pt - Vector2(8, 8)
 		spark.z_index = 9
 		parent.add_child(spark)
 		var stw := spark.create_tween()
 		stw.tween_interval(delay)
 		stw.tween_property(spark, "modulate:a", 1.0, 0.08)
-		stw.tween_property(spark, "scale", Vector2(2.2, 2.2), 0.22)
+		stw.tween_property(spark, "scale", Vector2(2.0, 2.0), 0.22)
 		stw.parallel().tween_property(spark, "modulate:a", 0.0, 0.22)
 		stw.tween_callback(spark.queue_free)
 
@@ -519,55 +577,46 @@ static func hit_flash(parent: Node, at: Vector2, color: Color = Color(1, 0.9, 0.
 
 
 static func hit_impact(parent: Node, at: Vector2, color: Color = Color(1, 0.9, 0.55, 0.85)) -> void:
-	## Readable hit: core spark + slash strokes + expanding impact ring.
+	## Readable hit: disc core + blade strokes + expanding ring.
 	if parent == null:
 		return
-	var flash := ColorRect.new()
-	flash.size = Vector2(24, 24)
-	flash.position = at - flash.size * 0.5
-	flash.color = color
-	flash.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var flash := _fx_disc(12.0, color, 12)
+	flash.position = at - Vector2(12, 12)
+	flash.z_index = 14
 	parent.add_child(flash)
 	for i in 3:
-		var slash := ColorRect.new()
-		slash.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		slash.size = Vector2(30 + i * 8, 3)
+		var slash := _fx_blade(30.0 + float(i) * 8.0, 4.0, Color(color.r, color.g, color.b, 0.75 - i * 0.15))
 		slash.position = at + Vector2(-16 - i * 2, -8 + i * 6)
 		slash.rotation = -0.65 + i * 0.4
-		slash.color = Color(color.r, color.g, color.b, 0.75 - i * 0.15)
+		slash.z_index = 14
 		parent.add_child(slash)
 		var stw := slash.create_tween()
 		stw.tween_property(slash, "modulate:a", 0.0, 0.18)
 		stw.parallel().tween_property(slash, "position", slash.position + Vector2(10, -4), 0.18)
 		stw.tween_callback(slash.queue_free)
-	var ring := ColorRect.new()
-	ring.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	ring.size = Vector2(18, 18)
-	ring.position = at - ring.size * 0.5
-	ring.color = Color(color.r, color.g, color.b, 0.55)
+	var ring := _fx_ring(10.0, 2.4, Color(color.r, color.g, color.b, 0.7), 18)
+	ring.position = at
+	ring.z_index = 14
 	parent.add_child(ring)
 	var rtw := ring.create_tween()
-	rtw.tween_property(ring, "scale", Vector2(2.8, 2.8), 0.2).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	rtw.tween_property(ring, "scale", Vector2(2.6, 2.6), 0.2).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 	rtw.parallel().tween_property(ring, "modulate:a", 0.0, 0.2)
 	rtw.tween_callback(ring.queue_free)
 	var tw := flash.create_tween()
-	tw.tween_property(flash, "scale", Vector2(2.2, 2.2), 0.12)
+	tw.tween_property(flash, "scale", Vector2(2.0, 2.0), 0.12)
 	tw.parallel().tween_property(flash, "modulate:a", 0.0, 0.18)
 	tw.tween_callback(flash.queue_free)
 
 
 static func slash_arc(parent: Node, at: Vector2, color: Color, scale_mult: float = 1.0) -> void:
-	## Wide crescent slash — skill / heavy hit readable from subway distance.
+	## Wide crescent slash — tapered Polygon2D blades, subway-readable.
 	if parent == null:
 		return
 	for i in 4:
-		var blade := ColorRect.new()
-		blade.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		blade.size = Vector2((42 + i * 10) * scale_mult, 4)
-		blade.pivot_offset = Vector2(0, 2)
+		var blade := _fx_blade((42.0 + float(i) * 10.0) * scale_mult, 5.0, Color(color.r, color.g, color.b, 0.85 - i * 0.12))
 		blade.position = at + Vector2(-8, -12 + i * 7)
 		blade.rotation = -0.95 + i * 0.28
-		blade.color = Color(color.r, color.g, color.b, 0.85 - i * 0.12)
+		blade.z_index = 14
 		parent.add_child(blade)
 		var tw := blade.create_tween()
 		tw.tween_property(blade, "rotation", blade.rotation + 0.55, 0.16).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
@@ -592,25 +641,20 @@ static func attack_strike(parent: Node, attacker: Control, target: Control, colo
 	tw.tween_property(attacker, "position", base + lunge, 0.07).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 	tw.tween_property(attacker, "position", base, 0.12).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	slash_arc(parent, to, color, 1.05)
-	# Travel spark along strike line
-	var spark := ColorRect.new()
-	spark.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	spark.size = Vector2(14, 14)
-	spark.position = from - spark.size * 0.5
-	spark.color = Color(color.r, color.g, color.b, 0.95)
+	# Travel diamond along strike line
+	var spark := _fx_diamond(Vector2(14, 14), Color(color.r, color.g, color.b, 0.95))
+	spark.position = from - Vector2(7, 7)
+	spark.z_index = 14
 	parent.add_child(spark)
 	var stw := spark.create_tween()
-	stw.tween_property(spark, "position", to - spark.size * 0.5, 0.1)
+	stw.tween_property(spark, "position", to - Vector2(7, 7), 0.1)
 	stw.parallel().tween_property(spark, "modulate:a", 0.35, 0.1)
 	stw.tween_callback(spark.queue_free)
-	# Secondary trail
-	var trail := ColorRect.new()
-	trail.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	trail.size = Vector2(maxf(16.0, dir.length() * 0.2), 4)
-	trail.pivot_offset = Vector2(0, 2)
+	# Secondary trail blade
+	var trail := _fx_blade(maxf(16.0, dir.length() * 0.2), 4.0, Color(color.r, color.g, color.b, 0.7))
 	trail.position = from
 	trail.rotation = dir.angle()
-	trail.color = Color(color.r, color.g, color.b, 0.7)
+	trail.z_index = 13
 	parent.add_child(trail)
 	var trtw := trail.create_tween()
 	trtw.tween_property(trail, "modulate:a", 0.0, 0.12)
@@ -636,28 +680,23 @@ static func td_attack_fx(parent: Node, attacker: Control, target: Control, color
 	var tw := attacker.create_tween()
 	tw.tween_property(attacker, "position", base + lunge, 0.06).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 	tw.tween_property(attacker, "position", base, 0.1).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	# Thick travel bolt
-	var bolt := ColorRect.new()
-	bolt.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	bolt.size = Vector2(maxf(18.0, dist * 0.18), 5)
-	bolt.pivot_offset = Vector2(0, 2.5)
+	# Thick travel bolt (tapered blade)
+	var bolt := _fx_blade(maxf(18.0, dist * 0.18), 6.0, Color(color.r, color.g, color.b, 0.95))
 	bolt.position = from
 	bolt.rotation = dir.angle()
-	bolt.color = Color(color.r, color.g, color.b, 0.95)
+	bolt.z_index = 14
 	parent.add_child(bolt)
 	var btw := bolt.create_tween()
-	btw.tween_property(bolt, "position", to - Vector2(bolt.size.x * 0.5, 2.5), 0.09)
+	btw.tween_property(bolt, "position", to - Vector2(9, 3), 0.09)
 	btw.parallel().tween_property(bolt, "modulate:a", 0.25, 0.09)
 	btw.tween_callback(bolt.queue_free)
-	# Tip spark
-	var tip := ColorRect.new()
-	tip.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	tip.size = Vector2(14, 14)
-	tip.position = from - tip.size * 0.5
-	tip.color = Color(AP.LANTERN_GOLD.r, AP.LANTERN_GOLD.g, AP.LANTERN_GOLD.b, 1.0)
+	# Tip diamond
+	var tip := _fx_diamond(Vector2(14, 14), Color(AP.LANTERN_GOLD.r, AP.LANTERN_GOLD.g, AP.LANTERN_GOLD.b, 1.0))
+	tip.position = from - Vector2(7, 7)
+	tip.z_index = 15
 	parent.add_child(tip)
 	var ttw := tip.create_tween()
-	ttw.tween_property(tip, "position", to - tip.size * 0.5, 0.09)
+	ttw.tween_property(tip, "position", to - Vector2(7, 7), 0.09)
 	ttw.tween_callback(tip.queue_free)
 	slash_arc(parent, to, color, 0.95)
 	hit_impact(parent, to, color)
@@ -675,11 +714,9 @@ static func skill_cast_fx(parent: Node, at: Vector2, effect: String, color: Colo
 		"heal":
 			# Rising jade petals
 			for i in 5:
-				var petal := ColorRect.new()
-				petal.mouse_filter = Control.MOUSE_FILTER_IGNORE
-				petal.size = Vector2(10, 14)
+				var petal := _fx_petal(Vector2(12, 16), Color(color.r, color.g, color.b, 0.9))
 				petal.position = at + Vector2(-20 + i * 10, 8)
-				petal.color = Color(color.r, color.g, color.b, 0.9)
+				petal.z_index = 14
 				parent.add_child(petal)
 				var ptw := petal.create_tween()
 				ptw.tween_property(petal, "position:y", petal.position.y - 48.0 - i * 4.0, 0.36).set_trans(Tween.TRANS_SINE)
@@ -687,29 +724,39 @@ static func skill_cast_fx(parent: Node, at: Vector2, effect: String, color: Colo
 				ptw.tween_callback(petal.queue_free)
 			skill_burst(parent, at, color)
 		"shield":
-			# Expanding shield plate
-			var plate := ColorRect.new()
-			plate.mouse_filter = Control.MOUSE_FILTER_IGNORE
-			plate.size = Vector2(48, 56)
-			plate.position = at - plate.size * 0.5
-			plate.color = Color(color.r, color.g, color.b, 0.55)
+			# Expanding shield disc + rim
+			var plate := _fx_disc(28.0, Color(color.r, color.g, color.b, 0.5), 16)
+			plate.position = at - Vector2(28, 28)
+			plate.z_index = 14
 			parent.add_child(plate)
+			var shield_rim := _fx_ring(30.0, 3.0, Color(color.r, color.g, color.b, 0.85), 20)
+			shield_rim.position = at
+			shield_rim.z_index = 15
+			parent.add_child(shield_rim)
 			var ptw2 := plate.create_tween()
-			ptw2.tween_property(plate, "scale", Vector2(1.6, 1.6), 0.28).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+			ptw2.tween_property(plate, "scale", Vector2(1.55, 1.55), 0.28).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 			ptw2.parallel().tween_property(plate, "modulate:a", 0.0, 0.32)
 			ptw2.tween_callback(plate.queue_free)
+			var rtw2 := shield_rim.create_tween()
+			rtw2.tween_property(shield_rim, "scale", Vector2(1.7, 1.7), 0.3)
+			rtw2.parallel().tween_property(shield_rim, "modulate:a", 0.0, 0.3)
+			rtw2.tween_callback(shield_rim.queue_free)
 			skill_burst(parent, at, color)
 		"slow_all":
-			# Frost wash bands
+			# Frost wash bands as Line2D
 			for i in 3:
-				var band := ColorRect.new()
-				band.mouse_filter = Control.MOUSE_FILTER_IGNORE
-				band.size = Vector2(120, 8)
-				band.position = at + Vector2(-60, -20 + i * 18)
-				band.color = Color(color.r, color.g, color.b, 0.7)
+				var band := Line2D.new()
+				band.width = 7.0
+				band.default_color = Color(color.r, color.g, color.b, 0.75)
+				band.z_index = 14
+				var y := at.y - 20.0 + float(i) * 18.0
+				band.points = PackedVector2Array([Vector2(at.x - 60, y), Vector2(at.x + 60, y)])
 				parent.add_child(band)
 				var btw := band.create_tween()
-				btw.tween_property(band, "size:x", 180.0, 0.28)
+				btw.tween_method(func(w: float):
+					if is_instance_valid(band):
+						band.points = PackedVector2Array([Vector2(at.x - w * 0.5, y), Vector2(at.x + w * 0.5, y)])
+				, 120.0, 180.0, 0.28)
 				btw.parallel().tween_property(band, "modulate:a", 0.0, 0.3)
 				btw.tween_callback(band.queue_free)
 			skill_burst(parent, at, color)
@@ -718,36 +765,28 @@ static func skill_cast_fx(parent: Node, at: Vector2, effect: String, color: Colo
 			slash_arc(parent, at, color, 1.0)
 
 
-static func lock_badge(size: Vector2 = Vector2(18, 22)) -> Control:
-	## Painted padlock glyph (no emoji / bare「锁」text).
+static func lock_badge(size: Vector2 = Vector2(22, 24)) -> Control:
+	## Proper 「锁」 glyph on jade seal — not ColorRect padlock geometry.
 	var root := Control.new()
 	root.custom_minimum_size = size
 	root.size = size
 	root.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var shackle := ColorRect.new()
-	shackle.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	shackle.size = Vector2(size.x * 0.55, size.y * 0.42)
-	shackle.position = Vector2(size.x * 0.225, size.y * 0.05)
-	shackle.color = Color(0.72, 0.76, 0.7, 0.92)
-	root.add_child(shackle)
-	var hole := ColorRect.new()
-	hole.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	hole.size = Vector2(size.x * 0.28, size.y * 0.22)
-	hole.position = Vector2(size.x * 0.36, size.y * 0.18)
-	hole.color = Color(0.08, 0.12, 0.1, 0.95)
-	root.add_child(hole)
-	var body := ColorRect.new()
-	body.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	body.size = Vector2(size.x * 0.78, size.y * 0.52)
-	body.position = Vector2(size.x * 0.11, size.y * 0.42)
-	body.color = Color(0.68, 0.72, 0.66, 0.95)
-	root.add_child(body)
-	var keyhole := ColorRect.new()
-	keyhole.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	keyhole.size = Vector2(size.x * 0.16, size.y * 0.22)
-	keyhole.position = Vector2(size.x * 0.42, size.y * 0.55)
-	keyhole.color = Color(0.1, 0.14, 0.12, 0.95)
-	root.add_child(keyhole)
+	# Soft jade seal plate behind the character
+	var seal := _fx_disc(size.x * 0.48, Color(0.06, 0.12, 0.10, 0.88), 16)
+	seal.position = Vector2(size.x * 0.02, size.y * 0.02)
+	root.add_child(seal)
+	var rim := _fx_ring(size.x * 0.42, 1.6, Color(AP.LANTERN_GOLD.r, AP.LANTERN_GOLD.g, AP.LANTERN_GOLD.b, 0.55), 18)
+	rim.position = Vector2(size.x * 0.5, size.y * 0.5)
+	root.add_child(rim)
+	var glyph := Label.new()
+	glyph.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	glyph.text = "锁"
+	AP.apply_label(glyph, int(clampf(size.y * 0.72, 14.0, 22.0)), Color(0.86, 0.90, 0.82, 0.98))
+	glyph.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	glyph.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	glyph.position = Vector2(-1, -2)
+	glyph.size = size + Vector2(2, 4)
+	root.add_child(glyph)
 	return root
 
 
@@ -755,39 +794,33 @@ static func skill_burst(parent: Node, at: Vector2, color: Color = Color(0.7, 0.8
 	if parent == null:
 		return
 	# Expanding outer ring
-	var ring := ColorRect.new()
-	ring.size = Vector2(36, 36)
-	ring.position = at - ring.size * 0.5
-	ring.color = color
-	ring.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var ring := _fx_ring(18.0, 3.5, color, 20)
+	ring.position = at
+	ring.z_index = 14
 	parent.add_child(ring)
 	# Inner core pulse
-	var core := ColorRect.new()
-	core.size = Vector2(18, 18)
-	core.position = at - core.size * 0.5
-	core.color = Color(AP.LANTERN_GOLD.r, AP.LANTERN_GOLD.g, AP.LANTERN_GOLD.b, 0.85)
-	core.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var core := _fx_disc(9.0, Color(AP.LANTERN_GOLD.r, AP.LANTERN_GOLD.g, AP.LANTERN_GOLD.b, 0.85), 12)
+	core.position = at - Vector2(9, 9)
+	core.z_index = 15
 	parent.add_child(core)
-	# Radial sparks
+	# Radial diamond sparks
 	for i in 6:
-		var spark := ColorRect.new()
-		spark.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		spark.size = Vector2(8, 8)
-		spark.position = at - spark.size * 0.5
-		spark.color = Color(color.r, color.g, color.b, 0.9)
+		var spark := _fx_diamond(Vector2(10, 10), Color(color.r, color.g, color.b, 0.9))
+		spark.position = at - Vector2(5, 5)
+		spark.z_index = 14
 		parent.add_child(spark)
 		var ang := TAU * float(i) / 6.0
-		var dest := at + Vector2(cos(ang), sin(ang)) * 56.0 - spark.size * 0.5
+		var dest := at + Vector2(cos(ang), sin(ang)) * 56.0 - Vector2(5, 5)
 		var stw := spark.create_tween()
 		stw.tween_property(spark, "position", dest, 0.28).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 		stw.parallel().tween_property(spark, "modulate:a", 0.0, 0.28)
 		stw.tween_callback(spark.queue_free)
 	var tw := ring.create_tween()
-	tw.tween_property(ring, "scale", Vector2(3.6, 3.6), 0.32).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	tw.tween_property(ring, "scale", Vector2(3.2, 3.2), 0.32).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 	tw.parallel().tween_property(ring, "modulate:a", 0.0, 0.32)
 	tw.tween_callback(ring.queue_free)
 	var ctw := core.create_tween()
-	ctw.tween_property(core, "scale", Vector2(2.4, 2.4), 0.2)
+	ctw.tween_property(core, "scale", Vector2(2.2, 2.2), 0.2)
 	ctw.parallel().tween_property(core, "modulate:a", 0.0, 0.22)
 	ctw.tween_callback(core.queue_free)
 
@@ -796,14 +829,12 @@ static func death_puff(parent: Node, at: Vector2, color: Color = Color(0.9, 0.55
 	if parent == null:
 		return
 	for i in 5:
-		var p := ColorRect.new()
-		p.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		p.size = Vector2(10, 10)
-		p.position = at - p.size * 0.5
-		p.color = color
+		var p := _fx_diamond(Vector2(12, 12), color)
+		p.position = at - Vector2(6, 6)
+		p.z_index = 12
 		parent.add_child(p)
 		var ang := TAU * float(i) / 5.0 + randf() * 0.4
-		var dest := at + Vector2(cos(ang), sin(ang)) * (28.0 + randf() * 24.0) - p.size * 0.5
+		var dest := at + Vector2(cos(ang), sin(ang)) * (28.0 + randf() * 24.0) - Vector2(6, 6)
 		var tw := p.create_tween()
 		tw.tween_property(p, "position", dest, 0.28)
 		tw.parallel().tween_property(p, "modulate:a", 0.0, 0.28)
