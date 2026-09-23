@@ -99,7 +99,7 @@ func _build_portrait(uid: String) -> void:
 		_portrait.queue_free()
 	var u: Dictionary = ContentDB.get_unit(uid)
 	# In-mode hero readout uses figure sprite (lobby keeps portrait cards).
-	_portrait = VF.unit_node(u, Vector2(72, 96))
+	_portrait = VF.unit_node(u, Vector2(96, 124))
 	_portrait.position = Vector2(8, 8)
 	portrait_slot.add_child(_portrait)
 	VF.idle_bob(_portrait, 2.0, 2.5)

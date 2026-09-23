@@ -159,9 +159,10 @@ static func _is_male_figure(id: String) -> bool:
 
 static func _figure_modulate(id: String, enemy: bool = false) -> Color:
 	## Brighter silhouettes on misty TD; males/enemies get extra lift.
+	## v0.9.8: readability-first — punch through ink fog.
 	if _is_male_figure(id) or enemy:
-		return Color(1.28, 1.2, 1.12, 1.0)
-	return Color(1.14, 1.1, 1.06, 1.0)
+		return Color(1.42, 1.32, 1.2, 1.0)
+	return Color(1.26, 1.2, 1.14, 1.0)
 
 
 static func _sheet_anim(id: String, kind: String, fps: float) -> AnimatedTexture:
@@ -303,7 +304,7 @@ static func _ellipse_shadow(size: Vector2) -> ColorRect:
 	return r
 
 
-static func unit_node(unit: Dictionary, size: Vector2 = Vector2(64, 80)) -> Control:
+static func unit_node(unit: Dictionary, size: Vector2 = Vector2(88, 112)) -> Control:
 	## In-world ally: small figure sprite (no framed portrait card).
 	var role := str(unit.get("role", "dps"))
 	var uid := str(unit.get("id", ""))
@@ -449,7 +450,7 @@ static func _draw_unit_body(root: Control, role: String, col: Color, size: Vecto
 			root.add_child(body)
 
 
-static func enemy_node(enemy: Dictionary, size: Vector2 = Vector2(48, 64)) -> Control:
+static func enemy_node(enemy: Dictionary, size: Vector2 = Vector2(72, 96)) -> Control:
 	## In-world enemy figure — frameless mini-character with threat tint + HP bar.
 	var tags: Array = enemy.get("tags", [])
 	var eid := str(enemy.get("id", ""))

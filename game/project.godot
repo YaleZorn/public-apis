@@ -1,12 +1,12 @@
 ; Engine configuration file.
-; Kongfu Roguelike v0.9.7 — 17+ 造型再抬 + 走跑攻击帧
+; Kongfu Roguelike v0.9.8 — 17+ 肢帧精修 + 雾天可读 + 肖像对齐
 config_version=5
 
 [application]
 
 config/name="Kongfu Roguelike"
 config/description="竖屏武侠：无限波塔防 + Idle 名人 + 探索搜打撤 + 演武场 + 爬塔 + 健身知识 + content_pack · 内容分级 17+"
-config/version="0.9.7"
+config/version="0.9.8"
 run/main_scene="res://scenes/shell/title_screen.tscn"
 config/features=PackedStringArray("4.3", "Forward Plus")
 config/icon="res://icon.svg"

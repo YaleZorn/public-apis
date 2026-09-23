@@ -58,7 +58,7 @@ func init_hero(uid: String, start_shield: float = 0.0) -> void:
 	slow_all_timer = 0.0
 	if hero_visual and is_instance_valid(hero_visual):
 		hero_visual.queue_free()
-	hero_visual = VF.unit_node(u, Vector2(96, 112))
+	hero_visual = VF.unit_node(u, Vector2(118, 148))
 	hero_visual.position = hero_anchor.position if hero_anchor else Vector2(72, 200)
 	if hero_anchor:
 		hero_anchor.visible = false
@@ -81,7 +81,7 @@ func spawn_enemies(ids: Array, hp_scale: float = 1.0, atk_scale: float = 1.0) ->
 		var e: Dictionary = ContentDB.get_enemy(str(eid))
 		if e.is_empty():
 			continue
-		var node := VF.enemy_node(e, Vector2(84, 100))
+		var node := VF.enemy_node(e, Vector2(100, 128))
 		var col := i % 3
 		var row := int(i / 3)
 		node.position = Vector2(320 + col * 92, 90 + row * 105)

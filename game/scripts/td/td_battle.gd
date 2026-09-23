@@ -401,7 +401,7 @@ func _highlight_slot(slot: int) -> void:
 func _spawn_unit_visual(slot: int, unit_id: String) -> void:
 	var u: Dictionary = ContentDB.get_unit(unit_id)
 	# Larger frameless figure so it reads as a mini-character, not a card in the slot chrome.
-	var node := VF.unit_node(u, Vector2(78, 100))
+	var node := VF.unit_node(u, Vector2(104, 134))
 	var center := _slot_center(slot)
 	# Feet near pad center — figure hangs upward from ground point.
 	node.position = center - Vector2(node.custom_minimum_size.x * 0.5, node.custom_minimum_size.y * 0.82)
@@ -530,7 +530,7 @@ func _tick_spawns(delta: float) -> void:
 
 func _spawn_enemy(eid: String, lane: String = "main") -> void:
 	var e: Dictionary = ContentDB.get_enemy(eid)
-	var node := VF.enemy_node(e, Vector2(64, 84))
+	var node := VF.enemy_node(e, Vector2(88, 116))
 	var lane_path := _path_for_lane(lane)
 	var scale := _wave_hp_scale()
 	node.position = lane_path[0] - Vector2(node.custom_minimum_size.x * 0.5, node.custom_minimum_size.y * 0.78)
