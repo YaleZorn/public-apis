@@ -1,0 +1,14 @@
+# Godot 4
+.godot/
+*.translation
+export.cfg
+export_presets.cfg
+*.apk
+*.aab
+*.zip
+*.pck
+*.exe
+*.app
+.mono/
+data_*/
+.DS_Store

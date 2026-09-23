@@ -1,0 +1,15 @@
+{
+  "content_pack": "demo_mountain",
+  "gear": [
+    {
+      "id": "gear_demo_trail_charm",
+      "name": "山野行囊符",
+      "slot": 2,
+      "tag": "饰",
+      "bonus": "演示包 · 探索开局 +8 护盾",
+      "unlock": "pack_demo_mountain",
+      "content_pack": "demo_mountain",
+      "demo": true
+    }
+  ]
+}
