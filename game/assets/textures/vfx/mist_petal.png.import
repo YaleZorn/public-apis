@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bt23rglb7l5g7"
-path="res://.godot/imported/unit_mingwang_reveal.png-4812fe9442c32b154dc44ffe93824d02.ctex"
+uid="uid://bt3ufjnb5k4a6"
+path="res://.godot/imported/mist_petal.png-4f8b1b364225cda6ac1f3f6fa46fcb6c.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/textures/figures/unit_mingwang_reveal.png"
-dest_files=["res://.godot/imported/unit_mingwang_reveal.png-4812fe9442c32b154dc44ffe93824d02.ctex"]
+source_file="res://assets/textures/vfx/mist_petal.png"
+dest_files=["res://.godot/imported/mist_petal.png-4f8b1b364225cda6ac1f3f6fa46fcb6c.ctex"]
 
 [params]
 

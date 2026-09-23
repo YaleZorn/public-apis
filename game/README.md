@@ -1,10 +1,10 @@
-# Kongfu Roguelike — v0.9.9 · 17+ 状态特效
+# Kongfu Roguelike — v0.10.0 · 17+ 特效品质重建
 
-竖屏、离线武侠健身题材。叠在 v0.9.8 肢帧之上：
+竖屏、离线武侠健身题材。叠在 v0.9.9 状态特效之上做 **品质重建**：
 
-- **状态特效**：Idle 光环 · 技能激发爆发 · 爆衣/costume-damage reveal · 知识/训练 buff 光环
-- **数据驱动**：`units.json` → `vfx` hooks（per-unit）
-- **肢帧续修**：黄蓉/木兰行走条臂腿摆动更清晰
+- **爆衣**：作者向 `*_reveal.png` 换装立绘（非 procedural 暖色撕裂）
+- **光环**：软层叠环 + 雾盘 + 环绕墨瓣（`assets/textures/vfx/`）
+- **技能激发**：闪光核 + 斩痕拖尾 + 能量瓣，竖屏可读
 - 标题/设置仍标 **内容分级：17+**；离线无 IAP；合法 OSS only
 
 设计依据（Project store）：

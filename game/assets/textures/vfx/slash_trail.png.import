@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bt23rglb7l5g7"
-path="res://.godot/imported/unit_mingwang_reveal.png-4812fe9442c32b154dc44ffe93824d02.ctex"
+uid="uid://bt3xgjk5hm2dc"
+path="res://.godot/imported/slash_trail.png-13764ae41d0776f2110dea4d3b47f9e8.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/textures/figures/unit_mingwang_reveal.png"
-dest_files=["res://.godot/imported/unit_mingwang_reveal.png-4812fe9442c32b154dc44ffe93824d02.ctex"]
+source_file="res://assets/textures/vfx/slash_trail.png"
+dest_files=["res://.godot/imported/slash_trail.png-13764ae41d0776f2110dea4d3b47f9e8.ctex"]
 
 [params]
 
