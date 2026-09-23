@@ -1,11 +1,11 @@
-# Kongfu Roguelike — v0.9.6 · 17+ 造型
+# Kongfu Roguelike — v0.9.7 · 17+ 走跑帧
 
-竖屏、离线武侠健身题材。叠在 v0.9.5 小人立绘之上：
+竖屏、离线武侠健身题材。叠在 v0.9.6 17+ 造型之上：
 
-- **17+ 造型加码**：全解锁名人 + 敌方肖像/figure 更露骨（深 V、露腰、短裙/开襟等），**明确成年**
-- 标题/设置标注 **内容分级：17+**
-- 局内仍用 frameless figure；大厅仍用肖像收集卡；idle/攻击 lean 保留
-- 五模式仍可玩；离线无 IAP；合法 OSS only
+- **黄蓉等弱造型再抬**：露腰/深 V 对齐木兰级收集向；敌方改为可读主题造型
+- **真·走跑/攻击帧**：`figures/sheets/*_walk.png` / `*_attack.png` + AnimatedTexture（非仅 bob/lean）
+- **TD 雾可读**：男性 figure 加亮 + 青玉 rim；敌人 threat halo
+- 标题/设置仍标 **内容分级：17+**；离线无 IAP；合法 OSS only
 
 设计依据（Project store）：
 - `docs/gameplay-design.md`

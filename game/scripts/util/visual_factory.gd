@@ -1,11 +1,17 @@
 extends RefCounted
 class_name VisualFactory
-## Lobby: portrait collection cards. In-world: frameless figure sprites + idle/attack motion.
+## Lobby: portrait collection cards. In-world: frameless figure sprites + walk/attack sheets.
 
 const AP := preload("res://scripts/util/art_palette.gd")
 const ATLAS_PATH := "res://assets/textures/unit-enemy-atlas.jpg"
 const PORTRAIT_DIR := "res://assets/textures/portraits/"
 const FIGURE_DIR := "res://assets/textures/figures/"
+const SHEET_DIR := "res://assets/textures/figures/sheets/"
+
+const FRAME_W := 192
+const FRAME_H := 256
+const WALK_FRAMES := 4
+const ATTACK_FRAMES := 3
 
 # Atlas fallback (1280x720, 7 figures).
 const ATLAS_W := 1280.0
@@ -22,9 +28,23 @@ const CROP_INSETS := [
 	Vector4(0.14, 0.10, 0.10, 0.12),
 ]
 
+## Male / enemy ids get stronger modulate lift for misty TD path.
+const MALE_FIGURE_IDS := {
+	"unit_feidao": true,
+	"unit_tiebi": true,
+	"unit_yishi": true,
+	"unit_zhaoyun": true,
+	"unit_linchong": true,
+	"unit_mingwang": true,
+	"enemy_bandit": true,
+	"enemy_shield": true,
+	"enemy_runner": true,
+}
+
 static var _atlas_tex: Texture2D
 static var _portrait_cache: Dictionary = {}
 static var _figure_cache: Dictionary = {}
+static var _anim_cache: Dictionary = {}
 
 
 ## --- Shaped FX primitives (Polygon2D / Line2D — not ColorRect blobs) ---
@@ -133,6 +153,83 @@ static func _figure_tex(id: String) -> Texture2D:
 	return port
 
 
+static func _is_male_figure(id: String) -> bool:
+	return MALE_FIGURE_IDS.has(id)
+
+
+static func _figure_modulate(id: String, enemy: bool = false) -> Color:
+	## Brighter silhouettes on misty TD; males/enemies get extra lift.
+	if _is_male_figure(id) or enemy:
+		return Color(1.28, 1.2, 1.12, 1.0)
+	return Color(1.14, 1.1, 1.06, 1.0)
+
+
+static func _sheet_anim(id: String, kind: String, fps: float) -> AnimatedTexture:
+	## Deprecated path kept for callers; prefer _apply_figure_tex frame cycling.
+	return null
+
+
+static func _sheet_path(id: String, kind: String) -> String:
+	return SHEET_DIR + id + "_" + kind + ".png"
+
+
+static func _sheet_frame_count(kind: String) -> int:
+	return WALK_FRAMES if kind == "walk" else ATTACK_FRAMES
+
+
+static func _make_atlas_frame(sheet: Texture2D, index: int) -> AtlasTexture:
+	var at := AtlasTexture.new()
+	at.atlas = sheet
+	at.region = Rect2(index * FRAME_W, 0, FRAME_W, FRAME_H)
+	return at
+
+
+static func _apply_figure_tex(spr: TextureRect, id: String, kind: String, fps: float) -> void:
+	## Cycle AtlasTexture regions on TextureRect — reliable multi-frame without AnimatedTexture quirks.
+	if spr == null or not is_instance_valid(spr):
+		return
+	# Stop prior cycler.
+	if spr.has_meta("frame_tw"):
+		var old_tw: Variant = spr.get_meta("frame_tw")
+		if old_tw is Tween and is_instance_valid(old_tw):
+			(old_tw as Tween).kill()
+		spr.remove_meta("frame_tw")
+	var path := _sheet_path(id, kind)
+	if ResourceLoader.exists(path) or FileAccess.file_exists(path):
+		var sheet: Texture2D = load(path)
+		if sheet:
+			var frames := _sheet_frame_count(kind)
+			spr.texture = _make_atlas_frame(sheet, 0)
+			spr.set_meta("anim_kind", kind)
+			spr.set_meta("sheet_tex", sheet)
+			spr.set_meta("sheet_frames", frames)
+			spr.set_meta("sheet_fps", fps)
+			spr.set_meta("sheet_i", 0)
+			var step := 1.0 / maxf(fps, 0.5)
+			var tw := spr.create_tween().set_loops()
+			spr.set_meta("frame_tw", tw)
+			tw.tween_interval(step)
+			tw.tween_callback(_advance_sheet_frame.bind(spr))
+			return
+	var still := _figure_tex(id)
+	if still:
+		spr.texture = still
+		spr.set_meta("anim_kind", "still")
+
+
+static func _advance_sheet_frame(spr: TextureRect) -> void:
+	if spr == null or not is_instance_valid(spr):
+		return
+	if not spr.has_meta("sheet_tex"):
+		return
+	var sheet: Texture2D = spr.get_meta("sheet_tex")
+	var frames: int = int(spr.get_meta("sheet_frames", 4))
+	var i: int = int(spr.get_meta("sheet_i", 0))
+	i = (i + 1) % maxi(frames, 1)
+	spr.set_meta("sheet_i", i)
+	spr.texture = _make_atlas_frame(sheet, i)
+
+
 static func _region(index: int) -> AtlasTexture:
 	var src := _atlas()
 	if src == null:
@@ -209,13 +306,15 @@ static func _ellipse_shadow(size: Vector2) -> ColorRect:
 static func unit_node(unit: Dictionary, size: Vector2 = Vector2(64, 80)) -> Control:
 	## In-world ally: small figure sprite (no framed portrait card).
 	var role := str(unit.get("role", "dps"))
+	var uid := str(unit.get("id", ""))
 	var root := Control.new()
 	root.custom_minimum_size = size
 	root.size = size
 	root.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	root.set_meta("unit_id", str(unit.get("id", "")))
+	root.set_meta("unit_id", uid)
 	root.set_meta("role", role)
 	root.set_meta("is_figure", true)
+	root.set_meta("figure_id", uid)
 
 	var shadow := _ellipse_shadow(Vector2(size.x * 0.72, 12.0))
 	shadow.position = Vector2(size.x * 0.14, size.y - 14.0)
@@ -230,16 +329,20 @@ static func unit_node(unit: Dictionary, size: Vector2 = Vector2(64, 80)) -> Cont
 	root.add_child(anim)
 
 	var tex := _unit_figure_tex(unit)
-	if tex:
+	var has_sheet := ResourceLoader.exists(_sheet_path(uid, "walk")) or FileAccess.file_exists(_sheet_path(uid, "walk"))
+	if tex or has_sheet:
 		var spr := TextureRect.new()
 		spr.name = "FigureSpr"
 		spr.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		spr.texture = tex
 		spr.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		spr.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 		spr.size = Vector2(size.x, size.y - 12.0)
 		spr.position = Vector2(0, 0)
-		spr.modulate = Color(1.12, 1.08, 1.05, 1.0)
+		spr.modulate = _figure_modulate(uid, false)
+		# Slow walk cycle as idle presence (real multi-frame, not bob-only).
+		_apply_figure_tex(spr, uid, "walk", 5.5)
+		if spr.texture == null and tex:
+			spr.texture = tex
 		anim.add_child(spr)
 	else:
 		_draw_unit_body(anim, role, Color(str(unit.get("color", "#6a8f71"))), size)
@@ -349,12 +452,14 @@ static func _draw_unit_body(root: Control, role: String, col: Color, size: Vecto
 static func enemy_node(enemy: Dictionary, size: Vector2 = Vector2(48, 64)) -> Control:
 	## In-world enemy figure — frameless mini-character with threat tint + HP bar.
 	var tags: Array = enemy.get("tags", [])
+	var eid := str(enemy.get("id", ""))
 	var root := Control.new()
 	root.custom_minimum_size = size
 	root.size = size
 	root.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	root.set_meta("enemy_id", str(enemy.get("id", "")))
+	root.set_meta("enemy_id", eid)
 	root.set_meta("is_figure", true)
+	root.set_meta("figure_id", eid)
 
 	var threat := Color(0.9, 0.6, 0.35)
 	if "fast" in tags:
@@ -376,16 +481,27 @@ static func enemy_node(enemy: Dictionary, size: Vector2 = Vector2(48, 64)) -> Co
 	root.add_child(anim)
 
 	var tex := _enemy_figure_tex(enemy)
-	if tex:
+	var walk_fps := 10.0 if "fast" in tags else (6.5 if "armored" in tags else 8.0)
+	var has_sheet := ResourceLoader.exists(_sheet_path(eid, "walk")) or FileAccess.file_exists(_sheet_path(eid, "walk"))
+	if tex or has_sheet:
 		var spr := TextureRect.new()
 		spr.name = "FigureSpr"
 		spr.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		spr.texture = tex
 		spr.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		spr.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 		spr.size = Vector2(size.x, size.y - 12.0)
 		spr.position = Vector2(0, 0)
-		spr.modulate = Color(1.18, 1.12, 1.08, 1.0)
+		spr.modulate = _figure_modulate(eid, true)
+		# Soft threat wash without crushing silhouette readability.
+		spr.modulate = Color(
+			minf(1.35, spr.modulate.r * (1.0 + threat.r * 0.08)),
+			minf(1.3, spr.modulate.g * (1.0 + threat.g * 0.05)),
+			minf(1.25, spr.modulate.b * (1.0 + threat.b * 0.04)),
+			1.0
+		)
+		_apply_figure_tex(spr, eid, "walk", walk_fps)
+		if spr.texture == null and tex:
+			spr.texture = tex
 		anim.add_child(spr)
 	else:
 		var body := ColorRect.new()
@@ -400,8 +516,18 @@ static func enemy_node(enemy: Dictionary, size: Vector2 = Vector2(48, 64)) -> Co
 	sash.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	sash.size = Vector2(maxf(5.0, size.x * 0.1), maxf(12.0, size.y * 0.22))
 	sash.position = Vector2(size.x * 0.7, size.y * 0.3)
-	sash.color = Color(threat.r, threat.g, threat.b, 0.5)
+	sash.color = Color(threat.r, threat.g, threat.b, 0.55)
 	anim.add_child(sash)
+
+	# Soft threat halo behind figure for TD fog readability.
+	var halo := ColorRect.new()
+	halo.name = "ThreatHalo"
+	halo.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	halo.size = Vector2(size.x * 0.85, size.y * 0.55)
+	halo.position = Vector2(size.x * 0.075, size.y * 0.2)
+	halo.color = Color(threat.r, threat.g, threat.b, 0.18)
+	anim.add_child(halo)
+	anim.move_child(halo, 0)
 
 	# HP bar above figure
 	var hp_bg := ColorRect.new()
@@ -904,7 +1030,7 @@ static func room_wipe(parent: Control, color: Color = Color(0.04, 0.10, 0.09, 0.
 
 
 static func idle_bob(node: Control, amp: float = 3.0, period: float = 2.4) -> void:
-	## Vertical bob + breath scale + sash limb sway for figure sprites.
+	## Vertical bob + breath scale + sash limb sway; figure walk sheets already cycle.
 	if node == null:
 		return
 	var base := node.position
@@ -915,7 +1041,7 @@ static func idle_bob(node: Control, amp: float = 3.0, period: float = 2.4) -> vo
 
 
 static func figure_idle_anim(node: Control, period: float = 2.4) -> void:
-	## Breath on AnimRoot + sash bob — maintainable procedural idle without SpriteFrames sheets.
+	## Breath on AnimRoot + sash bob — layered on walk SpriteFrames.
 	if node == null or not is_instance_valid(node):
 		return
 	var anim := node.get_node_or_null("AnimRoot") as Control
@@ -940,12 +1066,20 @@ static func figure_idle_anim(node: Control, period: float = 2.4) -> void:
 
 
 static func figure_attack_pose(node: Control, dir: Vector2 = Vector2(1, 0)) -> void:
-	## One-shot lean / squash toward strike — simple attack frame substitute.
+	## Swap to attack SpriteFrames + lean/squash toward strike.
 	if node == null or not is_instance_valid(node):
 		return
 	var anim := node.get_node_or_null("AnimRoot") as Control
 	if anim == null:
 		anim = node
+	var fig_id := str(node.get_meta("figure_id", node.get_meta("unit_id", node.get_meta("enemy_id", ""))))
+	var spr := anim.get_node_or_null("FigureSpr") as TextureRect
+	var is_enemy := node.has_meta("enemy_id")
+	if spr and fig_id != "":
+		_apply_figure_tex(spr, fig_id, "attack", 12.0)
+		# Restore walk after attack sheet plays (~0.25s for 3 frames @12fps).
+		var restore := node.get_tree().create_timer(0.28)
+		restore.timeout.connect(_restore_walk_after_attack.bind(spr, fig_id, is_enemy), CONNECT_ONE_SHOT)
 	var lean := clampf(dir.x, -1.0, 1.0) * 0.18
 	if absf(dir.x) < 0.2:
 		lean = 0.12 if dir.y < 0.0 else -0.08
@@ -954,3 +1088,9 @@ static func figure_attack_pose(node: Control, dir: Vector2 = Vector2(1, 0)) -> v
 	tw.parallel().tween_property(anim, "scale", Vector2(1.08, 0.92), 0.06)
 	tw.tween_property(anim, "rotation", 0.0, 0.14).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	tw.parallel().tween_property(anim, "scale", Vector2(1.0, 1.0), 0.14)
+
+
+static func _restore_walk_after_attack(spr: TextureRect, fig_id: String, is_enemy: bool) -> void:
+	if spr == null or not is_instance_valid(spr):
+		return
+	_apply_figure_tex(spr, fig_id, "walk", 9.0 if is_enemy else 5.5)
