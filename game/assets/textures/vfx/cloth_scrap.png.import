@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cs4vhll7dfviy"
-path="res://.godot/imported/unit_zhaoyun_reveal.png-305bd93ba20488f51de58b8fed9d16c7.ctex"
+uid="uid://cs4vfmrcdi3eb"
+path="res://.godot/imported/cloth_scrap.png-da38f9b2d594edad735f3b307dc36184.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/textures/figures/unit_zhaoyun_reveal.png"
-dest_files=["res://.godot/imported/unit_zhaoyun_reveal.png-305bd93ba20488f51de58b8fed9d16c7.ctex"]
+source_file="res://assets/textures/vfx/cloth_scrap.png"
+dest_files=["res://.godot/imported/cloth_scrap.png-da38f9b2d594edad735f3b307dc36184.ctex"]
 
 [params]
 

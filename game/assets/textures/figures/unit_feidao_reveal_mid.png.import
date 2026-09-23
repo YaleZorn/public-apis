@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cs4vhll7dfviy"
-path="res://.godot/imported/unit_zhaoyun_reveal.png-305bd93ba20488f51de58b8fed9d16c7.ctex"
+uid="uid://cs4xfjsv7m4c8"
+path="res://.godot/imported/unit_feidao_reveal_mid.png-7fb74f7e677ced97410f3ce5778a3e93.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/textures/figures/unit_zhaoyun_reveal.png"
-dest_files=["res://.godot/imported/unit_zhaoyun_reveal.png-305bd93ba20488f51de58b8fed9d16c7.ctex"]
+source_file="res://assets/textures/figures/unit_feidao_reveal_mid.png"
+dest_files=["res://.godot/imported/unit_feidao_reveal_mid.png-7fb74f7e677ced97410f3ce5778a3e93.ctex"]
 
 [params]
 

@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cs4vhll7dfviy"
-path="res://.godot/imported/unit_zhaoyun_reveal.png-305bd93ba20488f51de58b8fed9d16c7.ctex"
+uid="uid://cs4tf7q0fowb2"
+path="res://.godot/imported/unit_linchong_reveal_mid.png-e7c4aba659e48691e7cab7b9b4b0c3ad.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/textures/figures/unit_zhaoyun_reveal.png"
-dest_files=["res://.godot/imported/unit_zhaoyun_reveal.png-305bd93ba20488f51de58b8fed9d16c7.ctex"]
+source_file="res://assets/textures/figures/unit_linchong_reveal_mid.png"
+dest_files=["res://.godot/imported/unit_linchong_reveal_mid.png-e7c4aba659e48691e7cab7b9b4b0c3ad.ctex"]
 
 [params]
 

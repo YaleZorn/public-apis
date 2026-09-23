@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cs4vhll7dfviy"
-path="res://.godot/imported/unit_zhaoyun_reveal.png-305bd93ba20488f51de58b8fed9d16c7.ctex"
+uid="uid://cs33pdq5kj5od"
+path="res://.godot/imported/slash_trail_long.png-1bf41d5bb2d336b47ac8c3de2e06e0fe.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/textures/figures/unit_zhaoyun_reveal.png"
-dest_files=["res://.godot/imported/unit_zhaoyun_reveal.png-305bd93ba20488f51de58b8fed9d16c7.ctex"]
+source_file="res://assets/textures/vfx/slash_trail_long.png"
+dest_files=["res://.godot/imported/slash_trail_long.png-1bf41d5bb2d336b47ac8c3de2e06e0fe.ctex"]
 
 [params]
 

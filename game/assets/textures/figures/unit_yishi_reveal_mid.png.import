@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cs4vhll7dfviy"
-path="res://.godot/imported/unit_zhaoyun_reveal.png-305bd93ba20488f51de58b8fed9d16c7.ctex"
+uid="uid://cs4tlni6fg4h8"
+path="res://.godot/imported/unit_yishi_reveal_mid.png-4d2be32661df634d04790b734ac4103b.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/textures/figures/unit_zhaoyun_reveal.png"
-dest_files=["res://.godot/imported/unit_zhaoyun_reveal.png-305bd93ba20488f51de58b8fed9d16c7.ctex"]
+source_file="res://assets/textures/figures/unit_yishi_reveal_mid.png"
+dest_files=["res://.godot/imported/unit_yishi_reveal_mid.png-4d2be32661df634d04790b734ac4103b.ctex"]
 
 [params]
 

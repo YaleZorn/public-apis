@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cs4vhll7dfviy"
-path="res://.godot/imported/unit_zhaoyun_reveal.png-305bd93ba20488f51de58b8fed9d16c7.ctex"
+uid="uid://cs4vjih56n7i1"
+path="res://.godot/imported/aura_ink_wisp.png-a4205c7a4b8a85e0ae6822bd18f4482b.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/textures/figures/unit_zhaoyun_reveal.png"
-dest_files=["res://.godot/imported/unit_zhaoyun_reveal.png-305bd93ba20488f51de58b8fed9d16c7.ctex"]
+source_file="res://assets/textures/vfx/aura_ink_wisp.png"
+dest_files=["res://.godot/imported/aura_ink_wisp.png-a4205c7a4b8a85e0ae6822bd18f4482b.ctex"]
 
 [params]
 
