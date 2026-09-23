@@ -138,7 +138,7 @@ func _shot_closeups() -> void:
 
 
 func _shot_td_aura() -> void:
-	var packed = load("res://scenes/td/td_run.tscn")
+	var packed = load("res://scenes/td/td_battle.tscn")
 	var node: Node = packed.instantiate()
 	root.add_child(node)
 	await create_timer(1.1).timeout
@@ -148,7 +148,7 @@ func _shot_td_aura() -> void:
 
 
 func _shot_td_skill_reveal() -> void:
-	var packed = load("res://scenes/td/td_run.tscn")
+	var packed = load("res://scenes/td/td_battle.tscn")
 	var node: Node = packed.instantiate()
 	root.add_child(node)
 	await create_timer(1.0).timeout
