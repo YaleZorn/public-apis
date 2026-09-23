@@ -46,7 +46,19 @@
       },
       "knowledge_bind": "k_warmup",
       "color": "#4a7c59",
-      "blurb": "胖大和尚，力可开碑。训练加厚阵线。"
+      "blurb": "胖大和尚，力可开碑。训练加厚阵线。",
+      "vfx": {
+        "idle_aura": true,
+        "idle_aura_color": "#4a7c59",
+        "skill_burst": "jade",
+        "reveal": "cloth_burst",
+        "reveal_on": [
+          "skill",
+          "low_hp",
+          "crit"
+        ],
+        "buff_ring_color": "#6bcb77"
+      }
     },
     {
       "id": "unit_feidao",
@@ -93,7 +105,18 @@
       },
       "knowledge_bind": "k_protein",
       "color": "#c45c26",
-      "blurb": "小李飞刀，例不虚发。挂机偏修为。"
+      "blurb": "小李飞刀，例不虚发。挂机偏修为。",
+      "vfx": {
+        "idle_aura": false,
+        "skill_burst": "blade",
+        "reveal": "cloth_burst",
+        "reveal_on": [
+          "skill",
+          "crit",
+          "low_hp"
+        ],
+        "buff_ring_color": "#c45c26"
+      }
     },
     {
       "id": "unit_qinggong",
@@ -140,7 +163,19 @@
       },
       "knowledge_bind": "k_sleep",
       "color": "#5b8def",
-      "blurb": "聪慧过人，擅以柔克刚。材料草稿略丰。"
+      "blurb": "聪慧过人，擅以柔克刚。材料草稿略丰。",
+      "vfx": {
+        "idle_aura": true,
+        "idle_aura_color": "#5b8def",
+        "skill_burst": "petal",
+        "reveal": "cloth_burst",
+        "reveal_on": [
+          "skill",
+          "low_hp",
+          "crit"
+        ],
+        "buff_ring_color": "#7eb0ff"
+      }
     },
     {
       "id": "unit_yishi",
@@ -187,7 +222,18 @@
       },
       "knowledge_bind": "k_hydration",
       "color": "#6bcb77",
-      "blurb": "药王坐镇，挂机偏材料与修为。"
+      "blurb": "药王坐镇，挂机偏材料与修为。",
+      "vfx": {
+        "idle_aura": true,
+        "idle_aura_color": "#6bcb77",
+        "skill_burst": "jade",
+        "reveal": "cloth_burst",
+        "reveal_on": [
+          "skill",
+          "low_hp"
+        ],
+        "buff_ring_color": "#8fdfa0"
+      }
     },
     {
       "id": "unit_zhaoyun",
@@ -235,7 +281,18 @@
       },
       "knowledge_bind": "k_progressive",
       "color": "#d4a017",
-      "blurb": "白马银枪。碎片解锁后可编入剑阁。"
+      "blurb": "白马银枪。碎片解锁后可编入剑阁。",
+      "vfx": {
+        "idle_aura": false,
+        "skill_burst": "gold",
+        "reveal": "cloth_burst",
+        "reveal_on": [
+          "skill",
+          "crit",
+          "low_hp"
+        ],
+        "buff_ring_color": "#d4a017"
+      }
     },
     {
       "id": "unit_mingwang",
@@ -283,7 +340,19 @@
       },
       "knowledge_bind": "k_rest_day",
       "color": "#5a8f7b",
-      "blurb": "以柔克刚。训练显著抬升 TD 输出。"
+      "blurb": "以柔克刚。训练显著抬升 TD 输出。",
+      "vfx": {
+        "idle_aura": true,
+        "idle_aura_color": "#5a8f7b",
+        "skill_burst": "jade",
+        "reveal": "cloth_burst",
+        "reveal_on": [
+          "skill",
+          "crit",
+          "low_hp"
+        ],
+        "buff_ring_color": "#7ec8c0"
+      }
     },
     {
       "id": "unit_mulan",
@@ -331,7 +400,19 @@
       },
       "knowledge_bind": "k_warmup",
       "color": "#8b6b4a",
-      "blurb": "巾帼不让须眉。解锁后充实前排。"
+      "blurb": "巾帼不让须眉。解锁后充实前排。",
+      "vfx": {
+        "idle_aura": true,
+        "idle_aura_color": "#8b6b4a",
+        "skill_burst": "gold",
+        "reveal": "cloth_burst",
+        "reveal_on": [
+          "skill",
+          "low_hp",
+          "crit"
+        ],
+        "buff_ring_color": "#c4a574"
+      }
     },
     {
       "id": "unit_linchong",
@@ -379,7 +460,18 @@
       },
       "knowledge_bind": "k_progressive",
       "color": "#a0522d",
-      "blurb": "八十万禁军教头。训练抬升解锁权重。"
+      "blurb": "八十万禁军教头。训练抬升解锁权重。",
+      "vfx": {
+        "idle_aura": false,
+        "skill_burst": "blade",
+        "reveal": "cloth_burst",
+        "reveal_on": [
+          "skill",
+          "crit",
+          "low_hp"
+        ],
+        "buff_ring_color": "#c45c26"
+      }
     }
   ]
 }

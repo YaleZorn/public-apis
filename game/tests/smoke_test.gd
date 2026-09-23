@@ -47,8 +47,11 @@ func _check_files() -> bool:
 		"res://scripts/idle/idle_hub.gd",
 		"res://scripts/explore/run_bag.gd",
 		"res://scripts/combat/auto_combat_ring.gd",
+		"res://scripts/util/state_vfx.gd",
 		"res://scripts/arena/arena_run.gd",
 		"res://scripts/tower/tower_run.gd",
+		"res://assets/textures/figures/unit_qinggong_reveal.png",
+		"res://assets/textures/figures/unit_mulan_reveal.png",
 		"res://third_party/ape1121-godot-4-tower-defense-template/LICENSE",
 	]
 	for p in paths:
@@ -79,6 +82,13 @@ func _check_json() -> bool:
 			named += 1
 		if not u.has("idle"):
 			push_error("Unit missing idle block: %s" % u.get("id", "?"))
+			return false
+		if not u.has("vfx") or typeof(u.get("vfx")) != TYPE_DICTIONARY:
+			push_error("Unit missing vfx hooks: %s" % u.get("id", "?"))
+			return false
+		var vfx: Dictionary = u.get("vfx", {})
+		if str(vfx.get("reveal", "")) == "" or not vfx.has("reveal_on"):
+			push_error("Unit vfx incomplete: %s" % u.get("id", "?"))
 			return false
 	if named < 6:
 		push_error("Need >=6 named celebrities with historical_tag+idle, got %d" % named)

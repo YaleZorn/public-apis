@@ -366,6 +366,13 @@ static func unit_node(unit: Dictionary, size: Vector2 = Vector2(88, 112)) -> Con
 	label.size = Vector2(size.x, 14)
 	root.add_child(label)
 	root.set_meta("idle_bob", true)
+	# State VFX hooks — defer until in tree so aura tweens bind correctly.
+	var SV := preload("res://scripts/util/state_vfx.gd")
+	root.set_meta("vfx_pending_unit", unit)
+	root.tree_entered.connect(func():
+		if is_instance_valid(root):
+			SV.attach(root, unit, {"auto_buff": true})
+	, CONNECT_ONE_SHOT)
 	return root
 
 
