@@ -33,7 +33,7 @@ func _ready() -> void:
 	tagline.text = "守卫剑阁 · 栈道夜行 · 真知识"
 	AP.apply_label(tagline, 18, AP.MIST_TEAL.lightened(0.28))
 	AP.apply_label(version_label, 13, Color(0.55, 0.62, 0.56, 1))
-	version_label.text = "v0.9.5 小人·立绘"
+	version_label.text = "v0.9.6 · 17+ 造型"
 	continue_btn.visible = GameState.has_resume()
 	continue_btn.theme_type_variation = &"ButtonPrimary"
 	start_btn.theme_type_variation = &"ButtonPrimary"
@@ -96,6 +96,11 @@ func _build_settings_sliders() -> void:
 	sfx_toggle.button_pressed = SettingsManager.sfx_on
 	sfx_toggle.toggled.connect(func(on): SettingsManager.set_sfx_enabled(on))
 	box.add_child(sfx_toggle)
+	var rating := Label.new()
+	rating.name = "Row_Rating"
+	rating.text = "内容分级：17+（明确成年造型）"
+	AP.apply_label(rating, 14, Color(0.72, 0.58, 0.42, 1))
+	box.add_child(rating)
 
 
 func _add_slider(parent: VBoxContainer, label: String, initial: float, cb: Callable) -> void:

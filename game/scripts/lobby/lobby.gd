@@ -30,7 +30,7 @@ func _ready() -> void:
 		accent.visible = false
 	title_label.text = "剑阁·大厅"
 	AP.apply_label(title_label, 44, AP.LANTERN_GOLD)
-	subtitle.text = "TD · Idle · 搜打撤 · 演武 · 爬塔"
+	subtitle.text = "TD · Idle · 搜打撤 · 演武 · 爬塔 · 17+"
 	AP.apply_label(subtitle, 15, AP.MIST_TEAL.lightened(0.22))
 	# M4/M5: Arena + Tower live (same auto-combat ring as explore).
 	var idle_btn := get_node_or_null("%IdleStubBtn") as Button
@@ -269,6 +269,11 @@ func _build_settings() -> void:
 		SettingsManager.set_music(v)
 		GameState.persist_meta_keep_checkpoints()
 	)
+	var rating := Label.new()
+	rating.name = "Row_Rating"
+	rating.text = "内容分级：17+（明确成年造型）"
+	AP.apply_label(rating, 14, Color(0.72, 0.58, 0.42, 1))
+	box.add_child(rating)
 
 
 func _add_slider(parent: VBoxContainer, label: String, initial: float, cb: Callable) -> void:

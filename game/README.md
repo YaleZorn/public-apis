@@ -1,15 +1,16 @@
-# Kongfu Roguelike — v0.9.5 小人·立绘
+# Kongfu Roguelike — v0.9.6 · 17+ 造型
 
-竖屏、离线武侠健身题材。叠在 v0.9.4 音效形效之上：
+竖屏、离线武侠健身题材。叠在 v0.9.5 小人立绘之上：
 
-- **局内小人立绘**：TD / 探索 / 演武 / 爬塔用地上 figure 精灵（非卡框肖像）
-- **可动**：呼吸缩放 + 飘带 bob + 攻击 lean；大厅花名册仍用肖像收集卡
-- **吸睛造型**：更新黄蓉/木兰/李寻欢等肖像与全身 figure，墨雾武侠 + 略有风情不过火
-- 五模式仍可玩；离线无 IAP；合法 OSS only；保留 v0.9.4 音效形效
+- **17+ 造型加码**：全解锁名人 + 敌方肖像/figure 更露骨（深 V、露腰、短裙/开襟等），**明确成年**
+- 标题/设置标注 **内容分级：17+**
+- 局内仍用 frameless figure；大厅仍用肖像收集卡；idle/攻击 lean 保留
+- 五模式仍可玩；离线无 IAP；合法 OSS only
 
 设计依据（Project store）：
 - `docs/gameplay-design.md`
 - `docs/project-context.md`
+- `docs/character-presentation.md`
 - `docs/base-game-candidates.md`
 
 包协议说明：[`data/CONTENT_PACKS.md`](./data/CONTENT_PACKS.md)  
