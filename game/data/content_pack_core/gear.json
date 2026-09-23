@@ -1,0 +1,41 @@
+{
+  "content_pack": "core",
+  "gear": [
+    {
+      "id": "gear_bamboo_cup",
+      "name": "竹节水壶",
+      "slot": 0,
+      "tag": "器",
+      "bonus": "探索开局 +10 护盾",
+      "unlock": "first_td_clear"
+    },
+    {
+      "id": "gear_linen_wrap",
+      "name": "麻布护腕",
+      "slot": 1,
+      "tag": "衣",
+      "bonus": "TD 回收 +5% 银两",
+      "unlock": "first_explore_clear"
+    },
+    {
+      "id": "gear_jade_token",
+      "name": "玉佩信物",
+      "slot": 2,
+      "tag": "饰",
+      "bonus": "晨课答对额外 +5 HP",
+      "unlock": "knowledge_5"
+    },
+    {
+      "id": "gear_tower_blade",
+      "name": "剑阁残锋",
+      "slot": 0,
+      "tag": "器",
+      "bonus": "爬塔专属 · 自动战攻击 +8%",
+      "unlock": "tower_exclusive",
+      "pool": "tower_exclusive",
+      "exclusive": true,
+      "source": "tower",
+      "content_pack": "core"
+    }
+  ]
+}

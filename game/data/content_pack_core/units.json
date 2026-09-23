@@ -1,0 +1,385 @@
+{
+  "content_pack": "core",
+  "units": [
+    {
+      "id": "unit_tiebi",
+      "name": "鲁智深",
+      "faction": "少林",
+      "historical_tag": "水浒·花和尚",
+      "role": "tank",
+      "stars": 1,
+      "fragments": 0,
+      "unlocked": true,
+      "cost": 80,
+      "recall_refund": 0.5,
+      "idle": {
+        "silver_per_hour": 48,
+        "xiuwei_per_hour": 12,
+        "material_per_hour": 2,
+        "train_cost_silver": 40,
+        "train_minutes": 5.0
+      },
+      "td": {
+        "hp": 420,
+        "atk": 18,
+        "range": 90,
+        "attack_interval": 1.1,
+        "aura": {
+          "type": "armor_share",
+          "value": 0.12,
+          "radius": 140
+        },
+        "skill": "倒拔垂杨：嘲讽近敌，降低其移速 15%"
+      },
+      "explore": {
+        "hp": 180,
+        "atk": 22,
+        "attack_interval": 0.85,
+        "active": {
+          "id": "iron_guard",
+          "name": "铁壁",
+          "cooldown": 8.0,
+          "effect": "shield",
+          "value": 60,
+          "duration": 3.0
+        }
+      },
+      "knowledge_bind": "k_warmup",
+      "color": "#4a7c59",
+      "blurb": "胖大和尚，力可开碑。训练加厚阵线。"
+    },
+    {
+      "id": "unit_feidao",
+      "name": "李寻欢",
+      "faction": "飞刀门",
+      "historical_tag": "小李飞刀",
+      "role": "dps",
+      "stars": 1,
+      "fragments": 0,
+      "unlocked": true,
+      "cost": 70,
+      "recall_refund": 0.5,
+      "idle": {
+        "silver_per_hour": 36,
+        "xiuwei_per_hour": 18,
+        "material_per_hour": 1,
+        "train_cost_silver": 45,
+        "train_minutes": 5.0
+      },
+      "td": {
+        "hp": 160,
+        "atk": 36,
+        "range": 180,
+        "attack_interval": 0.7,
+        "aura": {
+          "type": "none",
+          "value": 0,
+          "radius": 0
+        },
+        "skill": "例无虚发：远程连射，优先打血少目标"
+      },
+      "explore": {
+        "hp": 120,
+        "atk": 28,
+        "attack_interval": 0.65,
+        "active": {
+          "id": "fan_knives",
+          "name": "散花",
+          "cooldown": 6.5,
+          "effect": "aoe_damage",
+          "value": 55,
+          "duration": 0
+        }
+      },
+      "knowledge_bind": "k_protein",
+      "color": "#c45c26",
+      "blurb": "小李飞刀，例不虚发。挂机偏修为。"
+    },
+    {
+      "id": "unit_qinggong",
+      "name": "黄蓉",
+      "faction": "桃花岛",
+      "historical_tag": "射雕·女诸葛",
+      "role": "control",
+      "stars": 1,
+      "fragments": 0,
+      "unlocked": true,
+      "cost": 75,
+      "recall_refund": 0.5,
+      "idle": {
+        "silver_per_hour": 40,
+        "xiuwei_per_hour": 16,
+        "material_per_hour": 3,
+        "train_cost_silver": 42,
+        "train_minutes": 5.0
+      },
+      "td": {
+        "hp": 140,
+        "atk": 22,
+        "range": 150,
+        "attack_interval": 0.9,
+        "aura": {
+          "type": "slow",
+          "value": 0.18,
+          "radius": 120
+        },
+        "skill": "落英缤纷：光环减速路过敌人"
+      },
+      "explore": {
+        "hp": 110,
+        "atk": 24,
+        "attack_interval": 0.7,
+        "active": {
+          "id": "swift_step",
+          "name": "凌波",
+          "cooldown": 7.0,
+          "effect": "slow_all",
+          "value": 0.4,
+          "duration": 2.5
+        }
+      },
+      "knowledge_bind": "k_sleep",
+      "color": "#5b8def",
+      "blurb": "聪慧过人，擅以柔克刚。材料草稿略丰。"
+    },
+    {
+      "id": "unit_yishi",
+      "name": "孙思邈",
+      "faction": "药王谷",
+      "historical_tag": "药王·千金方",
+      "role": "support",
+      "stars": 1,
+      "fragments": 0,
+      "unlocked": true,
+      "cost": 85,
+      "recall_refund": 0.5,
+      "idle": {
+        "silver_per_hour": 32,
+        "xiuwei_per_hour": 22,
+        "material_per_hour": 4,
+        "train_cost_silver": 38,
+        "train_minutes": 5.0
+      },
+      "td": {
+        "hp": 150,
+        "atk": 10,
+        "range": 160,
+        "attack_interval": 1.2,
+        "aura": {
+          "type": "regen",
+          "value": 6,
+          "radius": 150
+        },
+        "skill": "千金方：为范围内友军缓慢回血"
+      },
+      "explore": {
+        "hp": 100,
+        "atk": 14,
+        "attack_interval": 1.0,
+        "active": {
+          "id": "heal_salve",
+          "name": "金疮药",
+          "cooldown": 9.0,
+          "effect": "heal",
+          "value": 45,
+          "duration": 0
+        }
+      },
+      "knowledge_bind": "k_hydration",
+      "color": "#6bcb77",
+      "blurb": "药王坐镇，挂机偏材料与修为。"
+    },
+    {
+      "id": "unit_zhaoyun",
+      "name": "赵云",
+      "faction": "常山",
+      "historical_tag": "三国·常山赵子龙",
+      "role": "summon",
+      "stars": 1,
+      "fragments": 0,
+      "unlocked": false,
+      "unlock_fragments": 3,
+      "cost": 95,
+      "recall_refund": 0.45,
+      "idle": {
+        "silver_per_hour": 44,
+        "xiuwei_per_hour": 14,
+        "material_per_hour": 2,
+        "train_cost_silver": 55,
+        "train_minutes": 6.2
+      },
+      "td": {
+        "hp": 200,
+        "atk": 28,
+        "range": 110,
+        "attack_interval": 0.95,
+        "aura": {
+          "type": "atk_buff",
+          "value": 0.1,
+          "radius": 130
+        },
+        "skill": "七进七出：召唤短矛影，光环加攻"
+      },
+      "explore": {
+        "hp": 140,
+        "atk": 26,
+        "attack_interval": 0.75,
+        "active": {
+          "id": "spear_volley",
+          "name": "齐射",
+          "cooldown": 8.5,
+          "effect": "aoe_damage",
+          "value": 70,
+          "duration": 0
+        }
+      },
+      "knowledge_bind": "k_progressive",
+      "color": "#d4a017",
+      "blurb": "白马银枪。碎片解锁后可编入剑阁。"
+    },
+    {
+      "id": "unit_mingwang",
+      "name": "张三丰",
+      "faction": "武当",
+      "historical_tag": "武当开山·太极",
+      "role": "dps",
+      "stars": 1,
+      "fragments": 0,
+      "unlocked": false,
+      "unlock_fragments": 3,
+      "cost": 100,
+      "recall_refund": 0.45,
+      "idle": {
+        "silver_per_hour": 38,
+        "xiuwei_per_hour": 24,
+        "material_per_hour": 2,
+        "train_cost_silver": 60,
+        "train_minutes": 6.2
+      },
+      "td": {
+        "hp": 220,
+        "atk": 42,
+        "range": 100,
+        "attack_interval": 1.05,
+        "aura": {
+          "type": "none",
+          "value": 0,
+          "radius": 0
+        },
+        "skill": "太极粘黏：近战高伤，击破护甲敌人额外伤害"
+      },
+      "explore": {
+        "hp": 150,
+        "atk": 32,
+        "attack_interval": 0.8,
+        "active": {
+          "id": "vajra_burst",
+          "name": "金刚崩",
+          "cooldown": 7.5,
+          "effect": "aoe_damage",
+          "value": 80,
+          "duration": 0
+        }
+      },
+      "knowledge_bind": "k_rest_day",
+      "color": "#5a8f7b",
+      "blurb": "以柔克刚。训练显著抬升 TD 输出。"
+    },
+    {
+      "id": "unit_mulan",
+      "name": "花木兰",
+      "faction": "军旅",
+      "historical_tag": "北朝民歌·替父从军",
+      "role": "tank",
+      "stars": 1,
+      "fragments": 0,
+      "unlocked": false,
+      "unlock_fragments": 4,
+      "cost": 90,
+      "recall_refund": 0.5,
+      "idle": {
+        "silver_per_hour": 42,
+        "xiuwei_per_hour": 15,
+        "material_per_hour": 2,
+        "train_cost_silver": 50,
+        "train_minutes": 5.0
+      },
+      "td": {
+        "hp": 380,
+        "atk": 24,
+        "range": 100,
+        "attack_interval": 1.0,
+        "aura": {
+          "type": "armor_share",
+          "value": 0.08,
+          "radius": 130
+        },
+        "skill": "替父从军：前排承伤，短距反击"
+      },
+      "explore": {
+        "hp": 170,
+        "atk": 24,
+        "attack_interval": 0.8,
+        "active": {
+          "id": "mulan_charge",
+          "name": "冲阵",
+          "cooldown": 8.0,
+          "effect": "aoe_damage",
+          "value": 50,
+          "duration": 0
+        }
+      },
+      "knowledge_bind": "k_warmup",
+      "color": "#8b6b4a",
+      "blurb": "巾帼不让须眉。解锁后充实前排。"
+    },
+    {
+      "id": "unit_linchong",
+      "name": "林冲",
+      "faction": "梁山",
+      "historical_tag": "水浒·豹子头",
+      "role": "dps",
+      "stars": 1,
+      "fragments": 0,
+      "unlocked": false,
+      "unlock_fragments": 4,
+      "cost": 88,
+      "recall_refund": 0.5,
+      "idle": {
+        "silver_per_hour": 46,
+        "xiuwei_per_hour": 14,
+        "material_per_hour": 1,
+        "train_cost_silver": 48,
+        "train_minutes": 5.0
+      },
+      "td": {
+        "hp": 190,
+        "atk": 34,
+        "range": 130,
+        "attack_interval": 0.85,
+        "aura": {
+          "type": "atk_buff",
+          "value": 0.06,
+          "radius": 110
+        },
+        "skill": "豹子头枪法：中距突刺，光环微加攻"
+      },
+      "explore": {
+        "hp": 135,
+        "atk": 27,
+        "attack_interval": 0.72,
+        "active": {
+          "id": "spear_thrust",
+          "name": "点穴枪",
+          "cooldown": 7.0,
+          "effect": "aoe_damage",
+          "value": 60,
+          "duration": 0
+        }
+      },
+      "knowledge_bind": "k_progressive",
+      "color": "#a0522d",
+      "blurb": "八十万禁军教头。训练抬升解锁权重。"
+    }
+  ]
+}

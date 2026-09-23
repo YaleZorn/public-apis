@@ -1,0 +1,126 @@
+{
+  "content_pack": "core",
+  "display_name": "剑阁爬塔",
+  "blurb": "纵向层表 · 清层进下一层 · 层间可存 · 后期专属掉落与探索池分离。",
+  "start_floor": 1,
+  "morning_shield": 15,
+  "bamboo_shield": 10,
+  "floors": [
+    {
+      "floor": 1,
+      "label": "一层·山门试剑",
+      "enemies": [
+        "enemy_bandit"
+      ],
+      "hp_scale": 0.9,
+      "atk_scale": 0.9,
+      "fragments": 1,
+      "materials": {
+        "mat_wood": 1
+      },
+      "wuxue_drafts": 0,
+      "exclusive_roll": null,
+      "knowledge_card": null
+    },
+    {
+      "floor": 2,
+      "label": "二层·石阶夜袭",
+      "enemies": [
+        "enemy_bandit",
+        "enemy_runner"
+      ],
+      "hp_scale": 1.0,
+      "atk_scale": 1.0,
+      "fragments": 1,
+      "materials": {
+        "mat_herb": 1,
+        "mat_iron": 1
+      },
+      "wuxue_drafts": 0,
+      "exclusive_roll": null,
+      "knowledge_card": "k_deload"
+    },
+    {
+      "floor": 3,
+      "label": "三层·崖间伏兵",
+      "enemies": [
+        "enemy_shield",
+        "enemy_bandit"
+      ],
+      "hp_scale": 1.1,
+      "atk_scale": 1.05,
+      "fragments": 1,
+      "materials": {
+        "mat_silk": 1
+      },
+      "wuxue_drafts": 1,
+      "exclusive_roll": null,
+      "knowledge_card": null
+    },
+    {
+      "floor": 4,
+      "label": "四层·雾廊急行",
+      "enemies": [
+        "enemy_runner",
+        "enemy_runner",
+        "enemy_bandit"
+      ],
+      "hp_scale": 1.15,
+      "atk_scale": 1.1,
+      "fragments": 2,
+      "materials": {
+        "mat_jade_chip": 1,
+        "mat_iron": 1
+      },
+      "wuxue_drafts": 0,
+      "exclusive_roll": null,
+      "knowledge_card": "k_demo_trail_pace"
+    },
+    {
+      "floor": 5,
+      "label": "五层·专武初现",
+      "enemies": [
+        "enemy_shield",
+        "enemy_bandit",
+        "enemy_runner"
+      ],
+      "hp_scale": 1.25,
+      "atk_scale": 1.15,
+      "fragments": 2,
+      "materials": {
+        "mat_herb": 1,
+        "mat_silk": 1
+      },
+      "wuxue_drafts": 1,
+      "exclusive_roll": {
+        "gear_id": "gear_tower_blade",
+        "chance": 1.0,
+        "note": "后期专属样例 · 不进探索掉落池"
+      },
+      "knowledge_card": null
+    },
+    {
+      "floor": 6,
+      "label": "六层·剑阁残响",
+      "enemies": [
+        "enemy_shield",
+        "enemy_shield",
+        "enemy_runner"
+      ],
+      "hp_scale": 1.35,
+      "atk_scale": 1.2,
+      "fragments": 2,
+      "materials": {
+        "mat_jade_chip": 1,
+        "mat_wood": 1
+      },
+      "wuxue_drafts": 1,
+      "exclusive_roll": {
+        "gear_id": "gear_tower_blade",
+        "chance": 0.35,
+        "note": "重复层保底钩子 · 已拥有则跳过"
+      },
+      "knowledge_card": null
+    }
+  ]
+}

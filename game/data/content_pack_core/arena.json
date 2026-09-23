@@ -1,0 +1,19 @@
+{
+  "content_pack": "core",
+  "display_name": "演武场",
+  "blurb": "生存练功：敌人持续 ramp，随时下场结算修为与熟练度。",
+  "spawn_interval_start": 2.4,
+  "spawn_interval_min": 0.85,
+  "spawn_interval_decay": 0.045,
+  "ramp_hp_per_min": 0.18,
+  "ramp_atk_per_min": 0.22,
+  "max_alive": 5,
+  "enemy_pool": ["enemy_bandit", "enemy_runner", "enemy_shield", "enemy_bandit", "enemy_runner"],
+  "mastery_per_kill": 1,
+  "mastery_per_30s": 1,
+  "xiuwei_per_10s": 2,
+  "xiuwei_per_kill": 1,
+  "silver_per_30s": 3,
+  "morning_shield": 20,
+  "bamboo_shield": 10
+}

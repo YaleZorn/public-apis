@@ -1,0 +1,129 @@
+{
+  "content_pack": "demo_mountain",
+  "source_tier": "general_public_health",
+  "disclaimer": "演示包知识：一般健康教育，非医疗处方。",
+  "entries": [
+    {
+      "id": "k_demo_trail_pace",
+      "topic": "训练",
+      "title": "山路配速留余力",
+      "misconception": "爬山必须全程冲刺才算练到。",
+      "correct": "长距离爬升用可对话配速，陡坡可走一段；保留冲刺给短段。",
+      "why": "有氧底座靠可持续配速；全程冲刺易早衰竭与扭伤。",
+      "content_pack": "demo_mountain",
+      "quiz": [
+        {
+          "q": "长距离山野行走更稳妥？",
+          "choices": ["全程冲刺", "可对话配速，陡坡可走", "完全禁止休息"],
+          "answer": 1
+        }
+      ],
+      "td_hook": "wave_prep_silver_bonus",
+      "explore_hook": "start_shield_small",
+      "tower_hook": "floor_shield_small",
+      "mode_hooks": [
+        { "mode": "td", "hook": "wave_prep_silver_bonus" },
+        { "mode": "explore", "hook": "start_shield_small" },
+        { "mode": "tower", "hook": "floor_shield_small" }
+      ],
+      "scenario": {
+        "prompt": "弟子山道全程猛冲后力竭。你改？",
+        "choices": [
+          { "text": "继续冲，停就是退步", "correct": false },
+          { "text": "可对话配速，陡坡可走", "correct": true },
+          { "text": "只准静坐不许走", "correct": false }
+        ]
+      }
+    },
+    {
+      "id": "k_demo_pack_weight",
+      "topic": "训练",
+      "title": "负重循序加",
+      "misconception": "第一次徒步就该背满载装备。",
+      "correct": "负重从轻到重渐进；先把路程与脚下稳定练出来。",
+      "why": "突然大负重易伤膝背，也破坏步态。",
+      "content_pack": "demo_mountain",
+      "quiz": [
+        {
+          "q": "负重徒步入门？",
+          "choices": ["第一次就满载", "轻→重渐进", "负重越大越好无上限"],
+          "answer": 1
+        }
+      ],
+      "td_hook": "unit_atk_small",
+      "explore_hook": "max_hp_small",
+      "mode_hooks": [
+        { "mode": "td", "hook": "unit_atk_small" },
+        { "mode": "explore", "hook": "max_hp_small" }
+      ],
+      "scenario": {
+        "prompt": "新手要一次背满辎重翻山。建议？",
+        "choices": [
+          { "text": "满载才像练兵", "correct": false },
+          { "text": "先轻负重把路程走稳", "correct": true },
+          { "text": "负重与进步无关", "correct": false }
+        ]
+      }
+    },
+    {
+      "id": "k_demo_trail_food",
+      "topic": "饮食",
+      "title": "途中补给小而勤",
+      "misconception": "走山只在山顶大吃一顿就够。",
+      "correct": "途中少量多次补碳水与水；抵达后再正餐。",
+      "why": "长时间输出靠稳定供能；一次猛吃易胃不适。",
+      "content_pack": "demo_mountain",
+      "quiz": [
+        {
+          "q": "长途行走补给？",
+          "choices": ["只在终点狂吃", "途中少量多次", "全程空腹最好"],
+          "answer": 1
+        }
+      ],
+      "td_hook": "silver_kill_bonus",
+      "explore_hook": "energy_room",
+      "mode_hooks": [
+        { "mode": "td", "hook": "silver_kill_bonus" },
+        { "mode": "explore", "hook": "energy_room" }
+      ],
+      "scenario": {
+        "prompt": "弟子拒绝中途进食只想山顶顿顿。更好？",
+        "choices": [
+          { "text": "饿着走更燃脂", "correct": false },
+          { "text": "途中少量多次补给", "correct": true },
+          { "text": "只喝浓糖浆", "correct": false }
+        ]
+      }
+    },
+    {
+      "id": "k_demo_early_light",
+      "topic": "作息",
+      "title": "早行也要睡够",
+      "misconception": "为赶日出可以连续熬两夜。",
+      "correct": "早起行程前一晚尽量睡够；实在缺觉就缩短行程强度。",
+      "why": "缺觉损害平衡与判断，山野风险上升。",
+      "content_pack": "demo_mountain",
+      "quiz": [
+        {
+          "q": "次日早行前一晚？",
+          "choices": ["通宵收拾行李", "尽量睡够，缺觉则减强度", "睡眠与安全无关"],
+          "answer": 1
+        }
+      ],
+      "td_hook": "lives_temp_bonus",
+      "explore_hook": "heal_on_enter",
+      "mode_hooks": [
+        { "mode": "td", "hook": "lives_temp_bonus" },
+        { "mode": "explore", "hook": "heal_on_enter" }
+      ],
+      "scenario": {
+        "prompt": "弟子为看日出熬两夜。你拦？",
+        "choices": [
+          { "text": "熬夜不影响山行", "correct": false },
+          { "text": "先睡够，否则减强度", "correct": true },
+          { "text": "越缺觉越清醒", "correct": false }
+        ]
+      }
+    }
+  ]
+}
