@@ -62,11 +62,14 @@ func _shot_vfx_board() -> void:
 	title.size = Vector2(640, 40)
 	board.add_child(title)
 	root.add_child(board)
+	var cdb = root.get_node_or_null("ContentDB")
 	var ids := ["unit_qinggong", "unit_mulan", "unit_feidao"]
 	var labels := ["光环 Idle", "技能激发", "爆衣 Reveal"]
 	for i in ids.size():
-		var u: Dictionary = ContentDB.get_unit(ids[i])
-		var fig := VF.unit_node(u, Vector2(160, 210))
+		var u: Dictionary = {}
+		if cdb:
+			u = cdb.get_unit(ids[i])
+		var fig := VF.unit_node(u if not u.is_empty() else {"id": ids[i], "name": "?", "role": "dps", "color": "#6a8f71"}, Vector2(160, 210))
 		fig.position = Vector2(40 + i * 220, 420)
 		board.add_child(fig)
 		await create_timer(0.12).timeout

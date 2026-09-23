@@ -3,6 +3,7 @@ class_name StateVfx
 ## Data-driven character state VFX (v0.9.9):
 ## idle aura · 技能激发 burst · 爆衣/reveal · buff 光环.
 ## Tasteful 17+ game VFX — no porn / genital close-ups / sex UI.
+## Uses runtime autoload lookup so --script captures compile cleanly.
 
 const AP := preload("res://scripts/util/art_palette.gd")
 const VF := preload("res://scripts/util/visual_factory.gd")
@@ -10,6 +11,25 @@ const VF := preload("res://scripts/util/visual_factory.gd")
 const FIGURE_DIR := "res://assets/textures/figures/"
 const LOW_HP_RATIO := 0.35
 const REVEAL_HOLD := 2.0
+
+
+static func _autoload(name: String) -> Node:
+	var tree := Engine.get_main_loop() as SceneTree
+	if tree == null or tree.root == null:
+		return null
+	return tree.root.get_node_or_null(name)
+
+
+static func _content_db() -> Node:
+	return _autoload("ContentDB")
+
+
+static func _game_state() -> Node:
+	return _autoload("GameState")
+
+
+static func _juice() -> Node:
+	return _autoload("Juice")
 
 
 static func hooks_of(unit: Dictionary) -> Dictionary:
@@ -20,9 +40,12 @@ static func hooks_of(unit: Dictionary) -> Dictionary:
 
 
 static func hooks_for_id(uid: String) -> Dictionary:
-	if uid == "" or ContentDB == null:
+	if uid == "":
 		return {}
-	return hooks_of(ContentDB.get_unit(uid))
+	var cdb := _content_db()
+	if cdb == null:
+		return {}
+	return hooks_of(cdb.get_unit(uid))
 
 
 static func _parse_color(raw: Variant, fallback: Color) -> Color:
@@ -57,16 +80,24 @@ static func attach(figure: Control, unit: Dictionary = {}, opts: Dictionary = {}
 		show_buff_ring(figure, true, bcol)
 	# TD aura units get a faint persistent ring matching aura type
 	if bool(opts.get("td_aura", false)):
-		_attach_td_aura_hint(figure, unit if not unit.is_empty() else ContentDB.get_unit(str(figure.get_meta("unit_id", ""))))
+		var u := unit
+		if u.is_empty():
+			var cdb := _content_db()
+			if cdb:
+				u = cdb.get_unit(str(figure.get_meta("unit_id", "")))
+		_attach_td_aura_hint(figure, u)
 
 
 static func _should_auto_buff(uid: String) -> bool:
-	if uid == "" or GameState == null:
+	if uid == "":
 		return false
-	if GameState.is_morning_buff_live():
+	var gs := _game_state()
+	if gs == null:
+		return false
+	if gs.is_morning_buff_live():
 		return true
 	# Training occupancy
-	for slot in GameState.training_slots:
+	for slot in gs.training_slots:
 		if str(slot.get("unit_id", "")) == uid:
 			return true
 	return false
@@ -182,8 +213,10 @@ static func trigger_skill(figure: Control, parent: Node = null, effect: String =
 	if host:
 		VF.skill_cast_fx(host, at, effect if effect != "" else "default", col)
 		_skill_intensify_ring(host, at, col)
-	Juice.pulse(figure, 1.16, 0.16)
-	Juice.flash_modulate(figure, Color(1.35, 1.25, 1.05, 1.0), 0.18)
+	var juice := _juice()
+	if juice:
+		juice.pulse(figure, 1.16, 0.16)
+		juice.flash_modulate(figure, Color(1.35, 1.25, 1.05, 1.0), 0.18)
 	# Reveal on skill if configured
 	var reveal_on: Array = hooks.get("reveal_on", ["skill", "low_hp", "crit"])
 	if "skill" in reveal_on and str(hooks.get("reveal", "none")) != "none":
@@ -241,7 +274,9 @@ static func trigger_crit(figure: Control, parent: Node = null) -> void:
 	if hooks.is_empty():
 		hooks = hooks_for_id(str(figure.get_meta("unit_id", figure.get_meta("figure_id", ""))))
 	var reveal_on: Array = hooks.get("reveal_on", ["skill", "low_hp", "crit"])
-	Juice.pulse(figure, 1.12, 0.1)
+	var juice := _juice()
+	if juice:
+		juice.pulse(figure, 1.12, 0.1)
 	var host: Node = parent if parent else figure.get_parent()
 	if host:
 		var at := figure.position + (figure.custom_minimum_size if figure.custom_minimum_size.x > 1.0 else figure.size) * 0.45
@@ -304,7 +339,9 @@ static func trigger_reveal(figure: Control, reason: String = "skill", sticky: bo
 			)
 	figure.set_meta("vfx_revealed", true)
 	figure.set_meta("vfx_reveal_reason", reason)
-	Juice.flash_modulate(figure, Color(1.4, 1.15, 1.05, 1.0), 0.2)
+	var juice := _juice()
+	if juice:
+		juice.flash_modulate(figure, Color(1.4, 1.15, 1.05, 1.0), 0.2)
 	if anim:
 		var tw := anim.create_tween()
 		tw.tween_property(anim, "scale", Vector2(1.1, 0.94), 0.08)
