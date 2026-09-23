@@ -2,8 +2,8 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://v01023b7f06908"
-path="res://.godot/imported/mist_petal.png-000000000000000000000023b7f06908.ctex"
+uid="uid://bt3ufjnb5k4a6"
+path="res://.godot/imported/mist_petal.png-4f8b1b364225cda6ac1f3f6fa46fcb6c.ctex"
 metadata={
 "vram_texture": false
 }
@@ -11,7 +11,7 @@ metadata={
 [deps]
 
 source_file="res://assets/textures/vfx/mist_petal.png"
-dest_files=["res://.godot/imported/mist_petal.png-000000000000000000000023b7f06908.ctex"]
+dest_files=["res://.godot/imported/mist_petal.png-4f8b1b364225cda6ac1f3f6fa46fcb6c.ctex"]
 
 [params]
 

@@ -2,8 +2,8 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://v01054b5ac873e"
-path="res://.godot/imported/slash_trail.png-000000000000000000000054b5ac873e.ctex"
+uid="uid://bt3xgjk5hm2dc"
+path="res://.godot/imported/slash_trail.png-13764ae41d0776f2110dea4d3b47f9e8.ctex"
 metadata={
 "vram_texture": false
 }
@@ -11,7 +11,7 @@ metadata={
 [deps]
 
 source_file="res://assets/textures/vfx/slash_trail.png"
-dest_files=["res://.godot/imported/slash_trail.png-000000000000000000000054b5ac873e.ctex"]
+dest_files=["res://.godot/imported/slash_trail.png-13764ae41d0776f2110dea4d3b47f9e8.ctex"]
 
 [params]
 

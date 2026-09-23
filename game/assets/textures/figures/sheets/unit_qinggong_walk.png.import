@@ -2,8 +2,8 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://v010be1a72c7f5"
-path="res://.godot/imported/unit_qinggong_walk.png-0000000000000000000000be1a72c7f5.ctex"
+uid="uid://bt22p8p36p1o3"
+path="res://.godot/imported/unit_qinggong_walk.png-daa2e24f004072c6c45ea79897585b47.ctex"
 metadata={
 "vram_texture": false
 }
@@ -11,7 +11,7 @@ metadata={
 [deps]
 
 source_file="res://assets/textures/figures/sheets/unit_qinggong_walk.png"
-dest_files=["res://.godot/imported/unit_qinggong_walk.png-0000000000000000000000be1a72c7f5.ctex"]
+dest_files=["res://.godot/imported/unit_qinggong_walk.png-daa2e24f004072c6c45ea79897585b47.ctex"]
 
 [params]
 

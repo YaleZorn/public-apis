@@ -2,8 +2,8 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://v0109c31ab597e"
-path="res://.godot/imported/unit_zhaoyun_reveal.png-00000000000000000000009c31ab597e.ctex"
+uid="uid://bt31ocg5gj4hc"
+path="res://.godot/imported/unit_zhaoyun_reveal.png-305bd93ba20488f51de58b8fed9d16c7.ctex"
 metadata={
 "vram_texture": false
 }
@@ -11,7 +11,7 @@ metadata={
 [deps]
 
 source_file="res://assets/textures/figures/unit_zhaoyun_reveal.png"
-dest_files=["res://.godot/imported/unit_zhaoyun_reveal.png-00000000000000000000009c31ab597e.ctex"]
+dest_files=["res://.godot/imported/unit_zhaoyun_reveal.png-305bd93ba20488f51de58b8fed9d16c7.ctex"]
 
 [params]
 

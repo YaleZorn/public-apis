@@ -2,8 +2,8 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://v010ffe2ddbffb"
-path="res://.godot/imported/unit_yishi_reveal.png-0000000000000000000000ffe2ddbffb.ctex"
+uid="uid://bt26qmh8hn8n8"
+path="res://.godot/imported/unit_yishi_reveal.png-51e8aebe241eccd56af959fe95faf866.ctex"
 metadata={
 "vram_texture": false
 }
@@ -11,7 +11,7 @@ metadata={
 [deps]
 
 source_file="res://assets/textures/figures/unit_yishi_reveal.png"
-dest_files=["res://.godot/imported/unit_yishi_reveal.png-0000000000000000000000ffe2ddbffb.ctex"]
+dest_files=["res://.godot/imported/unit_yishi_reveal.png-51e8aebe241eccd56af959fe95faf866.ctex"]
 
 [params]
 

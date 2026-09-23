@@ -123,16 +123,16 @@ func _shot_vfx_board() -> void:
 func _shot_closeups() -> void:
 	## Dedicated close-ups: aura / skill / reveal for critique.
 	var shots := [
-		{"file": "04-aura-closeup.png", "id": "unit_qinggong", "mode": "aura"},
-		{"file": "05-skill-closeup.png", "id": "unit_mulan", "mode": "skill"},
-		{"file": "06-reveal-closeup.png", "id": "unit_qinggong", "mode": "reveal"},
+		{"file": "04-aura-closeup.png", "id": "unit_qinggong", "mode": "aura", "title": "光环 · Idle + Buff"},
+		{"file": "05-skill-closeup.png", "id": "unit_mulan", "mode": "skill", "title": "技能激发 · Cast Flourish"},
+		{"file": "06-reveal-closeup.png", "id": "unit_qinggong", "mode": "reveal", "title": "爆衣 · Authored Reveal"},
 	]
 	for s in shots:
 		var board := Control.new()
 		board.size = Vector2(720, 1280)
 		_mist_bg(board)
 		var title := Label.new()
-		title.text = str(s.file).replace(".png", "").replace("0", "").substr(1)
+		title.text = str(s.title)
 		title.position = Vector2(40, 48)
 		title.size = Vector2(640, 36)
 		AP.apply_label(title, 24, AP.PAPER_INK)
@@ -148,11 +148,14 @@ func _shot_closeups() -> void:
 			"aura":
 				SV.show_idle_aura(fig, true, Color(0.42, 0.78, 0.68, 0.85))
 				SV.show_buff_ring(fig, true, Color(0.92, 0.74, 0.32, 0.92))
+				await create_timer(0.55).timeout
 			"skill":
 				SV.trigger_skill(fig, board, "aoe_damage")
+				# Catch flourish near peak (flash + slash still visible)
+				await create_timer(0.14).timeout
 			"reveal":
 				SV.trigger_reveal(fig, "closeup", true)
-		await create_timer(0.55).timeout
+				await create_timer(0.45).timeout
 		_save(str(s.file))
 		board.queue_free()
 		await create_timer(0.12).timeout

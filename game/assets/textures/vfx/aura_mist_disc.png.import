@@ -2,8 +2,8 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://v01093bb8b9c3e"
-path="res://.godot/imported/aura_mist_disc.png-000000000000000000000093bb8b9c3e.ctex"
+uid="uid://bt32fiq4gm6dc"
+path="res://.godot/imported/aura_mist_disc.png-d47a2b49229141bcfa3d073d536ae148.ctex"
 metadata={
 "vram_texture": false
 }
@@ -11,7 +11,7 @@ metadata={
 [deps]
 
 source_file="res://assets/textures/vfx/aura_mist_disc.png"
-dest_files=["res://.godot/imported/aura_mist_disc.png-000000000000000000000093bb8b9c3e.ctex"]
+dest_files=["res://.godot/imported/aura_mist_disc.png-d47a2b49229141bcfa3d073d536ae148.ctex"]
 
 [params]
 

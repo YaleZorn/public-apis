@@ -2,8 +2,8 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://v0106d59f0b757"
-path="res://.godot/imported/burst_flash.png-00000000000000000000006d59f0b757.ctex"
+uid="uid://bt3xpepb4o2f5"
+path="res://.godot/imported/burst_flash.png-35dc49a30eee4cd3029d4ad50c2efae8.ctex"
 metadata={
 "vram_texture": false
 }
@@ -11,7 +11,7 @@ metadata={
 [deps]
 
 source_file="res://assets/textures/vfx/burst_flash.png"
-dest_files=["res://.godot/imported/burst_flash.png-00000000000000000000006d59f0b757.ctex"]
+dest_files=["res://.godot/imported/burst_flash.png-35dc49a30eee4cd3029d4ad50c2efae8.ctex"]
 
 [params]
 

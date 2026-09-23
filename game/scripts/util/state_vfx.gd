@@ -80,6 +80,10 @@ static func attach(figure: Control, unit: Dictionary = {}, opts: Dictionary = {}
 	figure.set_meta("vfx_revealed", false)
 	figure.set_meta("vfx_low_hp", false)
 	_ensure_layer(figure)
+	# Hide decorative sash — it reads as a UI bar next to VFX.
+	var sash := figure.get_node_or_null("AnimRoot/SashBob") as CanvasItem
+	if sash:
+		sash.visible = false
 	var idle_on := bool(hooks.get("idle_aura", false))
 	if idle_on or bool(opts.get("force_idle_aura", false)):
 		var col := _parse_color(hooks.get("idle_aura_color", "#6aa89a"), Color(0.45, 0.72, 0.62, 0.55))
@@ -159,20 +163,20 @@ static func show_idle_aura(figure: Control, on: bool, color: Color = Color(0.45,
 	var ring_tex := _vfx_tex("aura_ring_soft.png")
 	var mist_tex := _vfx_tex("aura_mist_disc.png")
 	var petal_tex := _vfx_tex("mist_petal.png")
-	var base_r := maxf(42.0, sz.x * 0.92)
+	var base_r := maxf(56.0, sz.x * 1.15)
 	# Soft mist underfoot
 	if mist_tex:
-		var mist := _tex_sprite(mist_tex, Vector2(base_r * 1.35, base_r * 0.72), Color(color.r, color.g, color.b, 0.55))
+		var mist := _tex_sprite(mist_tex, Vector2(base_r * 1.5, base_r * 0.82), Color(color.r, color.g, color.b, 0.72))
 		mist.name = "IdleAuraMist"
-		mist.position = Vector2(sz.x * 0.5 - mist.size.x * 0.5, sz.y * 0.70 - mist.size.y * 0.35)
+		mist.position = Vector2(sz.x * 0.5 - mist.size.x * 0.5, sz.y * 0.68 - mist.size.y * 0.35)
 		mist.z_index = 1
 		layer.add_child(mist)
 		var mtw := mist.create_tween().set_loops()
-		mtw.tween_property(mist, "modulate:a", 0.28, 1.6).set_trans(Tween.TRANS_SINE)
-		mtw.tween_property(mist, "modulate:a", 0.62, 1.6).set_trans(Tween.TRANS_SINE)
+		mtw.tween_property(mist, "modulate:a", 0.38, 1.6).set_trans(Tween.TRANS_SINE)
+		mtw.tween_property(mist, "modulate:a", 0.78, 1.6).set_trans(Tween.TRANS_SINE)
 	# Outer soft ring (slow rotate)
 	if ring_tex:
-		var outer := _tex_sprite(ring_tex, Vector2(base_r * 1.15, base_r * 1.15), Color(color.r, color.g, color.b, 0.55))
+		var outer := _tex_sprite(ring_tex, Vector2(base_r * 1.25, base_r * 1.25), Color(color.r, color.g, color.b, 0.78))
 		outer.name = "IdleAuraOuter"
 		outer.position = Vector2(sz.x * 0.5 - outer.size.x * 0.5, sz.y * 0.78 - outer.size.y * 0.5)
 		outer.z_index = 2
@@ -180,11 +184,11 @@ static func show_idle_aura(figure: Control, on: bool, color: Color = Color(0.45,
 		var otw := outer.create_tween().set_loops()
 		otw.tween_property(outer, "rotation", TAU, 7.5)
 		# Inner ring — counter-rotate + breath scale
-		var inner := _tex_sprite(ring_tex, Vector2(base_r * 0.78, base_r * 0.78), Color(
+		var inner := _tex_sprite(ring_tex, Vector2(base_r * 0.88, base_r * 0.88), Color(
 			minf(1.0, color.r * 1.15 + 0.15),
 			minf(1.0, color.g * 1.05 + 0.08),
 			minf(1.0, color.b * 0.9),
-			0.72
+			0.92
 		))
 		inner.name = "IdleAura"
 		inner.position = Vector2(sz.x * 0.5 - inner.size.x * 0.5, sz.y * 0.80 - inner.size.y * 0.5)
@@ -202,38 +206,31 @@ static func show_idle_aura(figure: Control, on: bool, color: Color = Color(0.45,
 		ring.name = "IdleAura"
 		ring.position = Vector2(sz.x * 0.5, sz.y * 0.78)
 		layer.add_child(ring)
-	# Orbiting mist petals
+	# Orbiting mist petals — parent rotates so children ride the ring.
 	var pets := Control.new()
 	pets.name = "IdleAuraPets"
 	pets.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	pets.position = Vector2(sz.x * 0.5, sz.y * 0.72)
+	pets.pivot_offset = Vector2.ZERO
 	pets.z_index = 4
 	layer.add_child(pets)
 	for i in 5:
-		var pet: CanvasItem
-		if petal_tex:
-			pet = _tex_sprite(petal_tex, Vector2(14, 18), Color(color.r, color.g, color.b, 0.85))
-			(pet as Control).position = Vector2(-7, -9)
-		else:
-			pet = VF._fx_petal(Vector2(12, 16), Color(color.r, color.g, color.b, 0.85))
-			(pet as Node2D).position = Vector2(-6, -8)
-		pets.add_child(pet)
 		var ang0 := TAU * float(i) / 5.0
 		var orbit_r := 22.0 + float(i % 2) * 8.0
-		var ptw := pets.create_tween().set_loops()
-		ptw.tween_method(
-			func(a: float):
-				if not is_instance_valid(pet):
-					return
-				var ang := ang0 + a
-				var pos := Vector2(cos(ang), sin(ang) * 0.55) * orbit_r
-				if pet is Control:
-					(pet as Control).position = pos - Vector2(7, 9)
-				elif pet is Node2D:
-					(pet as Node2D).position = pos - Vector2(6, 8)
-			,
-			0.0, TAU, 3.2 + float(i) * 0.25
-		)
+		var slot := Control.new()
+		slot.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		slot.position = Vector2(cos(ang0), sin(ang0) * 0.55) * orbit_r
+		pets.add_child(slot)
+		if petal_tex:
+			var pet := _tex_sprite(petal_tex, Vector2(14, 18), Color(color.r, color.g, color.b, 0.85))
+			pet.position = Vector2(-7, -9)
+			slot.add_child(pet)
+		else:
+			var pet2 := VF._fx_petal(Vector2(12, 16), Color(color.r, color.g, color.b, 0.85))
+			pet2.position = Vector2(-6, -8)
+			slot.add_child(pet2)
+	var ptw := pets.create_tween().set_loops()
+	ptw.tween_property(pets, "rotation", TAU, 4.8)
 
 
 static func show_buff_ring(figure: Control, on: bool, color: Color = Color(0.85, 0.7, 0.3, 0.8)) -> void:
@@ -365,13 +362,14 @@ static func _skill_cast_flourish(parent: Node, at: Vector2, color: Color, style:
 	var petal_tex := _vfx_tex("mist_petal.png")
 	# Core flash
 	if flash_tex:
-		var flash := _tex_sprite(flash_tex, Vector2(72, 72), Color(1.0, 0.95, 0.8, 0.95))
+		var flash := _tex_sprite(flash_tex, Vector2(88, 88), Color(1.0, 0.95, 0.8, 0.98))
 		flash.position = at - flash.size * 0.5
 		flash.z_index = 18
 		parent.add_child(flash)
 		var ftw := flash.create_tween()
-		ftw.tween_property(flash, "scale", Vector2(1.85, 1.85), 0.22).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-		ftw.parallel().tween_property(flash, "modulate:a", 0.0, 0.28)
+		ftw.tween_property(flash, "scale", Vector2(1.55, 1.55), 0.12).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+		ftw.tween_property(flash, "modulate:a", 0.0, 0.32)
+		ftw.parallel().tween_property(flash, "scale", Vector2(2.1, 2.1), 0.32)
 		ftw.tween_callback(flash.queue_free)
 	else:
 		var core := VF._fx_disc(14.0, Color(AP.LANTERN_GOLD.r, AP.LANTERN_GOLD.g, AP.LANTERN_GOLD.b, 0.95), 14)
@@ -404,24 +402,24 @@ static func _skill_cast_flourish(parent: Node, at: Vector2, color: Color, style:
 	# Dual slash trails (wuxia readable on portrait)
 	var slash_count := 3 if style == "blade" or effect == "aoe_damage" else 2
 	for i in slash_count:
-		var ang := -0.55 + float(i) * 0.55
+		var ang := -0.65 + float(i) * 0.65
 		if style == "blade":
-			ang = -0.9 + float(i) * 0.7
+			ang = -1.0 + float(i) * 0.75
 		if slash_tex:
-			var trail := _tex_sprite(slash_tex, Vector2(110, 48), Color(color.r, color.g, color.b, 0.95))
+			var trail := _tex_sprite(slash_tex, Vector2(140, 58), Color(color.r, color.g, color.b, 0.98))
 			trail.pivot_offset = trail.size * 0.5
 			trail.rotation = ang
-			trail.position = at - trail.size * 0.5 + Vector2(cos(ang), sin(ang)) * 8.0
+			trail.position = at - trail.size * 0.5 + Vector2(cos(ang), sin(ang)) * 10.0
 			trail.z_index = 17
-			trail.scale = Vector2(0.35, 0.55)
+			trail.scale = Vector2(0.4, 0.6)
 			parent.add_child(trail)
 			var stw := trail.create_tween()
-			stw.tween_property(trail, "scale", Vector2(1.15 + float(i) * 0.08, 0.95), 0.18).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-			stw.tween_property(trail, "modulate:a", 0.0, 0.22)
-			stw.parallel().tween_property(trail, "position", trail.position + Vector2(cos(ang), sin(ang)) * 28.0, 0.22)
+			stw.tween_property(trail, "scale", Vector2(1.35 + float(i) * 0.1, 1.05), 0.2).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+			stw.tween_property(trail, "modulate:a", 0.0, 0.28)
+			stw.parallel().tween_property(trail, "position", trail.position + Vector2(cos(ang), sin(ang)) * 36.0, 0.28)
 			stw.tween_callback(trail.queue_free)
 		else:
-			VF.slash_arc(parent, at + Vector2(cos(ang), sin(ang)) * 12.0, color, 1.15 + float(i) * 0.1)
+			VF.slash_arc(parent, at + Vector2(cos(ang), sin(ang)) * 12.0, color, 1.25 + float(i) * 0.12)
 	# Rising energy petals / sparks
 	for i in 7:
 		var pet: CanvasItem

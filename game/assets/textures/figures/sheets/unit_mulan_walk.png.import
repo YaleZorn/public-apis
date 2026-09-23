@@ -2,8 +2,8 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://v01005559bd891"
-path="res://.godot/imported/unit_mulan_walk.png-000000000000000000000005559bd891.ctex"
+uid="uid://bt3siel5fq3jy"
+path="res://.godot/imported/unit_mulan_walk.png-552ab74429f30a4faef2a89e96e50a39.ctex"
 metadata={
 "vram_texture": false
 }
@@ -11,7 +11,7 @@ metadata={
 [deps]
 
 source_file="res://assets/textures/figures/sheets/unit_mulan_walk.png"
-dest_files=["res://.godot/imported/unit_mulan_walk.png-000000000000000000000005559bd891.ctex"]
+dest_files=["res://.godot/imported/unit_mulan_walk.png-552ab74429f30a4faef2a89e96e50a39.ctex"]
 
 [params]
 

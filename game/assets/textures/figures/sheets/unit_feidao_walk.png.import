@@ -2,8 +2,8 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://v010c16d239a0a"
-path="res://.godot/imported/unit_feidao_walk.png-0000000000000000000000c16d239a0a.ctex"
+uid="uid://bt24eesx8m387"
+path="res://.godot/imported/unit_feidao_walk.png-a1c520691a93d2467fd28c60bb21339d.ctex"
 metadata={
 "vram_texture": false
 }
@@ -11,7 +11,7 @@ metadata={
 [deps]
 
 source_file="res://assets/textures/figures/sheets/unit_feidao_walk.png"
-dest_files=["res://.godot/imported/unit_feidao_walk.png-0000000000000000000000c16d239a0a.ctex"]
+dest_files=["res://.godot/imported/unit_feidao_walk.png-a1c520691a93d2467fd28c60bb21339d.ctex"]
 
 [params]
 

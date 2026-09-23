@@ -2,8 +2,8 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://v010c4645049d9"
-path="res://.godot/imported/aura_ring_soft.png-0000000000000000000000c4645049d9.ctex"
+uid="uid://bt24hfk15i3m7"
+path="res://.godot/imported/aura_ring_soft.png-f737f0ad9fd81530023a801763ec1b30.ctex"
 metadata={
 "vram_texture": false
 }
@@ -11,7 +11,7 @@ metadata={
 [deps]
 
 source_file="res://assets/textures/vfx/aura_ring_soft.png"
-dest_files=["res://.godot/imported/aura_ring_soft.png-0000000000000000000000c4645049d9.ctex"]
+dest_files=["res://.godot/imported/aura_ring_soft.png-f737f0ad9fd81530023a801763ec1b30.ctex"]
 
 [params]
 
