@@ -441,9 +441,9 @@ static func _skill_cast_flourish(parent: Node, at: Vector2, color: Color, style:
 			ptw.tween_property(pet, "position", dest - Vector2(5, 5), 0.36).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 		ptw.parallel().tween_property(pet, "modulate:a", 0.0, 0.36)
 		ptw.tween_callback(pet.queue_free)
-	# Also call legacy per-effect accents for heal/shield/slow
+	# Legacy per-effect accents only where they add unique language (not aoe — flourish already covers it).
 	match effect:
-		"heal", "shield", "slow_all", "aoe_damage":
+		"heal", "shield", "slow_all":
 			VF.skill_cast_fx(parent, at, effect, color)
 		_:
 			pass
