@@ -8,6 +8,7 @@ const KnowledgeCardScene := preload("res://scenes/knowledge/knowledge_card.tscn"
 const ResultOverlayScene := preload("res://scenes/ui/result_overlay.tscn")
 const WaveDirectorScript := preload("res://scripts/td/wave_director.gd")
 const VF := preload("res://scripts/util/visual_factory.gd")
+const SV := preload("res://scripts/util/state_vfx.gd")
 const Atmo := preload("res://scripts/util/atmosphere.gd")
 const AP := preload("res://scripts/util/art_palette.gd")
 
@@ -413,10 +414,16 @@ func _spawn_unit_visual(slot: int, unit_id: String) -> void:
 		"cooldown": 0.0,
 		"node": node,
 		"pos": center,
+		"attack_count": 0,
 	}
 	# Strip ornate themed slot chrome so the figure stands free (keep hit target for select/recall).
 	_flatten_slot_chrome(slot)
 	VF.idle_bob(node, 2.5, 2.2 + randf() * 0.6)
+	# State VFX: idle aura from data + TD aura ring when unit has gameplay aura.
+	SV.attach(node, u, {
+		"auto_buff": GameState.is_morning_buff_live(),
+		"td_aura": true,
+	})
 
 
 func _flatten_slot_chrome(slot: int) -> void:
@@ -626,6 +633,7 @@ func _tick_combat(delta: float) -> void:
 		var dmg := maxf(1.0, atk - armor * 0.5)
 		target.set_meta("hp", float(target.get_meta("hp")) - dmg)
 		info.cooldown = float(td.get("attack_interval", 1.0))
+		info.attack_count = int(info.get("attack_count", 0)) + 1
 		deployed[slot] = info
 		var hit_pos: Vector2 = target.position + target.custom_minimum_size * 0.5
 		var flash := Color(1.0, 0.9, 0.55, 0.9)
@@ -635,12 +643,18 @@ func _tick_combat(delta: float) -> void:
 		else:
 			VF.hit_impact(enemies_layer, hit_pos, flash)
 		Juice.float_number(hit_pos, str(int(dmg)), Color(1, 0.85, 0.45))
+		# 技能激发 cadence: every 4th shot ≈ active skill beat for TD figures.
+		if unit_node and int(info.attack_count) % 4 == 0:
+			SV.trigger_skill(unit_node, units_layer, "default")
 		var hp_now := float(target.get_meta("hp"))
 		var hp_max := float(target.get_meta("max_hp"))
 		if target is Control:
 			VF.set_enemy_hp_ratio(target as Control, hp_now / maxf(hp_max, 1.0))
 			_flash_enemy(target as Control)
 		Juice.play_sfx("hit")
+		# Crit / kill → 爆衣 on attacker
+		if unit_node and (dmg >= atk * 1.4 or hp_now <= 0):
+			SV.trigger_crit(unit_node, units_layer)
 		if hp_now <= 0:
 			_kill_enemy(target)
 

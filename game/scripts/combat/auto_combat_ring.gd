@@ -3,6 +3,7 @@ extends RefCounted
 ## First-party; AutoCombatKit ideas only — see THIRD_PARTY.md.
 
 const VF := preload("res://scripts/util/visual_factory.gd")
+const SV := preload("res://scripts/util/state_vfx.gd")
 
 signal hero_defeated
 signal enemies_cleared
@@ -64,6 +65,11 @@ func init_hero(uid: String, start_shield: float = 0.0) -> void:
 		hero_anchor.visible = false
 	arena.add_child(hero_visual)
 	VF.attach_hero_hp(hero_visual)
+	# Re-attach with combat opts: morning/knowledge buff ring + idle aura from data.
+	SV.attach(hero_visual, u, {
+		"auto_buff": true,
+		"buff": GameState.is_morning_buff_live() or float(GameState.knowledge_meta_bonuses().get("explore_shield", 0)) > 0.0,
+	})
 	_sync_hero_hp_bar()
 	VF.idle_bob(hero_visual, 4.0, 2.6)
 
@@ -134,43 +140,36 @@ func cast_skill() -> bool:
 	var effect := str(skill.get("effect", ""))
 	var value := float(skill.get("value", 0))
 	var burst_col := Color(0.7, 0.88, 0.75, 0.8)
-	var burst_at: Vector2 = arena.size * 0.5
+	# 技能激发 state VFX (burst + optional 爆衣) — replaces bare skill_cast_fx for hero.
 	if hero_visual:
-		burst_at = hero_visual.position + hero_visual.custom_minimum_size * 0.5
+		SV.trigger_skill(hero_visual, arena, effect if effect != "" else "default")
 	match effect:
 		"aoe_damage":
 			burst_col = Color(0.95, 0.55, 0.35, 0.85)
-			VF.skill_cast_fx(arena, burst_at, "aoe_damage", burst_col)
 			for enemy in enemies.duplicate():
 				if enemy.node and is_instance_valid(enemy.node):
 					VF.slash_arc(enemies_layer, enemy.node.position + enemy.node.custom_minimum_size * 0.5, burst_col, 1.15)
 				_damage_enemy(enemy, value, burst_col)
 		"heal":
 			burst_col = Color(0.55, 0.9, 0.65, 0.85)
-			VF.skill_cast_fx(arena, burst_at, "heal", burst_col)
 			hp = minf(max_hp, hp + value)
 			Juice.float_number(hero_visual.position, "+%d" % int(value), Color(0.55, 0.9, 0.6))
 		"shield":
 			burst_col = Color(0.55, 0.75, 0.95, 0.85)
-			VF.skill_cast_fx(arena, burst_at, "shield", burst_col)
 			shield += value
 			Juice.float_number(hero_visual.position, "盾+%d" % int(value), Color(0.55, 0.75, 0.95))
 		"slow_all":
 			burst_col = Color(0.55, 0.75, 0.95, 0.8)
-			VF.skill_cast_fx(arena, burst_at, "slow_all", burst_col)
 			slow_all_timer = float(skill.get("duration", 2.0))
 			for enemy in enemies:
 				if enemy.node:
 					enemy.node.modulate = Color(0.65, 0.8, 1.1, 1.0)
 		_:
-			VF.skill_cast_fx(arena, burst_at, effect if effect != "" else "default", burst_col)
 			for enemy in enemies.duplicate():
 				_damage_enemy(enemy, value, burst_col)
 	skill_cd = float(skill.get("cooldown", 8.0))
 	Juice.play_sfx("skill")
 	Juice.screen_shake(arena, 6.0)
-	if hero_visual:
-		Juice.pulse(hero_visual, 1.14, 0.14)
 	_sync_hero_hp_bar()
 	if enemies.is_empty() and combat_active:
 		combat_active = false
@@ -195,7 +194,9 @@ func hp_label_text() -> String:
 func _sync_hero_hp_bar() -> void:
 	if hero_visual == null or not is_instance_valid(hero_visual):
 		return
-	VF.set_hero_hp_ratio(hero_visual, hp / maxf(max_hp, 1.0), shield / maxf(max_hp, 1.0))
+	var ratio := hp / maxf(max_hp, 1.0)
+	VF.set_hero_hp_ratio(hero_visual, ratio, shield / maxf(max_hp, 1.0))
+	SV.sync_hp(hero_visual, ratio)
 
 
 func _hero_auto_attack() -> void:
@@ -213,6 +214,9 @@ func _damage_enemy(enemy: Dictionary, dmg: float, flash: Color) -> void:
 	if not enemy.has("node") or not is_instance_valid(enemy.node):
 		enemies.erase(enemy)
 		return
+	# Crit-ish: big hit relative to enemy max HP or overkill finishing blow.
+	var was_hp: float = float(enemy.hp)
+	var is_crit := dmg >= atk * 1.45 or dmg >= float(enemy.max_hp) * 0.45
 	enemy.hp -= dmg
 	var pos: Vector2 = enemy.node.position + enemy.node.custom_minimum_size * 0.5
 	Juice.float_number(pos, str(int(dmg)), Color(1, 0.88, 0.5))
@@ -220,7 +224,12 @@ func _damage_enemy(enemy: Dictionary, dmg: float, flash: Color) -> void:
 	VF.set_enemy_hp_ratio(enemy.node, enemy.hp / maxf(enemy.max_hp, 1.0))
 	Juice.play_sfx("hit")
 	_pulse(enemy.node)
+	if is_crit and hero_visual:
+		SV.trigger_crit(hero_visual, arena)
 	if enemy.hp <= 0:
+		# Finishing blow also counts as crit moment for reveal.
+		if was_hp > 0.0 and hero_visual and not is_crit:
+			SV.trigger_crit(hero_visual, arena)
 		VF.death_puff(enemies_layer, pos, Color(0.95, 0.5, 0.35, 0.85))
 		VF.placement_ring(enemies_layer, pos, Color(0.95, 0.7, 0.4, 0.7))
 		var eid := str(enemy.get("id", ""))

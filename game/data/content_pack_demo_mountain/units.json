@@ -48,7 +48,19 @@
       },
       "knowledge_bind": "k_demo_trail_pace",
       "color": "#6a8a6e",
-      "blurb": "演示包名人：山野行军节奏与耐力。"
+      "blurb": "演示包名人：山野行军节奏与耐力。",
+      "vfx": {
+        "idle_aura": true,
+        "idle_aura_color": "#7ec8c0",
+        "skill_burst": "jade",
+        "reveal": "cloth_burst",
+        "reveal_on": [
+          "skill",
+          "low_hp",
+          "crit"
+        ],
+        "buff_ring_color": "#d4a017"
+      }
     }
   ]
 }
