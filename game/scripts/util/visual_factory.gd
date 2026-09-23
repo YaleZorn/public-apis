@@ -165,45 +165,69 @@ static func _figure_modulate(id: String, enemy: bool = false) -> Color:
 
 
 static func _sheet_anim(id: String, kind: String, fps: float) -> AnimatedTexture:
-	## Build AnimatedTexture from horizontal walk/attack strip (true multi-frame).
-	if id == "":
-		return null
-	var key := "%s|%s|%.2f" % [id, kind, fps]
-	if _anim_cache.has(key):
-		return _anim_cache[key].duplicate() as AnimatedTexture
-	var path := SHEET_DIR + id + "_" + kind + ".png"
-	if not (ResourceLoader.exists(path) or FileAccess.file_exists(path)):
-		_anim_cache[key] = null
-		return null
-	var sheet: Texture2D = load(path)
-	if sheet == null:
-		_anim_cache[key] = null
-		return null
-	var frames := WALK_FRAMES if kind == "walk" else ATTACK_FRAMES
-	var anim := AnimatedTexture.new()
-	anim.frames = frames
-	anim.one_shot = kind == "attack"
-	var dur := 1.0 / maxf(fps, 0.5)
-	for i in frames:
-		var at := AtlasTexture.new()
-		at.atlas = sheet
-		at.region = Rect2(i * FRAME_W, 0, FRAME_W, FRAME_H)
-		anim.set_frame_texture(i, at)
-		anim.set_frame_duration(i, dur)
-	_anim_cache[key] = anim
-	return anim.duplicate() as AnimatedTexture
+	## Deprecated path kept for callers; prefer _apply_figure_tex frame cycling.
+	return null
+
+
+static func _sheet_path(id: String, kind: String) -> String:
+	return SHEET_DIR + id + "_" + kind + ".png"
+
+
+static func _sheet_frame_count(kind: String) -> int:
+	return WALK_FRAMES if kind == "walk" else ATTACK_FRAMES
+
+
+static func _make_atlas_frame(sheet: Texture2D, index: int) -> AtlasTexture:
+	var at := AtlasTexture.new()
+	at.atlas = sheet
+	at.region = Rect2(index * FRAME_W, 0, FRAME_W, FRAME_H)
+	return at
 
 
 static func _apply_figure_tex(spr: TextureRect, id: String, kind: String, fps: float) -> void:
-	var anim := _sheet_anim(id, kind, fps)
-	if anim:
-		spr.texture = anim
-		spr.set_meta("anim_kind", kind)
+	## Cycle AtlasTexture regions on TextureRect — reliable multi-frame without AnimatedTexture quirks.
+	if spr == null or not is_instance_valid(spr):
 		return
+	# Stop prior cycler.
+	if spr.has_meta("frame_tw"):
+		var old_tw: Variant = spr.get_meta("frame_tw")
+		if old_tw is Tween and is_instance_valid(old_tw):
+			(old_tw as Tween).kill()
+		spr.remove_meta("frame_tw")
+	var path := _sheet_path(id, kind)
+	if ResourceLoader.exists(path) or FileAccess.file_exists(path):
+		var sheet: Texture2D = load(path)
+		if sheet:
+			var frames := _sheet_frame_count(kind)
+			spr.texture = _make_atlas_frame(sheet, 0)
+			spr.set_meta("anim_kind", kind)
+			spr.set_meta("sheet_tex", sheet)
+			spr.set_meta("sheet_frames", frames)
+			spr.set_meta("sheet_fps", fps)
+			spr.set_meta("sheet_i", 0)
+			var step := 1.0 / maxf(fps, 0.5)
+			var tw := spr.create_tween().set_loops()
+			spr.set_meta("frame_tw", tw)
+			tw.tween_interval(step)
+			tw.tween_callback(_advance_sheet_frame.bind(spr))
+			return
 	var still := _figure_tex(id)
 	if still:
 		spr.texture = still
 		spr.set_meta("anim_kind", "still")
+
+
+static func _advance_sheet_frame(spr: TextureRect) -> void:
+	if spr == null or not is_instance_valid(spr):
+		return
+	if not spr.has_meta("sheet_tex"):
+		return
+	var sheet: Texture2D = spr.get_meta("sheet_tex")
+	var frames: int = int(spr.get_meta("sheet_frames", 4))
+	var i: int = int(spr.get_meta("sheet_i", 0))
+	i = (i + 1) % maxi(frames, 1)
+	spr.set_meta("sheet_i", i)
+	spr.texture = _make_atlas_frame(sheet, i)
 
 
 static func _region(index: int) -> AtlasTexture:
@@ -305,7 +329,8 @@ static func unit_node(unit: Dictionary, size: Vector2 = Vector2(64, 80)) -> Cont
 	root.add_child(anim)
 
 	var tex := _unit_figure_tex(unit)
-	if tex or _sheet_anim(uid, "walk", 6.0):
+	var has_sheet := ResourceLoader.exists(_sheet_path(uid, "walk")) or FileAccess.file_exists(_sheet_path(uid, "walk"))
+	if tex or has_sheet:
 		var spr := TextureRect.new()
 		spr.name = "FigureSpr"
 		spr.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -457,7 +482,8 @@ static func enemy_node(enemy: Dictionary, size: Vector2 = Vector2(48, 64)) -> Co
 
 	var tex := _enemy_figure_tex(enemy)
 	var walk_fps := 10.0 if "fast" in tags else (6.5 if "armored" in tags else 8.0)
-	if tex or _sheet_anim(eid, "walk", walk_fps):
+	var has_sheet := ResourceLoader.exists(_sheet_path(eid, "walk")) or FileAccess.file_exists(_sheet_path(eid, "walk"))
+	if tex or has_sheet:
 		var spr := TextureRect.new()
 		spr.name = "FigureSpr"
 		spr.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -1048,16 +1074,12 @@ static func figure_attack_pose(node: Control, dir: Vector2 = Vector2(1, 0)) -> v
 		anim = node
 	var fig_id := str(node.get_meta("figure_id", node.get_meta("unit_id", node.get_meta("enemy_id", ""))))
 	var spr := anim.get_node_or_null("FigureSpr") as TextureRect
+	var is_enemy := node.has_meta("enemy_id")
 	if spr and fig_id != "":
 		_apply_figure_tex(spr, fig_id, "attack", 12.0)
 		# Restore walk after attack sheet plays (~0.25s for 3 frames @12fps).
-		var restore := node.create_tween()
-		restore.tween_interval(0.28)
-		restore.tween_callback(func() -> void:
-			if is_instance_valid(spr):
-				var is_enemy := node.has_meta("enemy_id")
-				_apply_figure_tex(spr, fig_id, "walk", 9.0 if is_enemy else 5.5)
-		)
+		var restore := node.get_tree().create_timer(0.28)
+		restore.timeout.connect(_restore_walk_after_attack.bind(spr, fig_id, is_enemy), CONNECT_ONE_SHOT)
 	var lean := clampf(dir.x, -1.0, 1.0) * 0.18
 	if absf(dir.x) < 0.2:
 		lean = 0.12 if dir.y < 0.0 else -0.08
@@ -1066,3 +1088,9 @@ static func figure_attack_pose(node: Control, dir: Vector2 = Vector2(1, 0)) -> v
 	tw.parallel().tween_property(anim, "scale", Vector2(1.08, 0.92), 0.06)
 	tw.tween_property(anim, "rotation", 0.0, 0.14).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	tw.parallel().tween_property(anim, "scale", Vector2(1.0, 1.0), 0.14)
+
+
+static func _restore_walk_after_attack(spr: TextureRect, fig_id: String, is_enemy: bool) -> void:
+	if spr == null or not is_instance_valid(spr):
+		return
+	_apply_figure_tex(spr, fig_id, "walk", 9.0 if is_enemy else 5.5)

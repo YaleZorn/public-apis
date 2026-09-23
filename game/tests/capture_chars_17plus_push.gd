@@ -151,7 +151,7 @@ func _shot_portrait_grid() -> void:
 
 
 func _shot_sheet_strip() -> void:
-	## Show walk sheet strips to prove multi-frame assets.
+	## Show individual walk frames to prove multi-frame assets.
 	var host := Control.new()
 	host.set_anchors_preset(Control.PRESET_FULL_RECT)
 	host.size = Vector2(720, 1280)
@@ -161,26 +161,29 @@ func _shot_sheet_strip() -> void:
 	host.add_child(bg)
 	root.add_child(host)
 	var title := Label.new()
-	title.text = "Walk / Attack SpriteFrames"
+	title.text = "Walk frames ×4  /  Attack frames ×3"
 	title.position = Vector2(40, 36)
 	title.size = Vector2(640, 40)
 	host.add_child(title)
 	var ids := ["unit_qinggong", "unit_mulan", "unit_feidao", "enemy_bandit", "enemy_runner"]
-	var y := 100.0
+	var y := 90.0
 	for id in ids:
-		for kind in ["walk", "attack"]:
-			var path := "res://assets/textures/figures/sheets/%s_%s.png" % [id, kind]
-			if ResourceLoader.exists(path) or FileAccess.file_exists(path):
-				var tex: Texture2D = load(path)
+		var path := "res://assets/textures/figures/sheets/%s_walk.png" % id
+		if ResourceLoader.exists(path) or FileAccess.file_exists(path):
+			var sheet: Texture2D = load(path)
+			for fi in 4:
+				var at := AtlasTexture.new()
+				at.atlas = sheet
+				at.region = Rect2(fi * 192, 0, 192, 256)
 				var spr := TextureRect.new()
-				spr.texture = tex
+				spr.texture = at
 				spr.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 				spr.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-				spr.size = Vector2(640, 110)
-				spr.position = Vector2(40, y)
+				spr.size = Vector2(140, 180)
+				spr.position = Vector2(40.0 + fi * 160.0, y)
 				host.add_child(spr)
-				y += 118.0
-	await create_timer(0.5).timeout
+			y += 200.0
+	await create_timer(0.55).timeout
 	_save("09-sprite-sheets.png")
 	host.queue_free()
 	await create_timer(0.1).timeout

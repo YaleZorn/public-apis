@@ -164,28 +164,28 @@ def process_portrait(src: Path, dst: Path) -> None:
 def _warp_walk_frame(base: Image.Image, phase: float) -> Image.Image:
     """Procedural walk: lean + lower-body shear + squash (4-phase cycle)."""
     w, h = base.size
-    # phase 0..1
-    lean = math.sin(phase * math.tau) * 0.045
-    squash = 1.0 + math.sin(phase * math.tau * 2) * 0.035
-    shear = math.sin(phase * math.tau) * 10.0
+    # Stronger amplitudes so frames read as real walk, not micro-bob.
+    lean = math.sin(phase * math.tau) * 0.12
+    squash = 1.0 + math.sin(phase * math.tau * 2) * 0.08
+    shear = math.sin(phase * math.tau) * 22.0
+    bounce = abs(math.sin(phase * math.tau)) * 6.0
 
-    # Vertical squash toward feet pivot
     nh = max(8, int(h * squash))
     scaled = base.resize((w, nh), Image.Resampling.BILINEAR)
     canvas = Image.new("RGBA", (w, h), (0, 0, 0, 0))
-    y_off = h - nh
-    canvas.paste(scaled, (0, y_off), scaled)
+    y_off = h - nh - int(bounce)
+    canvas.paste(scaled, (0, max(0, y_off)), scaled)
 
-    # Horizontal shear on lower 55%
     px = canvas.load()
     out = Image.new("RGBA", (w, h), (0, 0, 0, 0))
     opx = out.load()
-    split = int(h * 0.42)
+    split = int(h * 0.38)
     for y in range(h):
         t = 0.0 if y < split else (y - split) / max(1, h - split)
-        dx = int(shear * t * t)
-        # slight lean via dx bias on whole body
-        dx += int(lean * (h - y) * 0.35)
+        # Opposite leg shift: alternate by phase half
+        leg = math.sin(phase * math.tau + (0.0 if t < 0.5 else math.pi))
+        dx = int(shear * t * t + leg * t * 8.0)
+        dx += int(lean * (h - y) * 0.55)
         for x in range(w):
             sx = x - dx
             if 0 <= sx < w:
@@ -194,30 +194,33 @@ def _warp_walk_frame(base: Image.Image, phase: float) -> Image.Image:
 
 
 def _warp_attack_frame(base: Image.Image, phase: float) -> Image.Image:
-    """Attack: wind-up → strike → recover. phase 0, 0.5, 1."""
+    """Attack: wind-up → strike → recover. phase 0..1."""
     w, h = base.size
-    # wind-up lean back, strike lean forward + stretch
     if phase < 0.35:
-        lean = -0.08
-        stretch_x, stretch_y = 0.96, 1.04
+        lean = -0.16
+        stretch_x, stretch_y = 0.9, 1.1
+        shift = -14
     elif phase < 0.7:
-        lean = 0.14
-        stretch_x, stretch_y = 1.12, 0.9
+        lean = 0.22
+        stretch_x, stretch_y = 1.22, 0.84
+        shift = 18
     else:
-        lean = 0.04
-        stretch_x, stretch_y = 1.02, 0.98
+        lean = 0.06
+        stretch_x, stretch_y = 1.04, 0.96
+        shift = 4
 
     nw = max(8, int(w * stretch_x))
     nh = max(8, int(h * stretch_y))
     scaled = base.resize((nw, nh), Image.Resampling.BILINEAR)
     canvas = Image.new("RGBA", (w, h), (0, 0, 0, 0))
-    x0 = (w - nw) // 2 + int(lean * 18)
+    x0 = (w - nw) // 2 + int(lean * 28) + shift
     y0 = h - nh
     canvas.paste(scaled, (x0, y0), scaled)
 
-    # mild rotate via affine around feet
-    angle = -lean * 28.0
-    return canvas.rotate(angle, resample=Image.Resampling.BILINEAR, center=(w // 2, h - 4), fillcolor=(0, 0, 0, 0))
+    angle = -lean * 36.0
+    return canvas.rotate(
+        angle, resample=Image.Resampling.BILINEAR, center=(w // 2, h - 4), fillcolor=(0, 0, 0, 0)
+    )
 
 
 def build_sheets(fig_id: str, base_path: Path) -> None:
