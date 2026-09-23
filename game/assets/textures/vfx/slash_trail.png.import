@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://v010f24a7bff37"
-path="res://.godot/imported/unit_tiebi_reveal.png-0000000000000000000000f24a7bff37.ctex"
+uid="uid://v01054b5ac873e"
+path="res://.godot/imported/slash_trail.png-000000000000000000000054b5ac873e.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/textures/figures/unit_tiebi_reveal.png"
-dest_files=["res://.godot/imported/unit_tiebi_reveal.png-0000000000000000000000f24a7bff37.ctex"]
+source_file="res://assets/textures/vfx/slash_trail.png"
+dest_files=["res://.godot/imported/slash_trail.png-000000000000000000000054b5ac873e.ctex"]
 
 [params]
 

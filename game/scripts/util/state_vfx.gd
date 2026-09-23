@@ -1,7 +1,7 @@
 extends RefCounted
 class_name StateVfx
-## Data-driven character state VFX (v0.9.9):
-## idle aura · 技能激发 burst · 爆衣/reveal · buff 光环.
+## Data-driven character state VFX (v0.10.0 quality rebuild):
+## soft layered idle/buff 光环 · cinematic 技能激发 · authored 爆衣 reveal.
 ## Tasteful 17+ game VFX — no porn / genital close-ups / sex UI.
 ## Uses runtime autoload lookup so --script captures compile cleanly.
 
@@ -9,8 +9,11 @@ const AP := preload("res://scripts/util/art_palette.gd")
 const VF := preload("res://scripts/util/visual_factory.gd")
 
 const FIGURE_DIR := "res://assets/textures/figures/"
+const VFX_DIR := "res://assets/textures/vfx/"
 const LOW_HP_RATIO := 0.35
-const REVEAL_HOLD := 2.0
+const REVEAL_HOLD := 2.2
+
+static var _tex_cache: Dictionary = {}
 
 
 static func _autoload(name: String) -> Node:
@@ -30,6 +33,17 @@ static func _game_state() -> Node:
 
 static func _juice() -> Node:
 	return _autoload("Juice")
+
+
+static func _vfx_tex(name: String) -> Texture2D:
+	if _tex_cache.has(name):
+		return _tex_cache[name]
+	var path := VFX_DIR + name
+	var tex: Texture2D = null
+	if ResourceLoader.exists(path) or FileAccess.file_exists(path):
+		tex = load(path)
+	_tex_cache[name] = tex
+	return tex
 
 
 static func hooks_of(unit: Dictionary) -> Dictionary:
@@ -66,19 +80,16 @@ static func attach(figure: Control, unit: Dictionary = {}, opts: Dictionary = {}
 	figure.set_meta("vfx_revealed", false)
 	figure.set_meta("vfx_low_hp", false)
 	_ensure_layer(figure)
-	# Optional subtle idle aura
 	var idle_on := bool(hooks.get("idle_aura", false))
 	if idle_on or bool(opts.get("force_idle_aura", false)):
 		var col := _parse_color(hooks.get("idle_aura_color", "#6aa89a"), Color(0.45, 0.72, 0.62, 0.55))
 		show_idle_aura(figure, true, col)
-	# Buff ring (morning knowledge / training / explicit)
 	var want_buff := bool(opts.get("buff", false))
 	if not want_buff and bool(opts.get("auto_buff", true)):
 		want_buff = _should_auto_buff(str(figure.get_meta("unit_id", "")))
 	if want_buff:
 		var bcol := _parse_color(hooks.get("buff_ring_color", "#d4a017"), Color(AP.LANTERN_GOLD.r, AP.LANTERN_GOLD.g, AP.LANTERN_GOLD.b, 0.75))
 		show_buff_ring(figure, true, bcol)
-	# TD aura units get a faint persistent ring matching aura type
 	if bool(opts.get("td_aura", false)):
 		var u := unit
 		if u.is_empty():
@@ -96,7 +107,6 @@ static func _should_auto_buff(uid: String) -> bool:
 		return false
 	if gs.is_morning_buff_live():
 		return true
-	# Training occupancy
 	for slot in gs.training_slots:
 		if str(slot.get("unit_id", "")) == uid:
 			return true
@@ -113,70 +123,172 @@ static func _ensure_layer(figure: Control) -> Control:
 	layer.set_anchors_preset(Control.PRESET_FULL_RECT)
 	layer.size = figure.size if figure.size.x > 1.0 else figure.custom_minimum_size
 	figure.add_child(layer)
-	# Behind name label but above figure — move near front of children except last labels.
 	figure.move_child(layer, mini(figure.get_child_count() - 1, 2))
 	return layer
 
+
+static func _fig_size(figure: Control) -> Vector2:
+	return figure.custom_minimum_size if figure.custom_minimum_size.x > 1.0 else figure.size
+
+
+static func _tex_sprite(tex: Texture2D, sz: Vector2, col: Color) -> TextureRect:
+	var spr := TextureRect.new()
+	spr.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	spr.texture = tex
+	spr.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	spr.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	spr.size = sz
+	spr.modulate = col
+	spr.pivot_offset = sz * 0.5
+	return spr
+
+
+## --- 光环: soft layered rings + orbiting mist petals (ink-mist palette) ---
 
 static func show_idle_aura(figure: Control, on: bool, color: Color = Color(0.45, 0.72, 0.62, 0.55)) -> void:
 	if figure == null or not is_instance_valid(figure):
 		return
 	var layer := _ensure_layer(figure)
-	var old := layer.get_node_or_null("IdleAura")
-	if old:
-		old.queue_free()
+	for n in ["IdleAura", "IdleAuraOuter", "IdleAuraMist", "IdleAuraPets"]:
+		var old := layer.get_node_or_null(n)
+		if old:
+			old.queue_free()
 	if not on:
 		return
-	var sz := figure.custom_minimum_size if figure.custom_minimum_size.x > 1.0 else figure.size
-	var radius := maxf(18.0, sz.x * 0.38)
-	var ring := VF._fx_ring(radius, 2.0, Color(color.r, color.g, color.b, 0.42), 24)
-	ring.name = "IdleAura"
-	ring.position = Vector2(sz.x * 0.5, sz.y * 0.78)
-	ring.z_index = 2
-	layer.add_child(ring)
-	# Soft breath pulse
-	var tw := ring.create_tween().set_loops()
-	tw.tween_property(ring, "modulate:a", 0.35, 1.4).set_trans(Tween.TRANS_SINE)
-	tw.tween_property(ring, "modulate:a", 0.85, 1.4).set_trans(Tween.TRANS_SINE)
-	# Inner mist disc
-	var mist := VF._fx_disc(radius * 0.55, Color(color.r, color.g, color.b, 0.12), 16)
-	mist.name = "IdleAuraMist"
-	mist.position = Vector2(sz.x * 0.5 - radius * 0.55, sz.y * 0.72 - radius * 0.35)
-	mist.z_index = 1
-	layer.add_child(mist)
+	var sz := _fig_size(figure)
+	var ring_tex := _vfx_tex("aura_ring_soft.png")
+	var mist_tex := _vfx_tex("aura_mist_disc.png")
+	var petal_tex := _vfx_tex("mist_petal.png")
+	var base_r := maxf(42.0, sz.x * 0.92)
+	# Soft mist underfoot
+	if mist_tex:
+		var mist := _tex_sprite(mist_tex, Vector2(base_r * 1.35, base_r * 0.72), Color(color.r, color.g, color.b, 0.55))
+		mist.name = "IdleAuraMist"
+		mist.position = Vector2(sz.x * 0.5 - mist.size.x * 0.5, sz.y * 0.70 - mist.size.y * 0.35)
+		mist.z_index = 1
+		layer.add_child(mist)
+		var mtw := mist.create_tween().set_loops()
+		mtw.tween_property(mist, "modulate:a", 0.28, 1.6).set_trans(Tween.TRANS_SINE)
+		mtw.tween_property(mist, "modulate:a", 0.62, 1.6).set_trans(Tween.TRANS_SINE)
+	# Outer soft ring (slow rotate)
+	if ring_tex:
+		var outer := _tex_sprite(ring_tex, Vector2(base_r * 1.15, base_r * 1.15), Color(color.r, color.g, color.b, 0.55))
+		outer.name = "IdleAuraOuter"
+		outer.position = Vector2(sz.x * 0.5 - outer.size.x * 0.5, sz.y * 0.78 - outer.size.y * 0.5)
+		outer.z_index = 2
+		layer.add_child(outer)
+		var otw := outer.create_tween().set_loops()
+		otw.tween_property(outer, "rotation", TAU, 7.5)
+		# Inner ring — counter-rotate + breath scale
+		var inner := _tex_sprite(ring_tex, Vector2(base_r * 0.78, base_r * 0.78), Color(
+			minf(1.0, color.r * 1.15 + 0.15),
+			minf(1.0, color.g * 1.05 + 0.08),
+			minf(1.0, color.b * 0.9),
+			0.72
+		))
+		inner.name = "IdleAura"
+		inner.position = Vector2(sz.x * 0.5 - inner.size.x * 0.5, sz.y * 0.80 - inner.size.y * 0.5)
+		inner.z_index = 3
+		layer.add_child(inner)
+		var itw := inner.create_tween().set_loops()
+		itw.tween_property(inner, "rotation", -TAU, 5.2)
+		var btw := inner.create_tween().set_loops()
+		btw.tween_property(inner, "scale", Vector2(1.08, 1.08), 1.35).set_trans(Tween.TRANS_SINE)
+		btw.tween_property(inner, "scale", Vector2(0.94, 0.94), 1.35).set_trans(Tween.TRANS_SINE)
+	else:
+		# Fallback geometry rings if textures missing
+		var radius := maxf(18.0, sz.x * 0.38)
+		var ring := VF._fx_ring(radius, 2.4, Color(color.r, color.g, color.b, 0.5), 28)
+		ring.name = "IdleAura"
+		ring.position = Vector2(sz.x * 0.5, sz.y * 0.78)
+		layer.add_child(ring)
+	# Orbiting mist petals
+	var pets := Control.new()
+	pets.name = "IdleAuraPets"
+	pets.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	pets.position = Vector2(sz.x * 0.5, sz.y * 0.72)
+	pets.z_index = 4
+	layer.add_child(pets)
+	for i in 5:
+		var pet: CanvasItem
+		if petal_tex:
+			pet = _tex_sprite(petal_tex, Vector2(14, 18), Color(color.r, color.g, color.b, 0.85))
+			(pet as Control).position = Vector2(-7, -9)
+		else:
+			pet = VF._fx_petal(Vector2(12, 16), Color(color.r, color.g, color.b, 0.85))
+			(pet as Node2D).position = Vector2(-6, -8)
+		pets.add_child(pet)
+		var ang0 := TAU * float(i) / 5.0
+		var orbit_r := 22.0 + float(i % 2) * 8.0
+		var ptw := pets.create_tween().set_loops()
+		ptw.tween_method(
+			func(a: float):
+				if not is_instance_valid(pet):
+					return
+				var ang := ang0 + a
+				var pos := Vector2(cos(ang), sin(ang) * 0.55) * orbit_r
+				if pet is Control:
+					(pet as Control).position = pos - Vector2(7, 9)
+				elif pet is Node2D:
+					(pet as Node2D).position = pos - Vector2(6, 8)
+			,
+			0.0, TAU, 3.2 + float(i) * 0.25
+		)
 
 
 static func show_buff_ring(figure: Control, on: bool, color: Color = Color(0.85, 0.7, 0.3, 0.8)) -> void:
 	if figure == null or not is_instance_valid(figure):
 		return
 	var layer := _ensure_layer(figure)
-	var old := layer.get_node_or_null("BuffRing")
-	if old:
-		old.queue_free()
-	var old2 := layer.get_node_or_null("BuffRingOuter")
-	if old2:
-		old2.queue_free()
+	for n in ["BuffRing", "BuffRingOuter", "BuffRingMist", "BuffSpark"]:
+		var old := layer.get_node_or_null(n)
+		if old:
+			old.queue_free()
 	if not on:
 		figure.set_meta("vfx_buff", false)
 		return
 	figure.set_meta("vfx_buff", true)
-	var sz := figure.custom_minimum_size if figure.custom_minimum_size.x > 1.0 else figure.size
-	var radius := maxf(22.0, sz.x * 0.42)
-	var ring := VF._fx_ring(radius, 3.2, Color(color.r, color.g, color.b, 0.85), 26)
-	ring.name = "BuffRing"
-	ring.position = Vector2(sz.x * 0.5, sz.y * 0.82)
-	ring.z_index = 3
-	layer.add_child(ring)
-	var outer := VF._fx_ring(radius * 1.18, 1.6, Color(AP.MIST_TEAL.r, AP.MIST_TEAL.g, AP.MIST_TEAL.b, 0.55), 22)
-	outer.name = "BuffRingOuter"
-	outer.position = Vector2(sz.x * 0.5, sz.y * 0.82)
-	outer.z_index = 2
-	layer.add_child(outer)
-	var tw := ring.create_tween().set_loops()
-	tw.tween_property(ring, "scale", Vector2(1.08, 1.08), 0.9).set_trans(Tween.TRANS_SINE)
-	tw.tween_property(ring, "scale", Vector2(0.96, 0.96), 0.9).set_trans(Tween.TRANS_SINE)
-	var otw := outer.create_tween().set_loops()
-	otw.tween_property(outer, "rotation", TAU, 4.5)
+	var sz := _fig_size(figure)
+	var ring_tex := _vfx_tex("aura_ring_soft.png")
+	var mist_tex := _vfx_tex("aura_mist_disc.png")
+	var base_r := maxf(48.0, sz.x * 1.05)
+	if mist_tex:
+		var mist := _tex_sprite(mist_tex, Vector2(base_r * 1.2, base_r * 0.55), Color(color.r, color.g, color.b, 0.45))
+		mist.name = "BuffRingMist"
+		mist.position = Vector2(sz.x * 0.5 - mist.size.x * 0.5, sz.y * 0.78 - mist.size.y * 0.3)
+		mist.z_index = 2
+		layer.add_child(mist)
+	if ring_tex:
+		var outer := _tex_sprite(ring_tex, Vector2(base_r * 1.2, base_r * 1.2), Color(AP.MIST_TEAL.r, AP.MIST_TEAL.g, AP.MIST_TEAL.b, 0.5))
+		outer.name = "BuffRingOuter"
+		outer.position = Vector2(sz.x * 0.5 - outer.size.x * 0.5, sz.y * 0.82 - outer.size.y * 0.5)
+		outer.z_index = 3
+		layer.add_child(outer)
+		var otw := outer.create_tween().set_loops()
+		otw.tween_property(outer, "rotation", TAU, 4.8)
+		var ring := _tex_sprite(ring_tex, Vector2(base_r * 0.88, base_r * 0.88), Color(color.r, color.g, color.b, 0.9))
+		ring.name = "BuffRing"
+		ring.position = Vector2(sz.x * 0.5 - ring.size.x * 0.5, sz.y * 0.82 - ring.size.y * 0.5)
+		ring.z_index = 4
+		layer.add_child(ring)
+		var tw := ring.create_tween().set_loops()
+		tw.tween_property(ring, "scale", Vector2(1.1, 1.1), 0.85).set_trans(Tween.TRANS_SINE)
+		tw.tween_property(ring, "scale", Vector2(0.94, 0.94), 0.85).set_trans(Tween.TRANS_SINE)
+		# Lantern spark pulse at rim
+		var spark := VF._fx_diamond(Vector2(10, 10), Color(AP.LANTERN_GOLD.r, AP.LANTERN_GOLD.g, AP.LANTERN_GOLD.b, 0.95))
+		spark.name = "BuffSpark"
+		spark.position = Vector2(sz.x * 0.5 - 5.0, sz.y * 0.82 - base_r * 0.38)
+		spark.z_index = 5
+		layer.add_child(spark)
+		var stw := spark.create_tween().set_loops()
+		stw.tween_property(spark, "modulate:a", 0.25, 0.55)
+		stw.tween_property(spark, "modulate:a", 1.0, 0.55)
+	else:
+		var radius := maxf(22.0, sz.x * 0.42)
+		var ring := VF._fx_ring(radius, 3.2, Color(color.r, color.g, color.b, 0.85), 26)
+		ring.name = "BuffRing"
+		ring.position = Vector2(sz.x * 0.5, sz.y * 0.82)
+		layer.add_child(ring)
 
 
 static func _attach_td_aura_hint(figure: Control, unit: Dictionary) -> void:
@@ -199,8 +311,9 @@ static func _attach_td_aura_hint(figure: Control, unit: Dictionary) -> void:
 	show_buff_ring(figure, true, col)
 
 
+## --- 技能激发: distinct cast flourish (energy + slash trails + flash) ---
+
 static func trigger_skill(figure: Control, parent: Node = null, effect: String = "") -> void:
-	## 技能激发 — burst + brief intensify + optional reveal.
 	if figure == null or not is_instance_valid(figure):
 		return
 	var hooks: Dictionary = figure.get_meta("vfx_hooks", {})
@@ -208,16 +321,14 @@ static func trigger_skill(figure: Control, parent: Node = null, effect: String =
 		hooks = hooks_for_id(str(figure.get_meta("unit_id", figure.get_meta("figure_id", ""))))
 	var burst_style := str(hooks.get("skill_burst", "jade"))
 	var col := _burst_color(burst_style, effect)
-	var at := figure.position + (figure.custom_minimum_size if figure.custom_minimum_size.x > 1.0 else figure.size) * 0.5
+	var at := figure.position + _fig_size(figure) * 0.5
 	var host: Node = parent if parent else figure.get_parent()
 	if host:
-		VF.skill_cast_fx(host, at, effect if effect != "" else "default", col)
-		_skill_intensify_ring(host, at, col)
+		_skill_cast_flourish(host, at, col, burst_style, effect if effect != "" else "default")
 	var juice := _juice()
 	if juice:
-		juice.pulse(figure, 1.16, 0.16)
-		juice.flash_modulate(figure, Color(1.35, 1.25, 1.05, 1.0), 0.18)
-	# Reveal on skill if configured
+		juice.pulse(figure, 1.18, 0.16)
+		juice.flash_modulate(figure, Color(1.4, 1.28, 1.08, 1.0), 0.2)
 	var reveal_on: Array = hooks.get("reveal_on", ["skill", "low_hp", "crit"])
 	if "skill" in reveal_on and str(hooks.get("reveal", "none")) != "none":
 		trigger_reveal(figure, "skill")
@@ -226,45 +337,118 @@ static func trigger_skill(figure: Control, parent: Node = null, effect: String =
 static func _burst_color(style: String, effect: String) -> Color:
 	match effect:
 		"heal":
-			return Color(0.55, 0.92, 0.65, 0.9)
+			return Color(0.55, 0.92, 0.65, 0.95)
 		"shield":
-			return Color(0.55, 0.78, 0.98, 0.9)
+			return Color(0.55, 0.78, 0.98, 0.95)
 		"aoe_damage":
-			return Color(0.95, 0.55, 0.35, 0.9)
+			return Color(0.95, 0.55, 0.35, 0.95)
 		"slow_all":
-			return Color(0.55, 0.75, 0.98, 0.85)
+			return Color(0.55, 0.75, 0.98, 0.9)
 	match style:
 		"gold":
-			return Color(0.95, 0.78, 0.35, 0.9)
+			return Color(0.95, 0.78, 0.35, 0.95)
 		"petal":
-			return Color(0.95, 0.55, 0.65, 0.88)
+			return Color(0.95, 0.55, 0.65, 0.92)
 		"blade":
-			return Color(0.75, 0.85, 0.95, 0.9)
+			return Color(0.75, 0.85, 0.95, 0.95)
 		_:
-			return Color(0.55, 0.88, 0.75, 0.9)
+			return Color(0.55, 0.88, 0.75, 0.95)
 
 
-static func _skill_intensify_ring(parent: Node, at: Vector2, color: Color) -> void:
-	var ring := VF._fx_ring(14.0, 4.5, color, 20)
-	ring.position = at
-	ring.z_index = 16
-	parent.add_child(ring)
-	var tw := ring.create_tween()
-	tw.tween_property(ring, "scale", Vector2(4.0, 4.0), 0.38).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	tw.parallel().tween_property(ring, "modulate:a", 0.0, 0.38)
-	tw.tween_callback(ring.queue_free)
-	# Rising ink petals
-	for i in 5:
-		var petal := VF._fx_petal(Vector2(12, 16), Color(color.r, color.g, color.b, 0.9))
-		petal.position = at - Vector2(6, 8)
-		petal.z_index = 15
-		parent.add_child(petal)
-		var ang := -PI * 0.5 + (float(i) - 2.0) * 0.35
-		var dest := at + Vector2(cos(ang), sin(ang)) * (40.0 + i * 8.0) - Vector2(6, 8)
-		var ptw := petal.create_tween()
-		ptw.tween_property(petal, "position", dest, 0.34).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-		ptw.parallel().tween_property(petal, "modulate:a", 0.0, 0.34)
-		ptw.tween_callback(petal.queue_free)
+static func _skill_cast_flourish(parent: Node, at: Vector2, color: Color, style: String, effect: String) -> void:
+	## Phone-portrait readable: flash core + expanding rings + slash trails + rising energy.
+	if parent == null:
+		return
+	var flash_tex := _vfx_tex("burst_flash.png")
+	var slash_tex := _vfx_tex("slash_trail.png")
+	var ring_tex := _vfx_tex("aura_ring_soft.png")
+	var petal_tex := _vfx_tex("mist_petal.png")
+	# Core flash
+	if flash_tex:
+		var flash := _tex_sprite(flash_tex, Vector2(72, 72), Color(1.0, 0.95, 0.8, 0.95))
+		flash.position = at - flash.size * 0.5
+		flash.z_index = 18
+		parent.add_child(flash)
+		var ftw := flash.create_tween()
+		ftw.tween_property(flash, "scale", Vector2(1.85, 1.85), 0.22).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+		ftw.parallel().tween_property(flash, "modulate:a", 0.0, 0.28)
+		ftw.tween_callback(flash.queue_free)
+	else:
+		var core := VF._fx_disc(14.0, Color(AP.LANTERN_GOLD.r, AP.LANTERN_GOLD.g, AP.LANTERN_GOLD.b, 0.95), 14)
+		core.position = at - Vector2(14, 14)
+		core.z_index = 18
+		parent.add_child(core)
+		var ctw := core.create_tween()
+		ctw.tween_property(core, "scale", Vector2(2.4, 2.4), 0.22)
+		ctw.parallel().tween_property(core, "modulate:a", 0.0, 0.24)
+		ctw.tween_callback(core.queue_free)
+	# Expanding soft ring
+	if ring_tex:
+		var ering := _tex_sprite(ring_tex, Vector2(56, 56), Color(color.r, color.g, color.b, 0.9))
+		ering.position = at - ering.size * 0.5
+		ering.z_index = 16
+		parent.add_child(ering)
+		var rtw := ering.create_tween()
+		rtw.tween_property(ering, "scale", Vector2(3.6, 3.6), 0.4).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+		rtw.parallel().tween_property(ering, "modulate:a", 0.0, 0.4)
+		rtw.tween_callback(ering.queue_free)
+	else:
+		var ring := VF._fx_ring(14.0, 4.5, color, 24)
+		ring.position = at
+		ring.z_index = 16
+		parent.add_child(ring)
+		var rtw2 := ring.create_tween()
+		rtw2.tween_property(ring, "scale", Vector2(4.2, 4.2), 0.38).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+		rtw2.parallel().tween_property(ring, "modulate:a", 0.0, 0.38)
+		rtw2.tween_callback(ring.queue_free)
+	# Dual slash trails (wuxia readable on portrait)
+	var slash_count := 3 if style == "blade" or effect == "aoe_damage" else 2
+	for i in slash_count:
+		var ang := -0.55 + float(i) * 0.55
+		if style == "blade":
+			ang = -0.9 + float(i) * 0.7
+		if slash_tex:
+			var trail := _tex_sprite(slash_tex, Vector2(110, 48), Color(color.r, color.g, color.b, 0.95))
+			trail.pivot_offset = trail.size * 0.5
+			trail.rotation = ang
+			trail.position = at - trail.size * 0.5 + Vector2(cos(ang), sin(ang)) * 8.0
+			trail.z_index = 17
+			trail.scale = Vector2(0.35, 0.55)
+			parent.add_child(trail)
+			var stw := trail.create_tween()
+			stw.tween_property(trail, "scale", Vector2(1.15 + float(i) * 0.08, 0.95), 0.18).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+			stw.tween_property(trail, "modulate:a", 0.0, 0.22)
+			stw.parallel().tween_property(trail, "position", trail.position + Vector2(cos(ang), sin(ang)) * 28.0, 0.22)
+			stw.tween_callback(trail.queue_free)
+		else:
+			VF.slash_arc(parent, at + Vector2(cos(ang), sin(ang)) * 12.0, color, 1.15 + float(i) * 0.1)
+	# Rising energy petals / sparks
+	for i in 7:
+		var pet: CanvasItem
+		if petal_tex and style != "blade":
+			pet = _tex_sprite(petal_tex, Vector2(16, 20), Color(color.r, color.g, color.b, 0.95))
+			(pet as Control).position = at - Vector2(8, 10)
+		else:
+			pet = VF._fx_diamond(Vector2(11, 11), Color(color.r, color.g, color.b, 0.95))
+			(pet as Node2D).position = at - Vector2(5, 5)
+		parent.add_child(pet)
+		if pet is CanvasItem:
+			(pet as CanvasItem).z_index = 15
+		var ang2 := -PI * 0.5 + (float(i) - 3.0) * 0.28
+		var dest := at + Vector2(cos(ang2), sin(ang2)) * (48.0 + float(i) * 7.0)
+		var ptw := (pet as Node).create_tween()
+		if pet is Control:
+			ptw.tween_property(pet, "position", dest - Vector2(8, 10), 0.36).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+		else:
+			ptw.tween_property(pet, "position", dest - Vector2(5, 5), 0.36).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+		ptw.parallel().tween_property(pet, "modulate:a", 0.0, 0.36)
+		ptw.tween_callback(pet.queue_free)
+	# Also call legacy per-effect accents for heal/shield/slow
+	match effect:
+		"heal", "shield", "slow_all", "aoe_damage":
+			VF.skill_cast_fx(parent, at, effect, color)
+		_:
+			pass
 
 
 static func trigger_crit(figure: Control, parent: Node = null) -> void:
@@ -276,17 +460,27 @@ static func trigger_crit(figure: Control, parent: Node = null) -> void:
 	var reveal_on: Array = hooks.get("reveal_on", ["skill", "low_hp", "crit"])
 	var juice := _juice()
 	if juice:
-		juice.pulse(figure, 1.12, 0.1)
+		juice.pulse(figure, 1.14, 0.1)
 	var host: Node = parent if parent else figure.get_parent()
 	if host:
-		var at := figure.position + (figure.custom_minimum_size if figure.custom_minimum_size.x > 1.0 else figure.size) * 0.45
-		VF.placement_ring(host, at, Color(1.0, 0.85, 0.45, 0.7))
+		var at := figure.position + _fig_size(figure) * 0.45
+		var flash_tex := _vfx_tex("burst_flash.png")
+		if flash_tex:
+			var flash := _tex_sprite(flash_tex, Vector2(48, 48), Color(1.0, 0.88, 0.5, 0.9))
+			flash.position = at - flash.size * 0.5
+			flash.z_index = 16
+			host.add_child(flash)
+			var ftw := flash.create_tween()
+			ftw.tween_property(flash, "scale", Vector2(1.6, 1.6), 0.18)
+			ftw.parallel().tween_property(flash, "modulate:a", 0.0, 0.2)
+			ftw.tween_callback(flash.queue_free)
+		else:
+			VF.placement_ring(host, at, Color(1.0, 0.85, 0.45, 0.7))
 	if "crit" in reveal_on and str(hooks.get("reveal", "none")) != "none":
 		trigger_reveal(figure, "crit")
 
 
 static func sync_hp(figure: Control, ratio: float) -> void:
-	## Sticky 爆衣 while critically low HP; restore when recovered.
 	if figure == null or not is_instance_valid(figure):
 		return
 	var hooks: Dictionary = figure.get_meta("vfx_hooks", {})
@@ -304,8 +498,9 @@ static func sync_hp(figure: Control, ratio: float) -> void:
 		_restore_figure(figure)
 
 
+## --- 爆衣: authored *_reveal.png swap + cinematic fabric burst ---
+
 static func trigger_reveal(figure: Control, reason: String = "skill", sticky: bool = false) -> void:
-	## 爆衣 / costume-damage reveal — swap to *_reveal.png + tear scrap FX.
 	if figure == null or not is_instance_valid(figure):
 		return
 	if bool(figure.get_meta("vfx_revealed", false)) and sticky:
@@ -319,10 +514,8 @@ static func trigger_reveal(figure: Control, reason: String = "skill", sticky: bo
 	var spr := anim.get_node_or_null("FigureSpr") as TextureRect if anim else null
 	if spr == null:
 		spr = figure.get_node_or_null("AnimRoot/FigureSpr") as TextureRect
-	# Tear scrap burst always (even without texture swap)
 	_cloth_burst_fx(figure)
 	if has_reveal and spr:
-		# Stop walk cycler briefly; show reveal still.
 		if spr.has_meta("frame_tw"):
 			var old_tw: Variant = spr.get_meta("frame_tw")
 			if old_tw is Tween and is_instance_valid(old_tw):
@@ -331,21 +524,19 @@ static func trigger_reveal(figure: Control, reason: String = "skill", sticky: bo
 		var tex: Texture2D = load(reveal_path)
 		if tex:
 			spr.texture = tex
-			spr.modulate = Color(
-				minf(1.35, spr.modulate.r * 1.08),
-				minf(1.25, spr.modulate.g * 1.02),
-				minf(1.2, spr.modulate.b * 0.98),
-				1.0
-			)
+			# Clear sheet-region so full reveal still shows
+			if spr.texture is AtlasTexture:
+				spr.texture = tex
+			spr.modulate = Color(1.08, 1.04, 1.0, 1.0)
 	figure.set_meta("vfx_revealed", true)
 	figure.set_meta("vfx_reveal_reason", reason)
 	var juice := _juice()
 	if juice:
-		juice.flash_modulate(figure, Color(1.4, 1.15, 1.05, 1.0), 0.2)
+		juice.flash_modulate(figure, Color(1.45, 1.2, 1.05, 1.0), 0.22)
 	if anim:
 		var tw := anim.create_tween()
-		tw.tween_property(anim, "scale", Vector2(1.1, 0.94), 0.08)
-		tw.tween_property(anim, "scale", Vector2(1.0, 1.0), 0.18).set_trans(Tween.TRANS_BACK)
+		tw.tween_property(anim, "scale", Vector2(1.14, 0.9), 0.07)
+		tw.tween_property(anim, "scale", Vector2(1.0, 1.0), 0.2).set_trans(Tween.TRANS_BACK)
 	if not sticky:
 		var tree := figure.get_tree()
 		if tree:
@@ -371,30 +562,63 @@ static func _restore_figure(figure: Control) -> void:
 
 
 static func _cloth_burst_fx(figure: Control) -> void:
+	## Cinematic costume-change burst — shockwave + fabric scraps + ink petals.
 	var layer := _ensure_layer(figure)
-	var sz := figure.custom_minimum_size if figure.custom_minimum_size.x > 1.0 else figure.size
+	var sz := _fig_size(figure)
 	var origin := Vector2(sz.x * 0.5, sz.y * 0.42)
-	# Expanding tear ring
-	var ring := VF._fx_ring(10.0, 2.5, Color(0.95, 0.75, 0.6, 0.85), 18)
-	ring.position = origin
-	ring.z_index = 8
-	layer.add_child(ring)
-	var rtw := ring.create_tween()
-	rtw.tween_property(ring, "scale", Vector2(3.4, 3.4), 0.32).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	rtw.parallel().tween_property(ring, "modulate:a", 0.0, 0.32)
-	rtw.tween_callback(ring.queue_free)
-	# Fabric scraps
-	for i in 7:
-		var scrap := VF._fx_petal(Vector2(9, 12), Color(0.92, 0.82, 0.7, 0.95))
-		if i % 2 == 0:
-			scrap = VF._fx_diamond(Vector2(8, 8), Color(0.85, 0.7, 0.55, 0.9))
-		scrap.position = origin - Vector2(4, 4)
+	var flash_tex := _vfx_tex("burst_flash.png")
+	var ring_tex := _vfx_tex("aura_ring_soft.png")
+	var petal_tex := _vfx_tex("mist_petal.png")
+	if flash_tex:
+		var flash := _tex_sprite(flash_tex, Vector2(64, 64), Color(1.0, 0.85, 0.7, 0.95))
+		flash.position = origin - flash.size * 0.5
+		flash.z_index = 10
+		layer.add_child(flash)
+		var ftw := flash.create_tween()
+		ftw.tween_property(flash, "scale", Vector2(1.7, 1.7), 0.2)
+		ftw.parallel().tween_property(flash, "modulate:a", 0.0, 0.26)
+		ftw.tween_callback(flash.queue_free)
+	if ring_tex:
+		var ring := _tex_sprite(ring_tex, Vector2(36, 36), Color(0.95, 0.75, 0.6, 0.9))
+		ring.position = origin - ring.size * 0.5
+		ring.z_index = 8
+		layer.add_child(ring)
+		var rtw := ring.create_tween()
+		rtw.tween_property(ring, "scale", Vector2(3.8, 3.8), 0.36).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+		rtw.parallel().tween_property(ring, "modulate:a", 0.0, 0.36)
+		rtw.tween_callback(ring.queue_free)
+	else:
+		var ring2 := VF._fx_ring(10.0, 2.5, Color(0.95, 0.75, 0.6, 0.85), 18)
+		ring2.position = origin
+		ring2.z_index = 8
+		layer.add_child(ring2)
+		var rtw2 := ring2.create_tween()
+		rtw2.tween_property(ring2, "scale", Vector2(3.4, 3.4), 0.32).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+		rtw2.parallel().tween_property(ring2, "modulate:a", 0.0, 0.32)
+		rtw2.tween_callback(ring2.queue_free)
+	# Fabric scraps + mist petals
+	for i in 10:
+		var scrap: CanvasItem
+		var use_petal := petal_tex != null and i % 3 != 0
+		if use_petal:
+			scrap = _tex_sprite(petal_tex, Vector2(12, 16), Color(0.95, 0.82, 0.72, 0.95))
+			(scrap as Control).position = origin - Vector2(6, 8)
+		elif i % 2 == 0:
+			scrap = VF._fx_petal(Vector2(10, 14), Color(0.92, 0.82, 0.7, 0.95))
+			(scrap as Node2D).position = origin - Vector2(5, 7)
+		else:
+			scrap = VF._fx_diamond(Vector2(9, 9), Color(0.85, 0.7, 0.55, 0.9))
+			(scrap as Node2D).position = origin - Vector2(4, 4)
 		scrap.z_index = 9
 		layer.add_child(scrap)
-		var ang := TAU * float(i) / 7.0 + randf() * 0.3
-		var dest := origin + Vector2(cos(ang), sin(ang) - 0.35) * (28.0 + randf() * 22.0) - Vector2(4, 4)
-		var stw := scrap.create_tween()
-		stw.tween_property(scrap, "position", dest, 0.36).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-		stw.parallel().tween_property(scrap, "rotation", randf_range(-1.2, 1.2), 0.36)
-		stw.parallel().tween_property(scrap, "modulate:a", 0.0, 0.36)
+		var ang := TAU * float(i) / 10.0 + randf() * 0.25
+		var dest := origin + Vector2(cos(ang), sin(ang) - 0.4) * (32.0 + randf() * 28.0)
+		var stw := (scrap as Node).create_tween()
+		if scrap is Control:
+			stw.tween_property(scrap, "position", dest - Vector2(6, 8), 0.4).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+			stw.parallel().tween_property(scrap, "rotation", randf_range(-1.4, 1.4), 0.4)
+		else:
+			stw.tween_property(scrap, "position", dest - Vector2(4, 4), 0.4).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+			stw.parallel().tween_property(scrap, "rotation", randf_range(-1.4, 1.4), 0.4)
+		stw.parallel().tween_property(scrap, "modulate:a", 0.0, 0.4)
 		stw.tween_callback(scrap.queue_free)

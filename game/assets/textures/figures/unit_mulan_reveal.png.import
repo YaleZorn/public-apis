@@ -2,8 +2,8 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://di40ta7nfsyks"
-path="res://.godot/imported/unit_mulan_reveal.png-0f8f12e9ee86aea1c22cd11052e1e7cd.ctex"
+uid="uid://v010991b759000"
+path="res://.godot/imported/unit_mulan_reveal.png-0000000000000000000000991b759000.ctex"
 metadata={
 "vram_texture": false
 }
@@ -11,7 +11,7 @@ metadata={
 [deps]
 
 source_file="res://assets/textures/figures/unit_mulan_reveal.png"
-dest_files=["res://.godot/imported/unit_mulan_reveal.png-0f8f12e9ee86aea1c22cd11052e1e7cd.ctex"]
+dest_files=["res://.godot/imported/unit_mulan_reveal.png-0000000000000000000000991b759000.ctex"]
 
 [params]
 

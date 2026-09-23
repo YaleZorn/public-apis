@@ -2,8 +2,8 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bv8hv45f281ar"
-path="res://.godot/imported/unit_zhaoyun_walk.png-09268baea0a65c8f2ac55f7f97cc541d.ctex"
+uid="uid://v01081472f6b34"
+path="res://.godot/imported/unit_zhaoyun_walk.png-000000000000000000000081472f6b34.ctex"
 metadata={
 "vram_texture": false
 }
@@ -11,7 +11,7 @@ metadata={
 [deps]
 
 source_file="res://assets/textures/figures/sheets/unit_zhaoyun_walk.png"
-dest_files=["res://.godot/imported/unit_zhaoyun_walk.png-09268baea0a65c8f2ac55f7f97cc541d.ctex"]
+dest_files=["res://.godot/imported/unit_zhaoyun_walk.png-000000000000000000000081472f6b34.ctex"]
 
 [params]
 

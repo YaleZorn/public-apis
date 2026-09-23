@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://v010f24a7bff37"
-path="res://.godot/imported/unit_tiebi_reveal.png-0000000000000000000000f24a7bff37.ctex"
+uid="uid://v010c4645049d9"
+path="res://.godot/imported/aura_ring_soft.png-0000000000000000000000c4645049d9.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/textures/figures/unit_tiebi_reveal.png"
-dest_files=["res://.godot/imported/unit_tiebi_reveal.png-0000000000000000000000f24a7bff37.ctex"]
+source_file="res://assets/textures/vfx/aura_ring_soft.png"
+dest_files=["res://.godot/imported/aura_ring_soft.png-0000000000000000000000c4645049d9.ctex"]
 
 [params]
 

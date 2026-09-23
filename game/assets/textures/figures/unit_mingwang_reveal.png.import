@@ -2,8 +2,8 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bl5foxg336dx6"
-path="res://.godot/imported/unit_mingwang_reveal.png-4812fe9442c32b154dc44ffe93824d02.ctex"
+uid="uid://v010cf75f28b69"
+path="res://.godot/imported/unit_mingwang_reveal.png-0000000000000000000000cf75f28b69.ctex"
 metadata={
 "vram_texture": false
 }
@@ -11,7 +11,7 @@ metadata={
 [deps]
 
 source_file="res://assets/textures/figures/unit_mingwang_reveal.png"
-dest_files=["res://.godot/imported/unit_mingwang_reveal.png-4812fe9442c32b154dc44ffe93824d02.ctex"]
+dest_files=["res://.godot/imported/unit_mingwang_reveal.png-0000000000000000000000cf75f28b69.ctex"]
 
 [params]
 

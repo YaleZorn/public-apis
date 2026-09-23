@@ -52,6 +52,9 @@ func _check_files() -> bool:
 		"res://scripts/tower/tower_run.gd",
 		"res://assets/textures/figures/unit_qinggong_reveal.png",
 		"res://assets/textures/figures/unit_mulan_reveal.png",
+		"res://assets/textures/vfx/aura_ring_soft.png",
+		"res://assets/textures/vfx/slash_trail.png",
+		"res://assets/textures/vfx/burst_flash.png",
 		"res://third_party/ape1121-godot-4-tower-defense-template/LICENSE",
 	]
 	for p in paths:

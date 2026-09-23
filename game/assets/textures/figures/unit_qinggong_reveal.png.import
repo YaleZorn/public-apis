@@ -2,8 +2,8 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dbjyjgiwtm3h6"
-path="res://.godot/imported/unit_qinggong_reveal.png-6b40be4e8c4c0fcd71945229b96b9885.ctex"
+uid="uid://v0104d6dee97d2"
+path="res://.godot/imported/unit_qinggong_reveal.png-00000000000000000000004d6dee97d2.ctex"
 metadata={
 "vram_texture": false
 }
@@ -11,7 +11,7 @@ metadata={
 [deps]
 
 source_file="res://assets/textures/figures/unit_qinggong_reveal.png"
-dest_files=["res://.godot/imported/unit_qinggong_reveal.png-6b40be4e8c4c0fcd71945229b96b9885.ctex"]
+dest_files=["res://.godot/imported/unit_qinggong_reveal.png-00000000000000000000004d6dee97d2.ctex"]
 
 [params]
 

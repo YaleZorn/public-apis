@@ -2,8 +2,8 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bs4rvq0o2qaeq"
-path="res://.godot/imported/unit_linchong_reveal.png-49956a76c221af23a23195f46b5d7609.ctex"
+uid="uid://v0102bed38c296"
+path="res://.godot/imported/unit_linchong_reveal.png-00000000000000000000002bed38c296.ctex"
 metadata={
 "vram_texture": false
 }
@@ -11,7 +11,7 @@ metadata={
 [deps]
 
 source_file="res://assets/textures/figures/unit_linchong_reveal.png"
-dest_files=["res://.godot/imported/unit_linchong_reveal.png-49956a76c221af23a23195f46b5d7609.ctex"]
+dest_files=["res://.godot/imported/unit_linchong_reveal.png-00000000000000000000002bed38c296.ctex"]
 
 [params]
 
