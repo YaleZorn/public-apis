@@ -27,6 +27,9 @@ func _start() -> void:
 	if not await _smoke_knowledge_packs():
 		quit(1)
 		return
+	if not await _smoke_guidance():
+		quit(1)
+		return
 	print("GAMEPLAY_SMOKE_OK")
 	quit(0)
 
@@ -355,4 +358,63 @@ func _smoke_knowledge_packs() -> bool:
 	hub.queue_free()
 	await create_timer(0.1).timeout
 	print("knowledge_packs_ok entries=", cdb.knowledge_list.size(), " packs=", cdb.loaded_pack_ids)
+	return true
+
+
+func _smoke_guidance() -> bool:
+	var gs = root.get_node_or_null("GameState")
+	if gs == null:
+		push_error("GameState missing")
+		return false
+	gs.td_checkpoint = {}
+	gs.explore_checkpoint = {}
+	gs.arena_checkpoint = {}
+	gs.tower_checkpoint = {}
+	gs.td_best_wave = 0
+	gs.total_td_clears = 0
+	gs.total_explore_clears = 0
+	gs.tower_floor_cleared = 0
+	gs.total_arena_runs = 0
+	if not gs.is_mode_unlocked("td"):
+		push_error("td should always unlock")
+		return false
+	if gs.is_mode_unlocked("explore"):
+		push_error("explore should soft-lock at wave 0")
+		return false
+	if gs.is_mode_unlocked("tower"):
+		push_error("tower should soft-lock before chapter clear")
+		return false
+	var action: Dictionary = gs.next_action()
+	if str(action.get("mode", "")) != "td":
+		push_error("first next_action should be td got %s" % action)
+		return false
+	gs.note_td_wave_reached(3)
+	if not gs.is_mode_unlocked("explore"):
+		push_error("explore should unlock at wave 3")
+		return false
+	gs.note_td_wave_reached(5)
+	if not gs.is_mode_unlocked("arena"):
+		push_error("arena should unlock at wave 5")
+		return false
+	gs.total_td_clears = 1
+	if not gs.is_mode_unlocked("tower"):
+		push_error("tower should unlock after td clear")
+		return false
+	var lobby_packed = load("res://scenes/lobby/lobby.tscn")
+	if lobby_packed == null:
+		push_error("lobby missing")
+		return false
+	# Reset to first-session for lobby boot
+	gs.td_best_wave = 0
+	gs.total_td_clears = 0
+	var lobby = lobby_packed.instantiate()
+	root.add_child(lobby)
+	await create_timer(0.5).timeout
+	if lobby.get_node_or_null("%NextBtn") == null:
+		push_error("lobby missing NextBtn")
+		lobby.queue_free()
+		return false
+	lobby.queue_free()
+	await create_timer(0.1).timeout
+	print("guidance_ok next=", action.get("id"), " explore_at3=true")
 	return true

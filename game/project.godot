@@ -1,12 +1,12 @@
 ; Engine configuration file.
-; Kongfu Roguelike v0.10.1 — 17+ 状态特效续抠（墨意光环 / 长峰技能 / 多帧爆衣）
+; Kongfu Roguelike v0.11.0 — feel-like-a-game（引导 / 大厅枢纽 / TD 爽感 / 去原型感）
 config_version=5
 
 [application]
 
 config/name="Kongfu Roguelike"
 config/description="竖屏武侠：无限波塔防 + Idle 名人 + 探索搜打撤 + 演武场 + 爬塔 + 健身知识 + content_pack · 内容分级 17+"
-config/version="0.10.1"
+config/version="0.11.0"
 run/main_scene="res://scenes/shell/title_screen.tscn"
 config/features=PackedStringArray("4.3", "Forward Plus")
 config/icon="res://icon.svg"

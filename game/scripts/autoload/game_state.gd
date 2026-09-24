@@ -28,6 +28,8 @@ var total_explore_clears: int = 0
 var total_arena_runs: int = 0
 var arena_best_sec: float = 0.0
 var tower_floor_cleared: int = 0 ## highest floor cleared (1-based)
+## Guidance / soft-lock progress (v0.11 feel pass)
+var td_best_wave: int = 0 ## highest wave_index reached after a clear (0-based next wave)
 var silver_bank: int = 0
 var xiuwei_bank: int = 0
 var materials_draft: int = 0 ## aggregate draft count (Idle claim + explore deposit sum)
@@ -121,6 +123,12 @@ func _apply_meta(meta: Dictionary) -> void:
 	total_arena_runs = int(meta.get("total_arena_runs", 0))
 	arena_best_sec = float(meta.get("arena_best_sec", 0.0))
 	tower_floor_cleared = int(meta.get("tower_floor_cleared", 0))
+	td_best_wave = int(meta.get("td_best_wave", 0))
+	# Backfill soft progress from legacy clears so old saves unlock correctly.
+	if td_best_wave < 3 and total_td_clears >= 1:
+		td_best_wave = maxi(td_best_wave, 10)
+	if td_best_wave < 3 and total_explore_clears >= 1:
+		td_best_wave = maxi(td_best_wave, 3)
 	silver_bank = int(meta.get("silver_bank", 0))
 	xiuwei_bank = int(meta.get("xiuwei_bank", 0))
 	materials_draft = int(meta.get("materials_draft", 0))
@@ -170,6 +178,7 @@ func export_meta() -> Dictionary:
 		"total_arena_runs": total_arena_runs,
 		"arena_best_sec": arena_best_sec,
 		"tower_floor_cleared": tower_floor_cleared,
+		"td_best_wave": td_best_wave,
 		"silver_bank": silver_bank,
 		"xiuwei_bank": xiuwei_bank,
 		"materials_draft": materials_draft,
@@ -299,6 +308,142 @@ func resume_target() -> String:
 	if not tower_checkpoint.is_empty():
 		return "tower"
 	return "lobby"
+
+
+## --- First-session guidance / soft-lock (v0.11) ---
+
+func note_td_wave_reached(wave_after_clear: int) -> void:
+	## Call after a successful wave clear with the new wave_index (next wave to fight).
+	## Does not write save — caller persists with checkpoint.
+	if wave_after_clear > td_best_wave:
+		td_best_wave = wave_after_clear
+		meta_changed.emit()
+
+
+func is_mode_unlocked(mode_id: String) -> bool:
+	## Progressive unlock so lobby is a hub, not a toolbox.
+	match mode_id:
+		"td", "knowledge", "idle":
+			return true
+		"explore":
+			return td_best_wave >= 3 or total_td_clears >= 1
+		"arena":
+			return td_best_wave >= 5 or total_explore_clears >= 1 or total_td_clears >= 1
+		"tower":
+			return total_td_clears >= 1 or total_explore_clears >= 1 or tower_floor_cleared >= 1
+		_:
+			return true
+
+
+func mode_lock_reason(mode_id: String) -> String:
+	if is_mode_unlocked(mode_id):
+		return ""
+	match mode_id:
+		"explore":
+			return "先肃清 3 波塔防"
+		"arena":
+			return "先守到第 5 波"
+		"tower":
+			return "先通关第一章（10 波）"
+		_:
+			return "尚未解锁"
+
+
+func recommended_hero_id() -> String:
+	## Prefer explore hero if unlocked; else first roster unit with highest mastery.
+	if explore_hero_id in unlocked_units:
+		return explore_hero_id
+	var best := ""
+	var best_m := -1
+	for uid in unlocked_units:
+		var m := effective_mastery(str(uid))
+		if m > best_m:
+			best_m = m
+			best = str(uid)
+	if best != "":
+		return best
+	if not unlocked_units.is_empty():
+		return str(unlocked_units[0])
+	return "unit_tiebi"
+
+
+func next_action() -> Dictionary:
+	## Single clear 「下一步」 for lobby / title. Keys: id, title, detail, cta, mode
+	var pending := pending_claim_totals()
+	if has_resume():
+		var r := resume_target()
+		var labels := {"td": "塔防", "explore": "探索", "arena": "演武", "tower": "爬塔"}
+		return {
+			"id": "resume",
+			"title": "续关 · %s" % labels.get(r, r),
+			"detail": "波间存档仍在，点一下接着打。",
+			"cta": "继续旅程",
+			"mode": r,
+		}
+	if td_best_wave <= 0 and total_td_clears <= 0:
+		return {
+			"id": "first_td",
+			"title": "第一章 · 守卫剑阁",
+			"detail": "布阵守栈道，清完第一波就有反馈。",
+			"cta": "出战 · 塔防",
+			"mode": "td",
+		}
+	if td_best_wave < 3:
+		return {
+			"id": "td_wave3",
+			"title": "下一目标 · 肃清 3 波",
+			"detail": "守住三波解锁探索搜打撤。当前最佳：第 %d 波。" % td_best_wave,
+			"cta": "继续塔防",
+			"mode": "td",
+		}
+	if is_mode_unlocked("explore") and total_explore_clears <= 0 and td_best_wave >= 3 and td_best_wave < 8:
+		return {
+			"id": "first_explore",
+			"title": "新开 · 荒山搜打撤",
+			"detail": "探索已解锁。搜材料 → 打遭遇 → 撤据点。",
+			"cta": "出发探索",
+			"mode": "explore",
+		}
+	if pending.silver + pending.xiuwei + pending.materials > 0 and td_best_wave >= 1:
+		return {
+			"id": "idle_claim",
+			"title": "Idle 有产出可领",
+			"detail": "银%d · 修为%d · 材料%d" % [pending.silver, pending.xiuwei, pending.materials],
+			"cta": "打开花名册",
+			"mode": "idle",
+		}
+	if can_morning_quiz() and td_best_wave >= 1:
+		return {
+			"id": "morning",
+			"title": "晨课待完成",
+			"detail": "三题小测，答对有当日轻量加成。",
+			"cta": "去知识本",
+			"mode": "knowledge",
+		}
+	if total_td_clears <= 0:
+		var milestone := 10
+		return {
+			"id": "td_chapter",
+			"title": "第一章里程碑 · 守满 %d 波" % milestone,
+			"detail": "当前最佳第 %d 波。通关后解锁爬塔。" % td_best_wave,
+			"cta": "继续守卫",
+			"mode": "td",
+		}
+	if is_mode_unlocked("tower") and tower_floor_cleared <= 0:
+		return {
+			"id": "tower",
+			"title": "爬塔已开",
+			"detail": "纵向推进，层间可存，偶有专属装备。",
+			"cta": "挑战爬塔",
+			"mode": "tower",
+		}
+	return {
+		"id": "td_infinite",
+		"title": "无限波 · 再守一局",
+		"detail": "地铁友好：点下一波，随时存档回大厅。",
+		"cta": "新局 · 塔防",
+		"mode": "td",
+	}
 
 
 func mark_knowledge_delivered(kid: String, correct: bool) -> void:

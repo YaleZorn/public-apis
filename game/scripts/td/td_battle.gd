@@ -107,7 +107,12 @@ func _ready() -> void:
 		_persist_prep()
 	_refresh_hud()
 	_update_wave_preview()
-	status_label.text = "点选底栏角色卡 → 点槽放置。点「下一波」开战；波间自动存档。"
+	if wave_index == 0 and deployed.is_empty():
+		status_label.text = "① 点底栏角色  ② 点空槽放置  ③ 点「下一波」开战"
+		Juice.pulse(roster_bar, 1.04, 0.35)
+		Juice.pulse(start_wave_btn, 1.06, 0.4)
+	else:
+		status_label.text = "点选底栏角色卡 → 点槽放置。点「下一波」开战；波间自动存档。"
 
 
 func _process(delta: float) -> void:
@@ -383,14 +388,20 @@ func _on_slot_pressed(slot: int) -> void:
 	_spawn_unit_visual(slot, selected_unit_id)
 	var center := _slot_center(slot)
 	VF.placement_burst(units_layer, center, Color(AP.LANTERN_GOLD.r, AP.LANTERN_GOLD.g, AP.LANTERN_GOLD.b, 0.9))
+	VF.placement_ring(units_layer, center, Color(AP.LANTERN_GOLD.r, AP.LANTERN_GOLD.g, AP.LANTERN_GOLD.b, 0.75))
 	Juice.float_number(center + Vector2(0, -28), "-%d" % cost, Color(0.95, 0.78, 0.45))
 	Juice.play_sfx("place")
 	Juice.pulse(_slot_buttons[slot])
+	Juice.screen_shake(field, 2.5)
 	if deployed.has(slot) and deployed[slot].node:
-		Juice.pulse(deployed[slot].node, 1.18, 0.18)
-		Juice.flash_modulate(deployed[slot].node, Color(1.35, 1.2, 0.9, 1.0), 0.2)
+		Juice.pulse(deployed[slot].node, 1.22, 0.2)
+		Juice.flash_modulate(deployed[slot].node, Color(1.4, 1.25, 0.95, 1.0), 0.22)
+	status_label.text = "已布阵 · %s — 可再布或点「下一波」" % ContentDB.get_unit(selected_unit_id).get("name", "")
 	_refresh_hud()
 	_persist_prep()
+	# After first placement, nudge Start Wave as the clear next action.
+	if deployed.size() == 1 and not wave_running:
+		Juice.pulse(start_wave_btn, 1.1, 0.28)
 
 
 func _highlight_slot(slot: int) -> void:
@@ -726,6 +737,10 @@ func _kill_enemy(node: Node) -> void:
 	VF.death_puff(enemies_layer, at)
 	VF.placement_ring(enemies_layer, at, Color(0.95, 0.7, 0.4, 0.7))
 	Juice.play_sfx("kill")
+	# Last kill of the wave: punch so clear feels earned.
+	if enemies_alive <= 0 and spawn_queue.is_empty():
+		Juice.screen_shake(field, 6.0)
+		Juice.float_number(at + Vector2(0, -36), "击破!", Color(1.0, 0.88, 0.45))
 	node.queue_free()
 	_refresh_hud()
 
@@ -761,13 +776,24 @@ func _on_wave_cleared() -> void:
 	_threat_armed = false
 	start_wave_btn.disabled = false
 	var wave: Dictionary = wave_director.build_wave(wave_index) if wave_director else {}
-	silver += int(wave.get("silver_bonus", 30))
+	var bonus := int(wave.get("silver_bonus", 30))
+	silver += bonus
 	wave_index += 1
+	GameState.note_td_wave_reached(wave_index)
 	_refresh_hud()
 	_update_wave_preview()
-	status_label.text = "波次肃清。可调整阵容后点「下一波」。"
+	# Celebration: banner + bonus float + field punch — player must feel the clear.
+	var clear_label := str(wave.get("label", "第 %d 波" % wave_index))
+	wave_banner.text = "— 肃清 · %s —" % clear_label
+	status_label.text = "波次肃清 +%d 银两。可调整阵容后点「下一波」。" % bonus
 	Juice.play_sfx("win")
-	Juice.pulse(hud_wave, 1.08, 0.16)
+	Juice.banner_pop(wave_banner, 1.6)
+	Juice.pulse(hud_wave, 1.12, 0.2)
+	Juice.pulse(start_wave_btn, 1.1, 0.25)
+	Juice.screen_shake(field, 4.0)
+	var field_center := field.size * 0.5 if field else Vector2(360, 400)
+	Juice.float_number(field_center + Vector2(0, -40), "+%d 银两" % bonus, Color(0.95, 0.85, 0.4))
+	VF.placement_ring(units_layer, field_center, Color(0.95, 0.82, 0.4, 0.65))
 	if not GameState.unlocked_units.is_empty():
 		var uid: String = GameState.unlocked_units[wave_index % GameState.unlocked_units.size()]
 		GameState.add_fragments(uid, 1)
@@ -784,7 +810,11 @@ func _on_wave_cleared() -> void:
 			GameState.unlock_gear("gear_bamboo_cup")
 		GameState.silver_bank += silver / 8
 		GameState.persist_meta_keep_checkpoints()
-		status_label.text = "第一章里程碑达成！无限波仍可继续，或存档回大厅。"
+		wave_banner.text = "— 第一章达成 —"
+		Juice.banner_pop(wave_banner, 2.2)
+		status_label.text = "第一章里程碑！爬塔已解锁。无限波仍可继续，或存档回大厅。"
+	elif wave_index == 3:
+		status_label.text = "三波肃清 — 探索已解锁。可继续守，或回大厅开搜打撤。"
 	var kid = wave.get("knowledge_card", null)
 	_persist_prep()
 	if kid != null and str(kid) != "":

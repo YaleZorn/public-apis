@@ -32,11 +32,20 @@ func _ready() -> void:
 	AP.apply_label(title, 64, AP.LANTERN_GOLD)
 	tagline.text = "守卫剑阁 · 栈道夜行 · 真知识"
 	AP.apply_label(tagline, 18, AP.MIST_TEAL.lightened(0.28))
-	AP.apply_label(version_label, 13, Color(0.55, 0.62, 0.56, 1))
-	version_label.text = "v0.10.1 · 17+ 特效续抠"
+	AP.apply_label(version_label, 12, Color(0.50, 0.58, 0.52, 0.85))
+	var ver := str(ProjectSettings.get_setting("application/config/version", "0.11.0"))
+	version_label.text = "v%s" % ver
 	continue_btn.visible = GameState.has_resume()
 	continue_btn.theme_type_variation = &"ButtonPrimary"
 	start_btn.theme_type_variation = &"ButtonPrimary"
+	# First session: brand CTA toward first TD, not a toolbox lobby dump.
+	if not GameState.has_resume() and GameState.td_best_wave <= 0 and GameState.total_td_clears <= 0:
+		start_btn.text = "踏上栈道"
+		tagline.text = "守卫剑阁 · 先守一波"
+	elif GameState.has_resume():
+		start_btn.text = "进入大厅"
+	else:
+		start_btn.text = "进入大厅"
 	continue_btn.pressed.connect(_on_continue)
 	start_btn.pressed.connect(_on_start)
 	settings_btn.pressed.connect(_toggle_settings)
@@ -75,6 +84,7 @@ func _on_continue() -> void:
 
 func _on_start() -> void:
 	Juice.play_sfx("tap")
+	# Brand promise: first open lands in lobby with one clear 「下一步」 to TD.
 	Juice.fade_transition(func(): GameState.go_lobby())
 
 

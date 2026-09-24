@@ -1,5 +1,5 @@
 extends Control
-## Main hub: Idle celebrity meta + mode select — ink-mist atmosphere.
+## Game hub (v0.11): one 「下一步」, soft-locked secondary modes, brand-first calm.
 
 const AP := preload("res://scripts/util/art_palette.gd")
 const Atmo := preload("res://scripts/util/atmosphere.gd")
@@ -7,17 +7,24 @@ const VF := preload("res://scripts/util/visual_factory.gd")
 
 @onready var title_label: Label = %TitleLabel
 @onready var subtitle: Label = %Subtitle
+@onready var quest_title: Label = %QuestTitle
+@onready var quest_detail: Label = %QuestDetail
+@onready var next_btn: Button = %NextBtn
 @onready var continue_btn: Button = %ContinueBtn
 @onready var new_td_btn: Button = %NewTdBtn
 @onready var new_explore_btn: Button = %NewExploreBtn
 @onready var knowledge_btn: Button = %KnowledgeBtn
-@onready var roster_panel: RichTextLabel = %RosterPanel
-@onready var gear_panel: RichTextLabel = %GearPanel
-@onready var status_label: Label = %StatusLabel
+@onready var hero_name: Label = %HeroName
 @onready var hero_bar: HBoxContainer = %HeroBar
+@onready var status_label: Label = %StatusLabel
 @onready var settings_btn: Button = %SettingsBtn
 @onready var settings_panel: PanelContainer = %SettingsPanel
 @onready var decor: Control = %Decor
+@onready var secondary_row: HBoxContainer = %SecondaryRow
+
+var _idle_btn: Button
+var _tower_btn: Button
+var _arena_btn: Button
 
 
 func _ready() -> void:
@@ -28,49 +35,27 @@ func _ready() -> void:
 	var accent := get_node_or_null("Accent")
 	if accent:
 		accent.visible = false
-	title_label.text = "剑阁·大厅"
-	AP.apply_label(title_label, 44, AP.LANTERN_GOLD)
-	subtitle.text = "TD · Idle · 搜打撤 · 演武 · 爬塔 · 17+"
-	AP.apply_label(subtitle, 15, AP.MIST_TEAL.lightened(0.22))
-	# M4/M5: Arena + Tower live (same auto-combat ring as explore).
-	var idle_btn := get_node_or_null("%IdleStubBtn") as Button
-	var tower_btn := get_node_or_null("%TowerStubBtn") as Button
-	var arena_btn := get_node_or_null("%ArenaStubBtn") as Button
-	if idle_btn:
-		idle_btn.disabled = false
-		idle_btn.text = "名人花名册 · Idle"
-		idle_btn.theme_type_variation = &"ButtonPrimary"
-		idle_btn.tooltip_text = "挂机银两/修为/材料 · 训练槽喂 TD"
-		idle_btn.pressed.connect(func():
-			Juice.play_sfx("tap")
-			Juice.fade_transition(func(): GameState.go_idle())
-		)
-	if arena_btn:
-		arena_btn.disabled = false
-		arena_btn.text = "演武场 · 生存练功"
-		arena_btn.theme_type_variation = &"ButtonPrimary"
-		arena_btn.tooltip_text = "敌人 ramp · 随时下场 · 修为/熟练度"
-		arena_btn.pressed.connect(func():
-			Juice.play_sfx("tap")
-			Juice.fade_transition(func(): GameState.go_arena(false))
-		)
-	if tower_btn:
-		tower_btn.disabled = false
-		tower_btn.text = "爬塔 · 纵向进度"
-		tower_btn.theme_type_variation = &"ButtonPrimary"
-		tower_btn.tooltip_text = "清层进阶 · 层间存档 · 专属装备"
-		tower_btn.pressed.connect(func():
-			Juice.play_sfx("tap")
-			Juice.fade_transition(func(): GameState.go_tower(false))
-		)
-	new_explore_btn.text = "新局 · 探索搜打撤"
-	new_explore_btn.tooltip_text = "荒山节点：搜材料 → 打遭遇 → 撤据点结算"
-	AP.apply_richtext(roster_panel, 15)
-	AP.apply_richtext(gear_panel, 14)
-	AP.apply_label(status_label, 13, Color(0.65, 0.72, 0.64, 1))
+	title_label.text = "剑阁·健身"
+	AP.apply_label(title_label, 48, AP.LANTERN_GOLD)
+	subtitle.text = "守卫剑阁"
+	AP.apply_label(subtitle, 16, AP.MIST_TEAL.lightened(0.22))
+	AP.apply_label(quest_title, 20, AP.PAPER_INK)
+	AP.apply_label(quest_detail, 14, AP.PAPER_DIM)
+	AP.apply_label(hero_name, 14, AP.MIST_TEAL.lightened(0.18))
+	AP.apply_label(status_label, 13, Color(0.62, 0.70, 0.62, 1))
+
+	_idle_btn = get_node_or_null("%IdleStubBtn") as Button
+	_tower_btn = get_node_or_null("%TowerStubBtn") as Button
+	_arena_btn = get_node_or_null("%ArenaStubBtn") as Button
+
+	next_btn.theme_type_variation = &"ButtonPrimary"
 	continue_btn.theme_type_variation = &"ButtonPrimary"
 	new_td_btn.theme_type_variation = &"ButtonPrimary"
-	new_explore_btn.theme_type_variation = &"ButtonPrimary"
+	# Secondary modes: normal chrome (not all Primary).
+	new_explore_btn.theme_type_variation = &""
+	knowledge_btn.theme_type_variation = &""
+
+	next_btn.pressed.connect(_on_next_action)
 	continue_btn.pressed.connect(_on_continue)
 	new_td_btn.pressed.connect(func(): _start_mode("td"))
 	new_explore_btn.pressed.connect(func(): _start_mode("explore"))
@@ -78,6 +63,29 @@ func _ready() -> void:
 		Juice.play_sfx("tap")
 		Juice.fade_transition(func(): GameState.go_knowledge())
 	)
+	if _idle_btn:
+		_idle_btn.pressed.connect(func():
+			if not GameState.is_mode_unlocked("idle"):
+				return
+			Juice.play_sfx("tap")
+			Juice.fade_transition(func(): GameState.go_idle())
+		)
+	if _arena_btn:
+		_arena_btn.pressed.connect(func():
+			if not GameState.is_mode_unlocked("arena"):
+				Juice.play_sfx("tap")
+				return
+			Juice.play_sfx("tap")
+			Juice.fade_transition(func(): GameState.go_arena(false))
+		)
+	if _tower_btn:
+		_tower_btn.pressed.connect(func():
+			if not GameState.is_mode_unlocked("tower"):
+				Juice.play_sfx("tap")
+				return
+			Juice.play_sfx("tap")
+			Juice.fade_transition(func(): GameState.go_tower(false))
+		)
 	settings_btn.pressed.connect(_toggle_settings)
 	settings_panel.visible = false
 	_build_settings()
@@ -87,106 +95,114 @@ func _ready() -> void:
 	_refresh()
 	GameState.meta_changed.connect(_refresh)
 	GameState.checkpoint_changed.connect(_refresh)
+	# Soft entrance motion for hub focus.
+	Juice.slide_in(next_btn, 14, 0.32)
+	var quest_wrap := get_node_or_null("%QuestCard")
+	if quest_wrap:
+		Juice.pulse(quest_wrap, 1.02, 0.28)
 
 
 func _refresh() -> void:
+	title_label.text = "剑阁·健身"
+	AP.apply_label(title_label, 52, AP.LANTERN_GOLD)
+	subtitle.text = "守卫剑阁"
+	AP.apply_label(subtitle, 16, AP.MIST_TEAL.lightened(0.22))
+	var action: Dictionary = GameState.next_action()
+	quest_title.text = "下一步 · %s" % str(action.get("title", ""))
+	quest_detail.text = str(action.get("detail", ""))
+	next_btn.text = str(action.get("cta", "下一步"))
+
 	var has_resume := GameState.has_resume()
 	continue_btn.visible = has_resume
-	var resume := GameState.resume_target()
-	var resume_label := resume
-	match resume:
-		"td":
-			resume_label = "塔防"
-		"explore":
-			resume_label = "探索"
-		"arena":
-			resume_label = "演武"
-		"tower":
-			resume_label = "爬塔"
-	continue_btn.text = "续关 · %s" % resume_label
-	var unlocked := GameState.unlocked_units.size()
-	var total := ContentDB.unit_list.size()
-	var seen := GameState.knowledge_seen.size()
-	var total_k := ContentDB.knowledge_list.size()
-	var review := GameState.knowledge_due_ids().size()
-	if seen >= 5 and "gear_jade_token" not in GameState.gear_unlocked:
-		GameState.unlock_gear("gear_jade_token")
-	if GameState.owns_content_pack("demo_mountain") and ContentDB.gear.has("gear_demo_trail_charm"):
-		GameState.unlock_gear("gear_demo_trail_charm")
-	var pending := GameState.pending_claim_totals()
-	roster_panel.clear()
-	roster_panel.append_text("[b]名人花名册[/b]  %d/%d\n" % [unlocked, total])
-	if pending.silver + pending.xiuwei + pending.materials > 0:
-		roster_panel.append_text("[color=#e6c15a]Idle 待领[/color] 银%d 修为%d 材料%d\n" % [
-			pending.silver, pending.xiuwei, pending.materials
-		])
-	for u in ContentDB.unit_list:
-		var uid := str(u.get("id", ""))
-		var is_on: bool = uid in GameState.unlocked_units
-		var frags := int(GameState.unit_fragments.get(uid, 0))
-		var need := int(u.get("unlock_fragments", 3))
-		var mastery := GameState.effective_mastery(uid)
-		var mark := "★" if uid == GameState.explore_hero_id else "·"
-		if is_on:
-			var bar := _frag_bar(frags)
-			roster_panel.append_text("%s [color=#e6c15a]%s[/color] %s  熟练%d  %s\n" % [
-				mark, u.get("name", uid), u.get("role", "?"), mastery, bar
-			])
-		else:
-			roster_panel.append_text("· [color=#5a6a68]%s[/color] 碎片%d/%d\n" % [
-				u.get("historical_tag", u.get("name", uid)), frags, need
-			])
-	gear_panel.clear()
-	gear_panel.append_text("[b]装备[/b]  器 / 衣 / 饰\n")
-	var slot_names := ["器", "衣", "饰"]
-	for i in 3:
-		var gid: String = GameState.gear_equipped[i] if i < GameState.gear_equipped.size() else ""
-		var label := "空"
-		if gid != "":
-			label = ContentDB.get_gear(gid).get("name", gid)
-		gear_panel.append_text("%s：%s\n" % [slot_names[i], label])
-	if not GameState.gear_unlocked.is_empty():
-		gear_panel.append_text("\n[color=#5a9a90]可装备：[/color]\n")
-		for gid in GameState.gear_unlocked:
-			var g: Dictionary = ContentDB.get_gear(gid)
-			var equipped: bool = gid in GameState.gear_equipped
-			var exclusive := " [专]" if bool(g.get("exclusive", false)) else ""
-			gear_panel.append_text("%s %s%s — %s\n" % [
-				"✓" if equipped else "○", g.get("name", gid), exclusive, g.get("bonus", "")
-			])
-	status_label.text = "银%d · 修为%d · 材 %s · 知识%d/%d%s · 包[%s]" % [
-		GameState.silver_bank, GameState.xiuwei_bank, GameState.materials_summary(),
-		seen, total_k,
-		(" ·复%d" % review) if review > 0 else "",
-		",".join(ContentDB.loaded_pack_ids),
+	if has_resume:
+		var resume := GameState.resume_target()
+		var resume_label := resume
+		match resume:
+			"td":
+				resume_label = "塔防"
+			"explore":
+				resume_label = "探索"
+			"arena":
+				resume_label = "演武"
+			"tower":
+				resume_label = "爬塔"
+		continue_btn.text = "续关 · %s" % resume_label
+		# When resume exists, primary next is also resume — hide duplicate continue.
+		next_btn.visible = str(action.get("id", "")) != "resume"
+	else:
+		next_btn.visible = true
+
+	# TD always available as secondary path when next isn't TD.
+	new_td_btn.visible = str(action.get("mode", "")) != "td" or has_resume
+	new_td_btn.text = "新局 · 塔防"
+
+	_apply_mode_gate(new_explore_btn, "explore", "探索 · 搜打撤")
+	_apply_mode_gate(knowledge_btn, "knowledge", "知识本" + (" ✦" if GameState.can_morning_quiz() else ""))
+	_apply_mode_gate(_idle_btn, "idle", "花名册")
+	_apply_mode_gate(_tower_btn, "tower", "爬塔")
+	_apply_mode_gate(_arena_btn, "arena", "演武")
+	# Hide MoreRow entirely when both tower/arena locked — less toolbox chrome.
+	var more := get_node_or_null("VBox/MoreRow") as Control
+	if more and _tower_btn and _arena_btn:
+		more.visible = GameState.is_mode_unlocked("tower") or GameState.is_mode_unlocked("arena")
+
+	var hero_id := GameState.recommended_hero_id()
+	var hero: Dictionary = ContentDB.get_unit(hero_id)
+	hero_name.text = "推荐出战 · %s · %s" % [
+		str(hero.get("name", hero_id)),
+		str(hero.get("role", "")),
 	]
-	knowledge_btn.text = "知识本 / 晨课" + (" ✦" if GameState.can_morning_quiz() else "")
-	if review > 0:
-		knowledge_btn.text += " ·复%d" % review
-	_rebuild_hero_bar()
-	_rebuild_gear_buttons()
+	_rebuild_hero_bar(hero_id)
+
+	# Compact status — silver/xiuwei only; materials live in Idle.
+	status_label.text = "银 %d · 修为 %d" % [GameState.silver_bank, GameState.xiuwei_bank]
 
 
-func _frag_bar(frags: int) -> String:
-	var filled := mini(frags, 3)
-	return "◆".repeat(filled) + "◇".repeat(3 - filled)
+func _apply_mode_gate(btn: Button, mode_id: String, label: String) -> void:
+	if btn == null:
+		return
+	var unlocked := GameState.is_mode_unlocked(mode_id)
+	# Soft-lock: hide locked secondary modes (knowledge/idle always on).
+	if mode_id in ["explore", "tower", "arena"] and not unlocked:
+		btn.visible = false
+		return
+	btn.visible = true
+	btn.disabled = not unlocked
+	if unlocked:
+		btn.text = label
+		btn.modulate = Color.WHITE
+		btn.tooltip_text = ""
+	else:
+		btn.text = label
+		btn.modulate = Color(0.55, 0.58, 0.56, 0.85)
+		btn.tooltip_text = GameState.mode_lock_reason(mode_id)
 
 
-func _rebuild_hero_bar() -> void:
+func _rebuild_hero_bar(highlight_id: String) -> void:
 	for c in hero_bar.get_children():
 		c.queue_free()
-	# Full roster side-by-side (locked cards dimmed) so portrait set reads as one plate.
+	# Show unlocked heroes (+ one locked teaser) — calmer than full spreadsheet.
+	var unlocked_shown := 0
+	var locked_teaser_done := false
 	for u in ContentDB.unit_list:
 		var uid := str(u.get("id", ""))
 		var unlocked: bool = uid in GameState.unlocked_units
-		var selected: bool = unlocked and uid == GameState.explore_hero_id
+		if unlocked:
+			if unlocked_shown >= 4:
+				continue
+			unlocked_shown += 1
+		else:
+			if locked_teaser_done or unlocked_shown == 0:
+				continue
+			locked_teaser_done = true
+		var selected: bool = unlocked and uid == highlight_id
 		var wrap := Button.new()
-		wrap.custom_minimum_size = Vector2(84, 118)
+		wrap.custom_minimum_size = Vector2(78, 108)
 		wrap.focus_mode = Control.FOCUS_NONE
 		wrap.clip_contents = true
 		wrap.text = ""
 		wrap.disabled = selected or not unlocked
-		var card := VF.portrait_card(u, Vector2(88, 120), selected, not unlocked)
+		var card := VF.portrait_card(u, Vector2(82, 110), selected, not unlocked)
 		card.position = Vector2(2, 2)
 		card.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		if not unlocked:
@@ -203,42 +219,66 @@ func _rebuild_hero_bar() -> void:
 		hero_bar.add_child(wrap)
 
 
-func _rebuild_gear_buttons() -> void:
-	var bar: HBoxContainer = %GearBar
-	for c in bar.get_children():
-		c.queue_free()
-	for gid in GameState.gear_unlocked:
-		var g: Dictionary = ContentDB.get_gear(gid)
-		var b := Button.new()
-		b.text = str(g.get("name", gid))
-		b.custom_minimum_size = Vector2(0, 36)
-		if gid in GameState.gear_equipped:
-			b.disabled = true
-		b.pressed.connect(func():
-			var slot := int(g.get("slot", 0))
-			GameState.equip_gear(slot, gid)
-			Juice.play_sfx("place")
-			_refresh()
-		)
-		bar.add_child(b)
+func _on_next_action() -> void:
+	var action: Dictionary = GameState.next_action()
+	var mode := str(action.get("mode", "td"))
+	Juice.play_sfx("tap")
+	Juice.fade_transition(func():
+		if str(action.get("id", "")) == "resume":
+			_resume_now()
+			return
+		match mode:
+			"td":
+				GameState.go_td(false)
+			"explore":
+				if GameState.is_mode_unlocked("explore"):
+					GameState.go_explore(false)
+				else:
+					GameState.go_td(false)
+			"idle":
+				GameState.go_idle()
+			"knowledge":
+				GameState.go_knowledge()
+			"arena":
+				if GameState.is_mode_unlocked("arena"):
+					GameState.go_arena(false)
+				else:
+					GameState.go_td(false)
+			"tower":
+				if GameState.is_mode_unlocked("tower"):
+					GameState.go_tower(false)
+				else:
+					GameState.go_td(false)
+			_:
+				GameState.go_td(false)
+	)
+
+
+func _resume_now() -> void:
+	match GameState.resume_target():
+		"td":
+			GameState.go_td(true)
+		"explore":
+			GameState.go_explore(true)
+		"arena":
+			GameState.go_arena(true)
+		"tower":
+			GameState.go_tower(true)
+		_:
+			GameState.go_lobby()
 
 
 func _on_continue() -> void:
 	Juice.play_sfx("tap")
-	Juice.fade_transition(func():
-		match GameState.resume_target():
-			"td":
-				GameState.go_td(true)
-			"explore":
-				GameState.go_explore(true)
-			"arena":
-				GameState.go_arena(true)
-			"tower":
-				GameState.go_tower(true)
-	)
+	Juice.fade_transition(func(): _resume_now())
 
 
 func _start_mode(mode: String) -> void:
+	if mode != "td" and not GameState.is_mode_unlocked(mode):
+		Juice.play_sfx("tap")
+		quest_detail.text = GameState.mode_lock_reason(mode)
+		Juice.pulse(quest_detail, 1.04, 0.15)
+		return
 	Juice.play_sfx("tap")
 	Juice.fade_transition(func():
 		if mode == "td":
