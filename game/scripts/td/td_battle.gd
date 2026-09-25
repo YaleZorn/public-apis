@@ -56,6 +56,8 @@ var _gate_node_ref: Control = null
 var _ambush_lbl: Label = null
 var _lives_low_warned: bool = false
 var milestone_cleared: bool = false
+var _kill_credit: Dictionary = {} ## unit_id -> kills this run
+var _teaching_exit_offered: bool = false
 
 
 func _ready() -> void:
@@ -108,7 +110,11 @@ func _ready() -> void:
 	_refresh_hud()
 	_update_wave_preview()
 	if wave_index == 0 and deployed.is_empty():
-		status_label.text = "① 点底栏角色  ② 点空槽放置  ③ 点「下一波」开战"
+		if GameState.intro_stage <= 0:
+			status_label.text = "教学 · ①选具名角色 ②放栈道 ③点「下一波」——守住这一夜"
+			chapter_label.text = "守栈道 · 教学夜"
+		else:
+			status_label.text = "① 点底栏角色  ② 点空槽放置  ③ 点「下一波」开战"
 		Juice.pulse(roster_bar, 1.04, 0.35)
 		Juice.pulse(start_wave_btn, 1.06, 0.4)
 	else:
@@ -667,7 +673,7 @@ func _tick_combat(delta: float) -> void:
 		if unit_node and (dmg >= atk * 1.4 or hp_now <= 0):
 			SV.trigger_crit(unit_node, units_layer)
 		if hp_now <= 0:
-			_kill_enemy(target)
+			_kill_enemy(target, str(info.unit_id))
 
 
 func _apply_team_auras(delta: float) -> void:
@@ -728,10 +734,12 @@ func _find_target(from: Vector2, rng: float):
 	return best
 
 
-func _kill_enemy(node: Node) -> void:
+func _kill_enemy(node: Node, killer_id: String = "") -> void:
 	var reward := int(node.get_meta("reward"))
 	silver += reward
 	enemies_alive = max(0, enemies_alive - 1)
+	if killer_id != "":
+		_kill_credit[killer_id] = int(_kill_credit.get(killer_id, 0)) + 1
 	var at: Vector2 = node.position + (node.custom_minimum_size * 0.5 if node is Control else Vector2.ZERO)
 	Juice.float_number(at, "+%d" % reward, Color(0.7, 0.95, 0.65))
 	VF.death_puff(enemies_layer, at)
@@ -743,6 +751,21 @@ func _kill_enemy(node: Node) -> void:
 		Juice.float_number(at + Vector2(0, -36), "击破!", Color(1.0, 0.88, 0.45))
 	node.queue_free()
 	_refresh_hud()
+
+
+func _resolve_mvp() -> String:
+	var best := ""
+	var best_n := -1
+	for uid in _kill_credit.keys():
+		var n := int(_kill_credit[uid])
+		if n > best_n:
+			best_n = n
+			best = str(uid)
+	if best == "" and not deployed.is_empty():
+		best = str(deployed[deployed.keys()[0]].unit_id)
+	if best == "":
+		best = GameState.recommended_hero_id()
+	return best
 
 
 func _flash_enemy(node: Control) -> void:
@@ -801,7 +824,11 @@ func _on_wave_cleared() -> void:
 		GameState.unlock_unit("unit_zhaoyun")
 	if wave_index >= 8:
 		GameState.unlock_unit("unit_mingwang")
-	# Soft milestone (seed chapter clear) — infinite run continues until leak-out.
+	# Named hero stands out after each clear.
+	var mvp := _resolve_mvp()
+	GameState.mark_mvp(mvp)
+	var mvp_name := str(ContentDB.get_unit(mvp).get("name", mvp))
+	# Soft milestone (seed chapter) — no tower unlock; desire stays on the ring.
 	var milestone := int(ContentDB.waves_cfg.get("milestone_wave", 10))
 	if not milestone_cleared and wave_index >= milestone:
 		milestone_cleared = true
@@ -810,22 +837,62 @@ func _on_wave_cleared() -> void:
 			GameState.unlock_gear("gear_bamboo_cup")
 		GameState.silver_bank += silver / 8
 		GameState.persist_meta_keep_checkpoints()
-		wave_banner.text = "— 第一章达成 —"
+		wave_banner.text = "— 剑阁里程碑 —"
 		Juice.banner_pop(wave_banner, 2.2)
-		status_label.text = "第一章里程碑！爬塔已解锁。无限波仍可继续，或存档回大厅。"
+		status_label.text = "里程碑！%s 立功。无限波仍可继续，或回花名册再练。" % mvp_name
 	elif wave_index == 3:
-		status_label.text = "三波肃清 — 探索已解锁。可继续守，或回大厅开搜打撤。"
+		status_label.text = "侧翼已过 — %s 立了功。可再守，或回大厅考虑搜山。" % mvp_name
+	else:
+		status_label.text = "波次肃清 +%d 银两 · %s 击破最多。" % [bonus, mvp_name]
 	var kid = wave.get("knowledge_card", null)
+	# First session: only one meaningful knowledge hook (wave 1 seed).
+	if GameState.intro_stage <= 0 and wave_index != 1:
+		kid = null
 	_persist_prep()
 	if kid != null and str(kid) != "":
 		awaiting_knowledge = true
 		knowledge_layer.present(str(kid))
+	elif _should_offer_teaching_exit():
+		_offer_teaching_exit(mvp, mvp_name)
 
 
-func _on_knowledge_resolved(_id: String, _correct: bool) -> void:
+func _should_offer_teaching_exit() -> bool:
+	## After flank teaching wave (cleared wave 3 → wave_index >= 3) on fresh intro.
+	return (
+		not _teaching_exit_offered
+		and GameState.intro_stage <= 0
+		and wave_index >= 3
+		and not awaiting_knowledge
+	)
+
+
+func _offer_teaching_exit(mvp: String, mvp_name: String) -> void:
+	_teaching_exit_offered = true
+	GameState.mark_mvp(mvp)
+	GameState.advance_intro(1)
+	GameState.td_checkpoint = {}
+	GameState.silver_bank += maxi(8, silver / 12)
+	GameState.persist_lobby()
+	result_overlay.show_result(
+		"这一夜守住了",
+		"%s 立了功。\n看一眼花名册——班子在长成。\n再决定：再守，还是搜山。" % mvp_name,
+		"看花名册",
+		Color(0.55, 0.82, 0.55),
+		func(): GameState.go_idle()
+	)
+
+
+func _on_knowledge_resolved(_id: String, correct: bool) -> void:
 	awaiting_knowledge = false
 	_persist_prep()
-	status_label.text = "知识已记入。准备下一波。"
+	if correct:
+		status_label.text = "功法笺已记入——这条建议会帮你的班子。"
+	else:
+		status_label.text = "记下原因再上场。准备下一波。"
+	var mvp := _resolve_mvp()
+	var mvp_name := str(ContentDB.get_unit(mvp).get("name", mvp))
+	if _should_offer_teaching_exit():
+		_offer_teaching_exit(mvp, mvp_name)
 
 
 func _has_learned_hook(hook_name: String) -> bool:
@@ -858,15 +925,24 @@ func _victory() -> void:
 func _defeat() -> void:
 	game_over = true
 	wave_running = false
+	var mvp := _resolve_mvp()
+	GameState.mark_mvp(mvp)
+	var mvp_name := str(ContentDB.get_unit(mvp).get("name", mvp))
 	GameState.silver_bank += max(0, silver / 10)
 	GameState.td_checkpoint = {}
+	if GameState.intro_stage <= 0 and wave_index >= 1:
+		GameState.advance_intro(1)
 	GameState.persist_lobby()
 	result_overlay.show_result(
 		"据点失守",
-		"已保留知识进度与 %d 银两仓。\n回大厅重整阵容再战。" % (silver / 10),
-		"回大厅",
+		"%s 仍在坚持。\n已留 %d 银两仓 — 回花名册想「下次换谁」。" % [mvp_name, silver / 10],
+		"看花名册" if GameState.intro_stage <= 1 else "回大厅",
 		Color(0.85, 0.45, 0.4),
-		func(): GameState.go_lobby()
+		func():
+			if GameState.intro_stage <= 1:
+				GameState.go_idle()
+			else:
+				GameState.go_lobby()
 	)
 
 

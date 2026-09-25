@@ -375,36 +375,58 @@ func _smoke_guidance() -> bool:
 	gs.total_explore_clears = 0
 	gs.tower_floor_cleared = 0
 	gs.total_arena_runs = 0
+	gs.intro_stage = 0
+	gs.last_mvp_unit_id = ""
 	if not gs.is_mode_unlocked("td"):
 		push_error("td should always unlock")
 		return false
+	if not gs.is_mode_unlocked("idle"):
+		push_error("idle should always unlock")
+		return false
 	if gs.is_mode_unlocked("explore"):
-		push_error("explore should soft-lock at wave 0")
+		push_error("explore should stay locked before teaching")
 		return false
 	if gs.is_mode_unlocked("tower"):
-		push_error("tower should soft-lock before chapter clear")
+		push_error("tower must stay off v1 path")
+		return false
+	if gs.is_mode_unlocked("arena"):
+		push_error("arena must stay off v1 path")
 		return false
 	var action: Dictionary = gs.next_action()
-	if str(action.get("mode", "")) != "td":
-		push_error("first next_action should be td got %s" % action)
+	if str(action.get("mode", "")) != "td" or str(action.get("id", "")) != "first_td":
+		push_error("first next_action should be first_td got %s" % action)
 		return false
+	# Simulate teaching clear → roster glance
 	gs.note_td_wave_reached(3)
+	gs.mark_mvp("unit_tiebi")
+	gs.intro_stage = 1
+	action = gs.next_action()
+	if str(action.get("mode", "")) != "idle":
+		push_error("after teaching next should be idle roster got %s" % action)
+		return false
+	gs.intro_stage = 2
 	if not gs.is_mode_unlocked("explore"):
-		push_error("explore should unlock at wave 3")
+		push_error("explore should unlock after intro stage 2")
 		return false
-	gs.note_td_wave_reached(5)
-	if not gs.is_mode_unlocked("arena"):
-		push_error("arena should unlock at wave 5")
+	action = gs.next_action()
+	if str(action.get("id", "")) != "intro_choice":
+		push_error("stage 2 should be intro_choice got %s" % action)
 		return false
+	if str(action.get("alt_mode", "")) != "explore":
+		push_error("intro_choice should offer 搜山 alt")
+		return false
+	# Tower/arena stay dead even after clears
+	gs.intro_stage = 3
 	gs.total_td_clears = 1
-	if not gs.is_mode_unlocked("tower"):
-		push_error("tower should unlock after td clear")
+	gs.td_best_wave = 10
+	if gs.is_mode_unlocked("tower") or gs.is_mode_unlocked("arena"):
+		push_error("tower/arena must remain locked on v1 path")
 		return false
 	var lobby_packed = load("res://scenes/lobby/lobby.tscn")
 	if lobby_packed == null:
 		push_error("lobby missing")
 		return false
-	# Reset to first-session for lobby boot
+	gs.intro_stage = 0
 	gs.td_best_wave = 0
 	gs.total_td_clears = 0
 	var lobby = lobby_packed.instantiate()
@@ -414,7 +436,12 @@ func _smoke_guidance() -> bool:
 		push_error("lobby missing NextBtn")
 		lobby.queue_free()
 		return false
+	var more: Control = lobby.get_node_or_null("VBox/MoreRow") as Control
+	if more != null and more.visible:
+		push_error("MoreRow tower/arena must be hidden")
+		lobby.queue_free()
+		return false
 	lobby.queue_free()
 	await create_timer(0.1).timeout
-	print("guidance_ok next=", action.get("id"), " explore_at3=true")
+	print("guidance_ok desire_ring intro_choice+hidden_tower_arena")
 	return true

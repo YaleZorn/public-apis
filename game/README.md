@@ -1,17 +1,18 @@
-# Kongfu Roguelike — v0.11.0 · Feel like a game
+# Kongfu Roguelike — v0.12.0 · 主环竖切
 
-竖屏、离线武侠健身。相对 v0.10.1 本版专注 **前 5 分钟像游戏**：
+竖屏、离线武侠健身。相对 v0.11：**重绑核心欲望环**，不再堆模式入口。
 
-- **引导 / 下一步**：标题「踏上栈道」→ 大厅固定展示一条「下一步」任务卡 → 首局塔防分步提示
-- **大厅枢纽**：少按钮；探索 / 爬塔 / 演武按波次进度软锁；推荐出战英雄；去掉密排花名册与版本/包名噪音
-- **TD 手感**：放置震颤 + 落脚环；击杀/波清横幅奖励；第一章与三波解锁文案
-- **产品观感**：墨雾青玉面板层次，非工程师工具盘
+- **幻想主线**：地铁江湖梦 · 练班子守栈道（标题 / 大厅可读）
+- **核心环**：花名册欲望 → 守栈道 TD → Idle 长成 **或** 搜山补给 → 再守
+- **模式不平等**：TD 主场 · Idle 枢纽 · 搜山按需；**爬塔 / 演武移出 v1 路径**
+- **前 10 分钟**：标题直入教学波 → 具名立功 → 花名册一眼 → 一条功法笺 → 「再守 / 搜山」
+- **大厅**：一条叙事下一步，不是工具盘
 - 仍标 **内容分级：17+**；离线无 IAP；合法 OSS only
 
 设计依据（Project store）：
 - `docs/gameplay-design.md`
 - `docs/project-context.md`
-- `docs/character-presentation.md`
+- `docs/why-primitive.md`
 
 包协议说明：[`data/CONTENT_PACKS.md`](./data/CONTENT_PACKS.md)  
 第三方声明：[`THIRD_PARTY.md`](./THIRD_PARTY.md)（合法 OSS only）。
@@ -32,7 +33,7 @@ godot --path . --rendering-driver opengl3
 
 ## Android APK（侧载）
 
-见同版本交付说明；debug APK 可直接 `adb install`。开启「允许未知来源」后安装。
+见 `media/builds/README-sideload.md`；debug APK 可直接 `adb install`。
 
 ## 冒烟
 

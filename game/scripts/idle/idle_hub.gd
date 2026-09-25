@@ -41,13 +41,22 @@ func _ready() -> void:
 	claim_btn.pressed.connect(_on_claim)
 	back_btn.pressed.connect(func():
 		Juice.play_sfx("tap")
+		if GameState.intro_stage == 1:
+			GameState.advance_intro(2)
 		Juice.fade_transition(func(): GameState.go_lobby())
 	)
 	Atmo.build_lobby_decor(decor)
 	GameState.refresh_idle_accrual()
-	if _selected_id == "" and not GameState.unlocked_units.is_empty():
+	if GameState.last_mvp_unit_id != "" and GameState.last_mvp_unit_id in GameState.unlocked_units:
+		_selected_id = GameState.last_mvp_unit_id
+	elif _selected_id == "" and not GameState.unlocked_units.is_empty():
 		_selected_id = str(GameState.unlocked_units[0])
 	_refresh()
+	if GameState.intro_stage == 1:
+		var mvp_name := str(ContentDB.get_unit(_selected_id).get("name", "弟子"))
+		status_label.text = "%s 刚立功 — 领取微量银两，看他在修炼。" % mvp_name
+		subtitle.text = "欲望对象 · 具名班子"
+		Juice.pulse(claim_btn, 1.06, 0.35)
 	GameState.meta_changed.connect(_refresh)
 
 

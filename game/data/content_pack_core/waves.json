@@ -2,7 +2,7 @@
   "content_pack": "core",
   "map_id": "jiange_pass",
   "map_name": "剑阁栈道",
-  "chapter_title": "守卫剑阁 · 无限波",
+  "chapter_title": "守栈道 · 无限波",
   "starting_silver": 220,
   "starting_lives": 12,
   "slot_count": 6,
@@ -55,7 +55,7 @@
           "lane": "main"
         }
       ],
-      "knowledge_card": "k_form"
+      "knowledge_card": null
     },
     {
       "id": 3,
@@ -83,7 +83,7 @@
           "lane": "flank"
         }
       ],
-      "knowledge_card": "k_hydration"
+      "knowledge_card": null
     },
     {
       "id": 4,

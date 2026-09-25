@@ -1,5 +1,7 @@
 extends Control
-## Game hub (v0.11): one 「下一步」, soft-locked secondary modes, brand-first calm.
+## Desire hub (v0.12): one narrative next action — not a mode toolbox.
+## TD = main field · Idle = roster hub · Explore = on-demand supply.
+## Tower / arena hidden from v1 path.
 
 const AP := preload("res://scripts/util/art_palette.gd")
 const Atmo := preload("res://scripts/util/atmosphere.gd")
@@ -25,6 +27,7 @@ const VF := preload("res://scripts/util/visual_factory.gd")
 var _idle_btn: Button
 var _tower_btn: Button
 var _arena_btn: Button
+var _alt_btn: Button
 
 
 func _ready() -> void:
@@ -37,7 +40,7 @@ func _ready() -> void:
 		accent.visible = false
 	title_label.text = "剑阁·健身"
 	AP.apply_label(title_label, 48, AP.LANTERN_GOLD)
-	subtitle.text = "守卫剑阁"
+	subtitle.text = "练班子 · 守栈道"
 	AP.apply_label(subtitle, 16, AP.MIST_TEAL.lightened(0.22))
 	AP.apply_label(quest_title, 20, AP.PAPER_INK)
 	AP.apply_label(quest_detail, 14, AP.PAPER_DIM)
@@ -51,41 +54,39 @@ func _ready() -> void:
 	next_btn.theme_type_variation = &"ButtonPrimary"
 	continue_btn.theme_type_variation = &"ButtonPrimary"
 	new_td_btn.theme_type_variation = &"ButtonPrimary"
-	# Secondary modes: normal chrome (not all Primary).
 	new_explore_btn.theme_type_variation = &""
 	knowledge_btn.theme_type_variation = &""
+
+	# Optional alt CTA under primary (再守 / 搜山 binary).
+	_alt_btn = Button.new()
+	_alt_btn.name = "AltChoiceBtn"
+	_alt_btn.custom_minimum_size = Vector2(0, 52)
+	_alt_btn.visible = false
+	_alt_btn.theme_type_variation = &""
+	next_btn.get_parent().add_child(_alt_btn)
+	next_btn.get_parent().move_child(_alt_btn, next_btn.get_index() + 1)
+	_alt_btn.pressed.connect(_on_alt_action)
 
 	next_btn.pressed.connect(_on_next_action)
 	continue_btn.pressed.connect(_on_continue)
 	new_td_btn.pressed.connect(func(): _start_mode("td"))
 	new_explore_btn.pressed.connect(func(): _start_mode("explore"))
 	knowledge_btn.pressed.connect(func():
+		if not GameState.is_mode_unlocked("knowledge"):
+			return
 		Juice.play_sfx("tap")
 		Juice.fade_transition(func(): GameState.go_knowledge())
 	)
 	if _idle_btn:
 		_idle_btn.pressed.connect(func():
-			if not GameState.is_mode_unlocked("idle"):
-				return
 			Juice.play_sfx("tap")
 			Juice.fade_transition(func(): GameState.go_idle())
 		)
+	# Tower / arena: leave dead — never wire as v1 entry.
 	if _arena_btn:
-		_arena_btn.pressed.connect(func():
-			if not GameState.is_mode_unlocked("arena"):
-				Juice.play_sfx("tap")
-				return
-			Juice.play_sfx("tap")
-			Juice.fade_transition(func(): GameState.go_arena(false))
-		)
+		_arena_btn.visible = false
 	if _tower_btn:
-		_tower_btn.pressed.connect(func():
-			if not GameState.is_mode_unlocked("tower"):
-				Juice.play_sfx("tap")
-				return
-			Juice.play_sfx("tap")
-			Juice.fade_transition(func(): GameState.go_tower(false))
-		)
+		_tower_btn.visible = false
 	settings_btn.pressed.connect(_toggle_settings)
 	settings_panel.visible = false
 	_build_settings()
@@ -95,7 +96,6 @@ func _ready() -> void:
 	_refresh()
 	GameState.meta_changed.connect(_refresh)
 	GameState.checkpoint_changed.connect(_refresh)
-	# Soft entrance motion for hub focus.
 	Juice.slide_in(next_btn, 14, 0.32)
 	var quest_wrap := get_node_or_null("%QuestCard")
 	if quest_wrap:
@@ -105,56 +105,83 @@ func _ready() -> void:
 func _refresh() -> void:
 	title_label.text = "剑阁·健身"
 	AP.apply_label(title_label, 52, AP.LANTERN_GOLD)
-	subtitle.text = "守卫剑阁"
+	subtitle.text = "地铁江湖梦 · 练班子守栈道"
 	AP.apply_label(subtitle, 16, AP.MIST_TEAL.lightened(0.22))
 	var action: Dictionary = GameState.next_action()
-	quest_title.text = "下一步 · %s" % str(action.get("title", ""))
+	quest_title.text = str(action.get("title", "下一步"))
 	quest_detail.text = str(action.get("detail", ""))
 	next_btn.text = str(action.get("cta", "下一步"))
+	next_btn.theme_type_variation = &"ButtonPrimary"
+
+	var alt_cta := str(action.get("alt_cta", ""))
+	var alt_mode := str(action.get("alt_mode", ""))
+	if alt_cta != "" and alt_mode != "" and GameState.is_mode_unlocked(alt_mode):
+		_alt_btn.visible = true
+		_alt_btn.text = alt_cta
+		_alt_btn.theme_type_variation = &""
+	else:
+		_alt_btn.visible = false
 
 	var has_resume := GameState.has_resume()
-	continue_btn.visible = has_resume
+	continue_btn.visible = has_resume and str(action.get("id", "")) != "resume"
 	if has_resume:
 		var resume := GameState.resume_target()
-		var resume_label := resume
+		var resume_label := "守栈道"
 		match resume:
-			"td":
-				resume_label = "塔防"
 			"explore":
-				resume_label = "探索"
-			"arena":
-				resume_label = "演武"
-			"tower":
-				resume_label = "爬塔"
+				resume_label = "搜山"
+			"td":
+				resume_label = "守栈道"
+			_:
+				resume_label = "旅程"
 		continue_btn.text = "续关 · %s" % resume_label
-		# When resume exists, primary next is also resume — hide duplicate continue.
 		next_btn.visible = str(action.get("id", "")) != "resume"
 	else:
 		next_btn.visible = true
 
-	# TD always available as secondary path when next isn't TD.
-	new_td_btn.visible = str(action.get("mode", "")) != "td" or has_resume
-	new_td_btn.text = "新局 · 塔防"
+	# Hide redundant TD button when primary already is TD.
+	new_td_btn.visible = false
 
-	_apply_mode_gate(new_explore_btn, "explore", "探索 · 搜打撤")
-	_apply_mode_gate(knowledge_btn, "knowledge", "知识本" + (" ✦" if GameState.can_morning_quiz() else ""))
+	# Explore only when desire unlocks it — not a permanent toolbox peer.
+	var show_explore := GameState.is_mode_unlocked("explore") and (
+		str(action.get("id", "")) in ["intro_choice", "desire_explore", "td_again"]
+		or GameState.needs_materials_for_roster()
+		or GameState.total_explore_clears > 0
+	)
+	new_explore_btn.visible = show_explore and not _alt_btn.visible
+	if new_explore_btn.visible:
+		new_explore_btn.text = "搜山 · 补给"
+		new_explore_btn.disabled = false
+
+	# Knowledge journal: deep link only after first glance — not quiz wall peer.
+	knowledge_btn.visible = GameState.is_mode_unlocked("knowledge") and GameState.intro_stage >= 3
+	if knowledge_btn.visible:
+		knowledge_btn.text = "功法笺"
+
 	_apply_mode_gate(_idle_btn, "idle", "花名册")
-	_apply_mode_gate(_tower_btn, "tower", "爬塔")
-	_apply_mode_gate(_arena_btn, "arena", "演武")
-	# Hide MoreRow entirely when both tower/arena locked — less toolbox chrome.
+	# Always hide tower/arena more-row.
 	var more := get_node_or_null("VBox/MoreRow") as Control
-	if more and _tower_btn and _arena_btn:
-		more.visible = GameState.is_mode_unlocked("tower") or GameState.is_mode_unlocked("arena")
+	if more:
+		more.visible = false
+	if _tower_btn:
+		_tower_btn.visible = false
+	if _arena_btn:
+		_arena_btn.visible = false
 
-	var hero_id := GameState.recommended_hero_id()
+	var hero_id := GameState.last_mvp_unit_id if GameState.last_mvp_unit_id != "" else GameState.recommended_hero_id()
 	var hero: Dictionary = ContentDB.get_unit(hero_id)
-	hero_name.text = "推荐出战 · %s · %s" % [
-		str(hero.get("name", hero_id)),
-		str(hero.get("role", "")),
-	]
+	if GameState.intro_stage >= 1 and GameState.last_mvp_unit_id != "":
+		hero_name.text = "今夜立功 · %s · %s" % [
+			str(hero.get("name", hero_id)),
+			str(hero.get("role", "")),
+		]
+	else:
+		hero_name.text = "班子主力 · %s · %s" % [
+			str(hero.get("name", hero_id)),
+			str(hero.get("role", "")),
+		]
 	_rebuild_hero_bar(hero_id)
 
-	# Compact status — silver/xiuwei only; materials live in Idle.
 	status_label.text = "银 %d · 修为 %d" % [GameState.silver_bank, GameState.xiuwei_bank]
 
 
@@ -162,26 +189,19 @@ func _apply_mode_gate(btn: Button, mode_id: String, label: String) -> void:
 	if btn == null:
 		return
 	var unlocked := GameState.is_mode_unlocked(mode_id)
-	# Soft-lock: hide locked secondary modes (knowledge/idle always on).
-	if mode_id in ["explore", "tower", "arena"] and not unlocked:
+	if not unlocked:
 		btn.visible = false
 		return
 	btn.visible = true
-	btn.disabled = not unlocked
-	if unlocked:
-		btn.text = label
-		btn.modulate = Color.WHITE
-		btn.tooltip_text = ""
-	else:
-		btn.text = label
-		btn.modulate = Color(0.55, 0.58, 0.56, 0.85)
-		btn.tooltip_text = GameState.mode_lock_reason(mode_id)
+	btn.disabled = false
+	btn.text = label
+	btn.modulate = Color.WHITE
+	btn.tooltip_text = ""
 
 
 func _rebuild_hero_bar(highlight_id: String) -> void:
 	for c in hero_bar.get_children():
 		c.queue_free()
-	# Show unlocked heroes (+ one locked teaser) — calmer than full spreadsheet.
 	var unlocked_shown := 0
 	var locked_teaser_done := false
 	for u in ContentDB.unit_list:
@@ -221,12 +241,43 @@ func _rebuild_hero_bar(highlight_id: String) -> void:
 
 func _on_next_action() -> void:
 	var action: Dictionary = GameState.next_action()
-	var mode := str(action.get("mode", "td"))
+	_go_action(action)
+
+
+func _on_alt_action() -> void:
+	var action: Dictionary = GameState.next_action()
+	var alt_mode := str(action.get("alt_mode", ""))
+	if alt_mode == "":
+		return
+	if str(action.get("id", "")) == "intro_choice":
+		GameState.advance_intro(3)
 	Juice.play_sfx("tap")
 	Juice.fade_transition(func():
-		if str(action.get("id", "")) == "resume":
+		match alt_mode:
+			"explore":
+				if GameState.is_mode_unlocked("explore"):
+					GameState.go_explore(false)
+				else:
+					GameState.go_td(false)
+			"td":
+				GameState.go_td(false)
+			"idle":
+				GameState.go_idle()
+			_:
+				GameState.go_td(false)
+	)
+
+
+func _go_action(action: Dictionary) -> void:
+	var mode := str(action.get("mode", "td"))
+	var aid := str(action.get("id", ""))
+	Juice.play_sfx("tap")
+	Juice.fade_transition(func():
+		if aid == "resume":
 			_resume_now()
 			return
+		if aid == "intro_choice":
+			GameState.advance_intro(3)
 		match mode:
 			"td":
 				GameState.go_td(false)
@@ -239,16 +290,6 @@ func _on_next_action() -> void:
 				GameState.go_idle()
 			"knowledge":
 				GameState.go_knowledge()
-			"arena":
-				if GameState.is_mode_unlocked("arena"):
-					GameState.go_arena(false)
-				else:
-					GameState.go_td(false)
-			"tower":
-				if GameState.is_mode_unlocked("tower"):
-					GameState.go_tower(false)
-				else:
-					GameState.go_td(false)
 			_:
 				GameState.go_td(false)
 	)
@@ -260,10 +301,6 @@ func _resume_now() -> void:
 			GameState.go_td(true)
 		"explore":
 			GameState.go_explore(true)
-		"arena":
-			GameState.go_arena(true)
-		"tower":
-			GameState.go_tower(true)
 		_:
 			GameState.go_lobby()
 

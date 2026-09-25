@@ -1,5 +1,5 @@
 extends Control
-## Entry title: brand-first portrait hero, mist atmosphere, tap-through to lobby.
+## Entry title: fantasy through-line — 地铁江湖梦 / 练班子守栈道.
 
 const AP := preload("res://scripts/util/art_palette.gd")
 const Atmo := preload("res://scripts/util/atmosphere.gd")
@@ -18,7 +18,6 @@ var _pulse_t: float = 0.0
 
 func _ready() -> void:
 	Atmo.attach_full_bg(self, "night")
-	# Hide flat ColorRect backgrounds if present
 	var old_bg := get_node_or_null("Bg")
 	if old_bg:
 		old_bg.visible = false
@@ -30,20 +29,21 @@ func _ready() -> void:
 		ab.visible = false
 	title.text = "剑阁·健身"
 	AP.apply_label(title, 64, AP.LANTERN_GOLD)
-	tagline.text = "守卫剑阁 · 栈道夜行 · 真知识"
+	tagline.text = "地铁上也能做一场江湖梦"
 	AP.apply_label(tagline, 18, AP.MIST_TEAL.lightened(0.28))
 	AP.apply_label(version_label, 12, Color(0.50, 0.58, 0.52, 0.85))
-	var ver := str(ProjectSettings.get_setting("application/config/version", "0.11.0"))
-	version_label.text = "v%s" % ver
+	var ver := str(ProjectSettings.get_setting("application/config/version", "0.12.0"))
+	version_label.text = "v%s · 17+" % ver
 	continue_btn.visible = GameState.has_resume()
 	continue_btn.theme_type_variation = &"ButtonPrimary"
 	start_btn.theme_type_variation = &"ButtonPrimary"
-	# First session: brand CTA toward first TD, not a toolbox lobby dump.
-	if not GameState.has_resume() and GameState.td_best_wave <= 0 and GameState.total_td_clears <= 0:
-		start_btn.text = "踏上栈道"
-		tagline.text = "守卫剑阁 · 先守一波"
+	# First session: promise + land in guided TD (not toolbox lobby).
+	if GameState.is_first_session() and not GameState.has_resume():
+		start_btn.text = "守住这一夜"
+		tagline.text = "练班子 · 守栈道 · 敢搜山"
 	elif GameState.has_resume():
 		start_btn.text = "进入大厅"
+		continue_btn.text = "续关"
 	else:
 		start_btn.text = "进入大厅"
 	continue_btn.pressed.connect(_on_continue)
@@ -73,10 +73,9 @@ func _on_continue() -> void:
 				GameState.go_td(true)
 			"explore":
 				GameState.go_explore(true)
-			"arena":
-				GameState.go_arena(true)
-			"tower":
-				GameState.go_tower(true)
+			"arena", "tower":
+				# Dead path — bounce to lobby desire ring.
+				GameState.go_lobby()
 			_:
 				GameState.go_lobby()
 	)
@@ -84,8 +83,11 @@ func _on_continue() -> void:
 
 func _on_start() -> void:
 	Juice.play_sfx("tap")
-	# Brand promise: first open lands in lobby with one clear 「下一步」 to TD.
-	Juice.fade_transition(func(): GameState.go_lobby())
+	if GameState.is_first_session() and not GameState.has_resume():
+		# Design: forced main field — teaching waves, not five-button lobby.
+		Juice.fade_transition(func(): GameState.go_td(false))
+	else:
+		Juice.fade_transition(func(): GameState.go_lobby())
 
 
 func _toggle_settings() -> void:

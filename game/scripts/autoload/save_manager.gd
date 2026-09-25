@@ -2,7 +2,7 @@ extends Node
 ## Local single-slot save with version migration. Checkpoints at wave/room/lobby.
 
 const SAVE_PATH := "user://kongfu_save_v0.json"
-const SAVE_VERSION := 6
+const SAVE_VERSION := 7
 
 signal save_written
 signal save_loaded
@@ -110,4 +110,21 @@ func _migrate(data: Dictionary) -> Dictionary:
 			meta6["td_best_wave"] = 10 if clears >= 1 else 0
 		data["meta"] = meta6
 		data["save_version"] = 6
+		v = 6
+	if v < 7:
+		# v0.12 main-loop: intro_stage + mvp for desire ring.
+		var meta7: Dictionary = data.get("meta", {})
+		if not meta7.has("intro_stage"):
+			var best := int(meta7.get("td_best_wave", 0))
+			var clears7 := int(meta7.get("total_td_clears", 0))
+			if best >= 3 or clears7 >= 1 or int(meta7.get("total_explore_clears", 0)) >= 1:
+				meta7["intro_stage"] = 3
+			elif best >= 1:
+				meta7["intro_stage"] = 2
+			else:
+				meta7["intro_stage"] = 0
+		if not meta7.has("last_mvp_unit_id"):
+			meta7["last_mvp_unit_id"] = ""
+		data["meta"] = meta7
+		data["save_version"] = 7
 	return data

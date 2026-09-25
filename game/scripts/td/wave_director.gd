@@ -74,13 +74,29 @@ func _procedural_wave(wave_index: int) -> Dictionary:
 		_append_spawn_block(spawns, pool, flank_count, "flank", 1.4, maxf(0.45, 0.85 / maxf(diff * 0.5, 1.0)))
 	return {
 		"id": wave_index + 1,
-		"label": "第 %d 波 · 无限栈道" % (wave_index + 1),
+		"label": _milestone_label(wave_index, flank_count > 0),
 		"hint": "难度 %.1f — 侧翼伏击将至。" % diff if flank_count > 0 else "难度 %.1f — 上↓下压迫。" % diff,
 		"silver_bonus": silver_bonus_base + wave_index * silver_bonus_growth,
 		"spawns": spawns,
 		"knowledge_card": null,
 		"difficulty": diff,
 	}
+
+
+func _milestone_label(wave_index: int, has_flank: bool) -> String:
+	## Named emotional beats — Kingdom Defense cadence, not "wave N".
+	var n := wave_index + 1
+	match n % 10:
+		0:
+			return "第 %d 波 · 火攻总闸" % n
+		5:
+			return "第 %d 波 · 夜袭" % n
+		3, 6, 9:
+			return "第 %d 波 · 侧翼合围" % n if has_flank else "第 %d 波 · 栈道加压" % n
+		_:
+			if has_flank:
+				return "第 %d 波 · 伏击" % n
+			return "第 %d 波 · 无限栈道" % n
 
 
 func _spawnable_enemies(diff: float) -> Array:

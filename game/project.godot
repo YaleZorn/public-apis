@@ -1,12 +1,18 @@
 ; Engine configuration file.
-; Kongfu Roguelike v0.11.0 — feel-like-a-game（引导 / 大厅枢纽 / TD 爽感 / 去原型感）
+; It's best edited using the editor UI and not directly,
+; since the parameters that go here are not all obvious.
+;
+; Format:
+;   [section] ; section goes between []
+;   param=value ; assign values to parameters
+
 config_version=5
 
 [application]
 
 config/name="Kongfu Roguelike"
-config/description="竖屏武侠：无限波塔防 + Idle 名人 + 探索搜打撤 + 演武场 + 爬塔 + 健身知识 + content_pack · 内容分级 17+"
-config/version="0.11.0"
+config/description="竖屏武侠：守栈道 TD + Idle 名人花名册 + 搜山补给 + 健身知识 · 内容分级 17+ · 离线无 IAP"
+config/version="0.12.0"
 run/main_scene="res://scenes/shell/title_screen.tscn"
 config/features=PackedStringArray("4.3", "Forward Plus")
 config/icon="res://icon.svg"
@@ -29,6 +35,10 @@ window/stretch/mode="canvas_items"
 window/stretch/aspect="keep_width"
 window/handheld/orientation=1
 
+[gui]
+
+theme/custom="res://resources/kongfu_theme.tres"
+
 [input]
 
 ui_accept={
@@ -44,12 +54,8 @@ active_skill={
 ]
 }
 
-[gui]
-
-theme/custom="res://resources/kongfu_theme.tres"
-
 [rendering]
 
+textures/canvas_textures/default_texture_filter=0
 renderer/rendering_method="gl_compatibility"
 textures/vram_compression/import_etc2_astc=true
-textures/canvas_textures/default_texture_filter=0

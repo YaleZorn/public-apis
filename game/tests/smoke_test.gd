@@ -51,6 +51,7 @@ func _check_files() -> bool:
 		"res://scripts/arena/arena_run.gd",
 		"res://scripts/tower/tower_run.gd",
 		"res://tests/capture_feel_game.gd",
+		"res://tests/capture_main_loop.gd",
 		"res://assets/textures/figures/unit_qinggong_reveal.png",
 		"res://assets/textures/figures/unit_mulan_reveal.png",
 		"res://assets/textures/vfx/aura_ring_soft.png",
