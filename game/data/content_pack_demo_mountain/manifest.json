@@ -1,0 +1,9 @@
+{
+  "content_pack": "demo_mountain",
+  "version": 1,
+  "display_name": "演示包 · 山野补遗",
+  "blurb": "假 DLC：本地挂载、无商店计费。证明单位 / 知识 / 装备可经 content_pack 扩展。",
+  "owned": true,
+  "demo": true,
+  "modules": ["units", "knowledge", "gear"]
+}

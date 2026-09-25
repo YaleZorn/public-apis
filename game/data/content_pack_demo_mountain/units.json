@@ -1,0 +1,66 @@
+{
+  "content_pack": "demo_mountain",
+  "units": [
+    {
+      "id": "unit_mulan",
+      "name": "花木兰",
+      "faction": "军旅",
+      "historical_tag": "乐府·木兰",
+      "role": "dps",
+      "stars": 1,
+      "fragments": 0,
+      "unlocked": false,
+      "unlock_fragments": 3,
+      "cost": 75,
+      "recall_refund": 0.5,
+      "content_pack": "demo_mountain",
+      "idle": {
+        "silver_per_hour": 40,
+        "xiuwei_per_hour": 16,
+        "material_per_hour": 2,
+        "train_cost_silver": 42,
+        "train_minutes": 5.0
+      },
+      "td": {
+        "hp": 170,
+        "atk": 34,
+        "range": 150,
+        "attack_interval": 0.75,
+        "aura": {
+          "type": "atk_buff",
+          "value": 0.06,
+          "radius": 120
+        },
+        "skill": "替父从军：优先点杀残血，短时加攻光环"
+      },
+      "explore": {
+        "hp": 140,
+        "atk": 28,
+        "attack_interval": 0.7,
+        "active": {
+          "id": "mulan_volley",
+          "name": "骑射",
+          "cooldown": 7.5,
+          "effect": "aoe_damage",
+          "value": 42,
+          "duration": 0
+        }
+      },
+      "knowledge_bind": "k_demo_trail_pace",
+      "color": "#6a8a6e",
+      "blurb": "演示包名人：山野行军节奏与耐力。",
+      "vfx": {
+        "idle_aura": true,
+        "idle_aura_color": "#7ec8c0",
+        "skill_burst": "jade",
+        "reveal": "cloth_burst",
+        "reveal_on": [
+          "skill",
+          "low_hp",
+          "crit"
+        ],
+        "buff_ring_color": "#d4a017"
+      }
+    }
+  ]
+}
