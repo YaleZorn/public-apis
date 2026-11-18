@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <title>Stackpick — pick a public API stack fast</title>
+    <meta
+      name="description"
+      content="Search 1600+ curated public APIs, shortlist a stack, and discover partner APIs ready for production."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Source+Sans+3:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <div class="blueprint-grid" aria-hidden="true"></div>
+    <header class="topbar">
+      <a class="brand" href="#top">Stackpick</a>
+      <nav class="topnav">
+        <a href="#catalog">Catalog</a>
+        <a href="#partners">Partners</a>
+        <a href="#pro">Pro</a>
+        <button type="button" class="stack-btn" id="open-stack" aria-controls="stack-panel">
+          Stack <span id="stack-count">0</span>
+        </button>
+      </nav>
+    </header>
+
+    <main id="top">
+      <section class="hero">
+        <p class="eyebrow">Public APIs · curated · searchable</p>
+        <h1>Stackpick</h1>
+        <p class="lede">
+          Stop scrolling a 2,000-line README. Filter the catalog, shortlist APIs, ship faster.
+        </p>
+        <div class="cta-row">
+          <a class="btn primary" href="#catalog">Browse catalog</a>
+          <button type="button" class="btn ghost" id="hero-pro">Join Pro waitlist</button>
+        </div>
+      </section>
+
+      <section class="partners" id="partners" aria-labelledby="partners-title">
+        <div class="section-head">
+          <h2 id="partners-title">Partner APIs</h2>
+          <p>Production-grade options when free endpoints are not enough. Clearly labeled referrals.</p>
+        </div>
+        <div class="partner-track" id="partner-track"></div>
+      </section>
+
+      <section class="catalog" id="catalog" aria-labelledby="catalog-title">
+        <div class="section-head">
+          <h2 id="catalog-title">Catalog</h2>
+          <p id="result-meta">Loading APIs…</p>
+        </div>
+
+        <form class="filters" id="filters" role="search">
+          <label class="search-field">
+            <span class="sr-only">Search APIs</span>
+            <input
+              id="q"
+              name="q"
+              type="search"
+              placeholder="Search name, description, category…"
+              autocomplete="off"
+            />
+          </label>
+          <label>
+            Category
+            <select id="category" name="category">
+              <option value="">All</option>
+            </select>
+          </label>
+          <label>
+            Auth
+            <select id="auth" name="auth">
+              <option value="">All</option>
+              <option value="No">None</option>
+              <option value="apiKey">API key</option>
+              <option value="OAuth">OAuth</option>
+              <option value="X-Mashape-Key">Mashape</option>
+              <option value="User-Agent">User-Agent</option>
+            </select>
+          </label>
+          <label>
+            HTTPS
+            <select id="https" name="https">
+              <option value="">All</option>
+              <option value="yes">Required</option>
+              <option value="no">HTTP ok</option>
+            </select>
+          </label>
+          <label>
+            CORS
+            <select id="cors" name="cors">
+              <option value="">All</option>
+              <option value="Yes">Yes</option>
+              <option value="No">No</option>
+              <option value="Unknown">Unknown</option>
+            </select>
+          </label>
+        </form>
+
+        <div class="api-list" id="api-list"></div>
+        <button type="button" class="btn ghost load-more" id="load-more" hidden>Load more</button>
+      </section>
+
+      <section class="pro" id="pro" aria-labelledby="pro-title">
+        <div class="pro-panel">
+          <h2 id="pro-title">Stackpick Pro</h2>
+          <p>
+            Export stacks as JSON / CSV, sync shortlists across devices, and run lightweight health
+            checks. Free browse stays free — Pro unlocks power tools.
+          </p>
+          <ul class="pro-perks">
+            <li>One-click stack export</li>
+            <li>Synced shortlists</li>
+            <li>Endpoint health snapshots</li>
+          </ul>
+          <form id="waitlist-form" class="waitlist">
+            <label>
+              <span class="sr-only">Email</span>
+              <input type="email" name="email" id="waitlist-email" placeholder="you@company.com" required />
+            </label>
+            <button type="submit" class="btn primary">Join waitlist</button>
+          </form>
+          <p class="waitlist-note" id="waitlist-note" role="status" aria-live="polite"></p>
+          <p class="price-hint">Planned: $9 / month · cancel anytime · no charge to join the list</p>
+        </div>
+      </section>
+    </main>
+
+    <aside class="stack-panel" id="stack-panel" hidden aria-labelledby="stack-title">
+      <div class="stack-head">
+        <h2 id="stack-title">Your stack</h2>
+        <button type="button" class="icon-btn" id="close-stack" aria-label="Close stack">×</button>
+      </div>
+      <ol id="stack-items"></ol>
+      <div class="stack-actions">
+        <button type="button" class="btn ghost" id="clear-stack">Clear</button>
+        <button type="button" class="btn primary" id="export-stack">Export (Pro)</button>
+      </div>
+      <p class="stack-hint">Free: save up to 5 APIs locally. Export unlocks with Pro.</p>
+    </aside>
+    <div class="stack-backdrop" id="stack-backdrop" hidden></div>
+
+    <footer class="site-footer">
+      <p>
+        Data sourced from the
+        <a href="https://github.com/public-apis/public-apis" rel="noopener noreferrer" target="_blank"
+          >public-apis</a
+        >
+        community catalog. Partner links may earn referral credit.
+      </p>
+    </footer>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

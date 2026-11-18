@@ -1,3 +1,7 @@
+# Node / Stackpick explorer
+explorer/node_modules/
+explorer/dist/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
