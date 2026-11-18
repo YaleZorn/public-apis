@@ -253,11 +253,17 @@ function renderStack() {
 }
 
 function openStack() {
-  els.stackPanel.hidden = false;
   els.stackBackdrop.hidden = false;
+  els.stackPanel.hidden = false;
+  // Restart enter animation each open (avoids stale fill-mode / FOUC frames).
+  els.stackPanel.classList.remove('is-open');
+  void els.stackPanel.offsetWidth;
+  els.stackPanel.classList.add('is-open');
+  renderStack();
 }
 
 function closeStack() {
+  els.stackPanel.classList.remove('is-open');
   els.stackPanel.hidden = true;
   els.stackBackdrop.hidden = true;
 }
