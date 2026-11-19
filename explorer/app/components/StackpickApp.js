@@ -539,19 +539,14 @@ export function StackpickApp() {
         <a className="brand" href="#top">
           Stackpick
         </a>
-        <nav className="topnav">
+        <nav className="topnav" aria-label="Primary">
           <a href="#catalog">Catalog</a>
           <a href="#partners">Partners</a>
-          <a href="#pro">Sign in</a>
+          <a href="#feedback">Feedback</a>
           {user ? (
-            <>
-              <span className="auth-user" title={user.email || ""}>
-                {user.name || user.email}
-              </span>
-              <button type="button" className="stack-btn" onClick={signOut}>
-                Sign out
-              </button>
-            </>
+            <a className="auth-chip" href="#pro" title={user.email || ""}>
+              {user.name || user.email}
+            </a>
           ) : (
             <a className="stack-btn" href="#pro">
               Sign in
@@ -559,9 +554,10 @@ export function StackpickApp() {
           )}
           <button
             type="button"
-            className="stack-btn"
+            className={`stack-btn${stack.length ? " has-items" : ""}`}
             onClick={() => setPanelOpen(true)}
             aria-controls="stack-panel"
+            aria-expanded={panelOpen}
           >
             Stack <span>{stack.length}</span>
           </button>
@@ -570,11 +566,10 @@ export function StackpickApp() {
 
       <main id="top">
         <section className="hero">
-          <p className="eyebrow">Public APIs · curated · searchable</p>
           <h1>Stackpick</h1>
           <p className="lede">
-            Stop scrolling a 2,000-line README. Filter the catalog, shortlist APIs, export, share, and
-            spot-check health.
+            Find the right public API in seconds. Shortlist a stack, then export, share, or
+            spot-check health — without scrolling a giant README.
           </p>
           <div className="cta-row">
             <a className="btn primary" href="#catalog">
@@ -585,41 +580,23 @@ export function StackpickApp() {
               className="btn ghost"
               onClick={() => document.getElementById("pro")?.scrollIntoView({ behavior: "smooth" })}
             >
-              {user || isPro ? "Account" : "Sign in"}
+              {user || isPro ? "Your account" : "Sign in free"}
             </button>
           </div>
-        </section>
-
-        <section className="partners" id="partners" aria-labelledby="partners-title">
-          <div className="section-head">
-            <h2 id="partners-title">Partner APIs</h2>
-            <p>
-              Production-grade options when free endpoints are not enough. Clearly labeled referrals.
+          {(user || isPro) && (
+            <p className="hero-status" role="status">
+              Signed in{user?.email ? ` as ${user.email}` : proEmail ? ` as ${proEmail}` : ""}. Pro
+              tools are ready in your stack drawer.
             </p>
-          </div>
-          <div className="partner-track">
-            {partners.map((p) => (
-              <a
-                key={p.name + p.url}
-                className="partner-item"
-                href={p.url}
-                target="_blank"
-                rel="noopener noreferrer sponsored"
-              >
-                <span className="tag">{p.label || "Partner"}</span>
-                <strong>{p.name}</strong>
-                <span>{p.description}</span>
-              </a>
-            ))}
-          </div>
+          )}
         </section>
 
         <section className="catalog" id="catalog" aria-labelledby="catalog-title">
           <div className="section-head">
             <h2 id="catalog-title">Catalog</h2>
             <p>
-              {filtered.length.toLocaleString()} APIs match · showing {slice.length}
-              {isPro ? " · Pro" : " · Free"}
+              {filtered.length.toLocaleString()} matching APIs · showing {slice.length}
+              {isPro ? " · Pro unlocked" : " · browsing free"}
             </p>
           </div>
 
@@ -633,7 +610,7 @@ export function StackpickApp() {
                   setQ(e.target.value);
                   setVisible(PAGE_SIZE);
                 }}
-                placeholder="Search name, description, category…"
+                placeholder="Try weather, payments, or anime…"
                 autoComplete="off"
               />
             </label>
@@ -703,7 +680,26 @@ export function StackpickApp() {
           </form>
 
           <div className="api-list">
-            {!slice.length && <p className="empty">No APIs match these filters.</p>}
+            {!slice.length && (
+              <div className="empty-state">
+                <p className="empty-title">Nothing matches that filter</p>
+                <p className="empty">Try a broader search, or clear a filter and look again.</p>
+                <button
+                  type="button"
+                  className="btn ghost"
+                  onClick={() => {
+                    setQ("");
+                    setCategory("");
+                    setAuth("");
+                    setHttps("");
+                    setCors("");
+                    setVisible(PAGE_SIZE);
+                  }}
+                >
+                  Clear filters
+                </button>
+              </div>
+            )}
             {slice.map((api) => {
               const inStack = stack.some((item) => item.id === api.id);
               return (
@@ -726,6 +722,7 @@ export function StackpickApp() {
                     type="button"
                     className={`add-btn${inStack ? " in-stack" : ""}`}
                     onClick={() => toggleStack(api)}
+                    aria-pressed={inStack}
                   >
                     {inStack ? "In stack" : "Add"}
                   </button>
@@ -739,115 +736,166 @@ export function StackpickApp() {
               className="btn ghost load-more"
               onClick={() => setVisible((n) => n + PAGE_SIZE)}
             >
-              Load more
+              Show more APIs
             </button>
           )}
         </section>
 
-        <section className="pro" id="pro" aria-labelledby="pro-title">
-          <div className="pro-panel">
-            <h2 id="pro-title">Sign in</h2>
-            <p>
-              Create an account or sign back in. Google, GitHub, or email magic link — same flow for
-              new and returning users. Signing in unlocks Pro tools (export, share, health, larger
-              shortlist) while paid billing is prepared.
-            </p>
-            <ul className="pro-perks">
-              <li>One-click stack export (JSON / CSV)</li>
-              <li>Shareable shortlist links</li>
-              <li>Endpoint health snapshots (catalog URLs only)</li>
-              <li>Larger shortlist cap ({PRO_STACK_LIMIT})</li>
-            </ul>
-            <div className="auth-row">
-              {authProviders.google ? (
-                <a className="btn primary" href="/api/auth/google">
-                  Continue with Google
-                </a>
-              ) : (
-                <button type="button" className="btn ghost" disabled title="Add GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET">
-                  Google (add app secrets)
-                </button>
-              )}
-              {authProviders.github ? (
-                <a className="btn ghost" href="/api/auth/github">
-                  Continue with GitHub
-                </a>
-              ) : (
-                <button type="button" className="btn ghost" disabled title="Add GITHUB_CLIENT_ID / GITHUB_CLIENT_SECRET">
-                  GitHub (add app secrets)
-                </button>
-              )}
-              {authProviders.sampleLogin && (
-                <button type="button" className="btn ghost" onClick={sampleSignIn}>
-                  Sample sign-in
-                </button>
-              )}
-              {user && (
-                <button type="button" className="btn ghost" onClick={signOut}>
-                  Sign out
-                </button>
-              )}
-            </div>
-            <p className="price-hint">Or sign in with email — we send a one-time link, no password.</p>
-            <form className="waitlist" onSubmit={signInWithEmail}>
-              <label>
-                <span className="sr-only">Email</span>
-                <input
-                  type="email"
-                  name="email"
-                  value={waitlistEmail}
-                  onChange={(e) => setWaitlistEmail(e.target.value)}
-                  placeholder="you@company.com"
-                  required
-                />
-              </label>
-              <input
-                className="hp"
-                type="text"
-                name="company"
-                tabIndex={-1}
-                autoComplete="off"
-                aria-hidden="true"
-              />
-              <button type="submit" className="btn primary" disabled={waitlistBusy}>
-                {waitlistBusy ? "Sending link…" : "Email sign-in link"}
-              </button>
-            </form>
-            <p className="waitlist-note" role="status" aria-live="polite">
-              {waitlistNote}
-            </p>
-            <p className="price-hint">
-              Planned: $9 / month · cancel anytime · signing in unlocks Pro tools now
-            </p>
+        <section className="partners" id="partners" aria-labelledby="partners-title">
+          <div className="section-head">
+            <h2 id="partners-title">Partner APIs</h2>
+            <p>When a free endpoint is not enough — clearly labeled referrals.</p>
+          </div>
+          <div className="partner-track">
+            {partners.map((p) => (
+              <a
+                key={p.name + p.url}
+                className="partner-item"
+                href={p.url}
+                target="_blank"
+                rel="noopener noreferrer sponsored"
+              >
+                <span className="tag">{p.label || "Partner"}</span>
+                <strong>{p.name}</strong>
+                <span>{p.description}</span>
+              </a>
+            ))}
           </div>
         </section>
 
-        <section className="pro" id="feedback" aria-labelledby="feedback-title">
+        <section className="pro" id="pro" aria-labelledby="pro-title">
           <div className="pro-panel">
-            <h2 id="feedback-title">Feedback</h2>
-            <p>Tell us what to improve — bugs, missing APIs, or monetization ideas.</p>
-            <form className="waitlist" onSubmit={submitFeedback}>
-              <label>
-                <span className="sr-only">Email (optional)</span>
-                <input
-                  type="email"
-                  value={feedbackEmail}
-                  onChange={(e) => setFeedbackEmail(e.target.value)}
-                  placeholder="email (optional)"
-                />
-              </label>
+            {user || isPro ? (
+              <>
+                <h2 id="pro-title">Welcome back</h2>
+                <p>
+                  You are signed in
+                  {user?.email || proEmail ? ` as ${(user && user.email) || proEmail}` : ""}. Export,
+                  share, and health checks are unlocked on this device.
+                </p>
+                <ul className="pro-perks">
+                  <li>Shortlist up to {PRO_STACK_LIMIT} APIs</li>
+                  <li>Export JSON / CSV from the stack drawer</li>
+                  <li>Share a link and run catalog health checks</li>
+                </ul>
+                <div className="auth-row">
+                  <button
+                    type="button"
+                    className="btn primary"
+                    onClick={() => setPanelOpen(true)}
+                  >
+                    Open your stack
+                  </button>
+                  <button type="button" className="btn ghost" onClick={signOut}>
+                    Sign out
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <h2 id="pro-title">Sign in to unlock Pro</h2>
+                <p>
+                  Free while we prepare billing. One account for new and returning visitors — Google,
+                  GitHub, or a password-free email link — then export, share, and health-check your
+                  shortlist.
+                </p>
+                <ul className="pro-perks">
+                  <li>Export stacks as JSON or CSV</li>
+                  <li>Share a shortlist link with teammates</li>
+                  <li>Check whether catalog endpoints respond</li>
+                  <li>Raise the shortlist cap to {PRO_STACK_LIMIT}</li>
+                </ul>
+                <div className="auth-row">
+                  {authProviders.google ? (
+                    <a className="btn primary" href="/api/auth/google">
+                      Continue with Google
+                    </a>
+                  ) : null}
+                  {authProviders.github ? (
+                    <a className={`btn ${authProviders.google ? "ghost" : "primary"}`} href="/api/auth/github">
+                      Continue with GitHub
+                    </a>
+                  ) : null}
+                  {authProviders.sampleLogin && (
+                    <button type="button" className="btn ghost" onClick={sampleSignIn}>
+                      Try a sample account
+                    </button>
+                  )}
+                  {!authProviders.google && !authProviders.github && !authProviders.sampleLogin && (
+                    <p className="price-hint">
+                      Social sign-in needs Google/GitHub app secrets. Email link below still works when
+                      mail is configured.
+                    </p>
+                  )}
+                </div>
+                <div className="auth-divider">
+                  <span>or use email</span>
+                </div>
+                <form className="waitlist" onSubmit={signInWithEmail}>
+                  <label>
+                    <span className="sr-only">Email</span>
+                    <input
+                      type="email"
+                      name="email"
+                      value={waitlistEmail}
+                      onChange={(e) => setWaitlistEmail(e.target.value)}
+                      placeholder="you@company.com"
+                      required
+                      autoComplete="email"
+                    />
+                  </label>
+                  <input
+                    className="hp"
+                    type="text"
+                    name="company"
+                    tabIndex={-1}
+                    autoComplete="off"
+                    aria-hidden="true"
+                  />
+                  <button type="submit" className="btn primary" disabled={waitlistBusy}>
+                    {waitlistBusy ? "Sending…" : "Send sign-in link"}
+                  </button>
+                </form>
+                <p className="price-hint">
+                  We email a one-time link — no password to remember. Planned paid plan: $9/month.
+                </p>
+              </>
+            )}
+            {waitlistNote && (
+              <p className="status-note" role="status" aria-live="polite">
+                {waitlistNote}
+              </p>
+            )}
+          </div>
+        </section>
+
+        <section className="feedback-section" id="feedback" aria-labelledby="feedback-title">
+          <div className="feedback-panel">
+            <h2 id="feedback-title">How are we doing?</h2>
+            <p>Bugs, missing APIs, or ideas for monetization — we read every note.</p>
+            <form className="waitlist feedback-form" onSubmit={submitFeedback}>
               <label className="feedback-box">
                 <span className="sr-only">Message</span>
                 <textarea
                   value={feedbackText}
                   onChange={(e) => setFeedbackText(e.target.value)}
-                  placeholder="Your feedback…"
+                  placeholder="What should we improve?"
                   rows={4}
                   required
                   minLength={8}
                   maxLength={2000}
                 />
               </label>
+              <label>
+                <span className="sr-only">Email (optional)</span>
+                <input
+                  type="email"
+                  value={feedbackEmail}
+                  onChange={(e) => setFeedbackEmail(e.target.value)}
+                  placeholder="Email if you want a reply (optional)"
+                  autoComplete="email"
+                />
+              </label>
               <input
                 className="hp"
                 type="text"
@@ -856,61 +904,14 @@ export function StackpickApp() {
                 autoComplete="off"
                 aria-hidden="true"
               />
-              <button type="submit" className="btn primary" disabled={feedbackBusy}>
-                Send feedback
+              <button type="submit" className="btn ghost" disabled={feedbackBusy}>
+                {feedbackBusy ? "Sending…" : "Send feedback"}
               </button>
             </form>
-            <p className="waitlist-note" role="status" aria-live="polite">
-              {feedbackNote}
-            </p>
-          </div>
-        </section>
-
-        <section className="pro" id="admin" aria-labelledby="admin-title">
-          <div className="pro-panel">
-            <h2 id="admin-title">Ops</h2>
-            <p>
-              Site ops for the owner/agent: waitlist counts, mail quota, and feedback. Requires the
-              ADMIN_TOKEN app secret (or Cursor team-admin identity on a private/team publish).
-            </p>
-            <form className="waitlist" onSubmit={loadAdminSummary}>
-              <label>
-                <span className="sr-only">Admin token</span>
-                <input
-                  type="password"
-                  value={adminToken}
-                  onChange={(e) => setAdminToken(e.target.value)}
-                  placeholder="ADMIN_TOKEN"
-                  autoComplete="off"
-                />
-              </label>
-              <button type="submit" className="btn ghost">
-                Load summary
-              </button>
-            </form>
-            <p className="waitlist-note" role="status">
-              {adminNote}
-            </p>
-            {adminSummary?.stats && (
-              <ul className="pro-perks">
-                <li>Accounts (email): {adminSummary.stats.accounts ?? adminSummary.stats.waitlist}</li>
-                <li>Confirmed sign-ins: {adminSummary.stats.confirmed}</li>
-                <li>Active shares: {adminSummary.stats.activeStacks}</li>
-                <li>New feedback: {adminSummary.stats.newFeedback}</li>
-                <li>Mail sent today: {adminSummary.stats.mailSentToday}</li>
-              </ul>
-            )}
-            {!!adminSummary?.feedback?.length && (
-              <ul className="health-list">
-                {adminSummary.feedback.slice(0, 8).map((item) => (
-                  <li key={item.id}>
-                    <strong>{item.category}</strong>{" "}
-                    <span>
-                      {item.status} · {(item.message || "").slice(0, 120)}
-                    </span>
-                  </li>
-                ))}
-              </ul>
+            {feedbackNote && (
+              <p className="status-note" role="status" aria-live="polite">
+                {feedbackNote}
+              </p>
             )}
           </div>
         </section>
@@ -929,7 +930,12 @@ export function StackpickApp() {
           </button>
         </div>
         <ol id="stack-items">
-          {!stack.length && <li className="empty">No APIs shortlisted yet.</li>}
+          {!stack.length && (
+            <li className="empty-state compact">
+              <p className="empty-title">Your stack is empty</p>
+              <p className="empty">Add APIs from the catalog — they stay on this device until you clear them.</p>
+            </li>
+          )}
           {stack.map((item) => (
             <li key={item.id}>
               <div>
@@ -974,8 +980,8 @@ export function StackpickApp() {
           </button>
         </div>
         <p className="stack-hint">
-          Free: save up to {FREE_STACK_LIMIT} locally. Pro unlocks export, share sync, health, and up
-          to {PRO_STACK_LIMIT}.
+          Free shortlist: {FREE_STACK_LIMIT} APIs. Sign in for export, share, health, and up to{" "}
+          {PRO_STACK_LIMIT}.
         </p>
         {shareNote && (
           <p className="waitlist-note" role="status">
@@ -1008,18 +1014,63 @@ export function StackpickApp() {
 
       <footer className="site-footer">
         <p>
-          Data sourced from the{" "}
+          Data from the{" "}
           <a href="https://github.com/public-apis/public-apis" rel="noopener noreferrer" target="_blank">
             public-apis
           </a>{" "}
           community catalog. Partner links may earn referral credit.
-          {sampleData && (
-            <> Storage is running on sample in-memory data until Postgres is attached.</>
-          )}
-          {!mailConfigured && (
-            <> Confirmation email needs the RESEND_API_KEY app secret for production unlocks.</>
+          {sampleData && <> Running on sample in-memory storage until Postgres is attached.</>}
+          {!mailConfigured && !authProviders.google && !authProviders.github && (
+            <> Email sign-in needs RESEND_API_KEY when you leave sample mode.</>
           )}
         </p>
+        <details className="ops-details">
+          <summary>Owner ops</summary>
+          <p className="price-hint">
+            Load account and feedback counts with the ADMIN_TOKEN app secret.
+          </p>
+          <form className="waitlist" onSubmit={loadAdminSummary}>
+            <label>
+              <span className="sr-only">Admin token</span>
+              <input
+                type="password"
+                value={adminToken}
+                onChange={(e) => setAdminToken(e.target.value)}
+                placeholder="ADMIN_TOKEN"
+                autoComplete="off"
+              />
+            </label>
+            <button type="submit" className="btn ghost">
+              Load summary
+            </button>
+          </form>
+          {adminNote && (
+            <p className="status-note" role="status">
+              {adminNote}
+            </p>
+          )}
+          {adminSummary?.stats && (
+            <ul className="ops-stats">
+              <li>Accounts: {adminSummary.stats.accounts ?? adminSummary.stats.waitlist}</li>
+              <li>Confirmed: {adminSummary.stats.confirmed}</li>
+              <li>Active shares: {adminSummary.stats.activeStacks}</li>
+              <li>New feedback: {adminSummary.stats.newFeedback}</li>
+              <li>Mail today: {adminSummary.stats.mailSentToday}</li>
+            </ul>
+          )}
+          {!!adminSummary?.feedback?.length && (
+            <ul className="health-list">
+              {adminSummary.feedback.slice(0, 8).map((item) => (
+                <li key={item.id}>
+                  <strong>{item.category}</strong>{" "}
+                  <span>
+                    {item.status} · {(item.message || "").slice(0, 120)}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </details>
       </footer>
     </>
   );

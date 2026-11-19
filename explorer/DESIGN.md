@@ -21,7 +21,7 @@ Blueprint drafting table: deep navy paper, cyan construction grid, cadmium highl
 - Filters sit on a ruled panel, not cards.
 - API rows are list rows with metadata chips.
 - Partner placements use a small yellow Partner tag.
-- Stack is a right drawer; Pro is a single highlighted panel.
+- Stack is a right drawer; account/sign-in is a single highlighted panel; owner ops live in a footer disclosure.
 
 ## Motion
 
