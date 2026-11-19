@@ -52,8 +52,8 @@ async function postResend({ apiKey, from, email, confirmUrl }) {
     body: JSON.stringify({
       from,
       to: [email],
-      subject: "Confirm your Stackpick Pro waitlist",
-      text: `Confirm your email to unlock Stackpick Pro:\n\n${confirmUrl}\n\nIf you did not request this, ignore this message.`,
+      subject: "Sign in to Stackpick",
+      text: `Use this link to sign in to Stackpick and unlock Pro tools:\n\n${confirmUrl}\n\nIf you did not request this, ignore this message.`,
     }),
   });
   const detail = res.ok ? "" : (await res.text().catch(() => "")).slice(0, 300);

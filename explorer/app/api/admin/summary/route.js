@@ -31,6 +31,7 @@ export async function GET(request) {
     via: auth.via,
     stats: {
       waitlist: waitlist[0]?.count || 0,
+      accounts: waitlist[0]?.count || 0,
       confirmed: confirmed[0]?.count || 0,
       activeStacks: stacks[0]?.count || 0,
       newFeedback: feedback[0]?.count || 0,

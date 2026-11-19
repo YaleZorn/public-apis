@@ -105,6 +105,7 @@ export function StackpickApp() {
   async function confirmWaitlistToken(confirmToken) {
     const res = await fetch("/api/waitlist/confirm", {
       method: "POST",
+      credentials: "include",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ token: confirmToken }),
     });
@@ -116,7 +117,8 @@ export function StackpickApp() {
     localStorage.setItem(STORAGE_PRO_TOKEN, payload.token);
     setProEmail(payload.email);
     setProToken(payload.token);
-    setWaitlistNote(`Email confirmed for ${payload.email}. Pro tools are unlocked on this device.`);
+    setWaitlistNote(`Signed in as ${payload.email}. Account ready — Pro tools unlocked.`);
+    await refreshAuthUser();
     return payload;
   }
 
@@ -138,7 +140,7 @@ export function StackpickApp() {
       setWaitlistNote(`Pro unlocked for ${savedPro}.`);
     } else if (savedPro && !savedToken) {
       localStorage.removeItem(STORAGE_PRO);
-      setWaitlistNote("Please rejoin the waitlist to refresh Pro access.");
+      setWaitlistNote("Please sign in again to refresh Pro access.");
     }
 
     const params = new URLSearchParams(window.location.search);
@@ -180,7 +182,7 @@ export function StackpickApp() {
             next.searchParams.delete("confirm");
             window.history.replaceState({}, "", next.pathname + next.search);
           } catch {
-            setWaitlistNote("Confirmation link invalid or expired. Request a new waitlist email.");
+            setWaitlistNote("Sign-in link invalid or expired. Request a new email link.");
           }
         }
         if (code) {
@@ -249,13 +251,13 @@ export function StackpickApp() {
       setWaitlistNote(
         isPro
           ? `Pro shortlist is limited to ${PRO_STACK_LIMIT} APIs.`
-          : "Free shortlist is limited to 5 APIs. Join Pro waitlist to raise the cap and unlock export/health.",
+          : "Free shortlist is limited to 5 APIs. Sign in to raise the cap and unlock export/health.",
       );
       document.getElementById("pro")?.scrollIntoView({ behavior: "smooth" });
     }
   }
 
-  async function joinWaitlist(event) {
+  async function signInWithEmail(event) {
     event.preventDefault();
     const email = waitlistEmail.trim().toLowerCase();
     if (!email) return;
@@ -268,7 +270,7 @@ export function StackpickApp() {
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           email,
-          source: "web",
+          source: "email-signin",
           company: form.get("company") || "",
         }),
       });
@@ -277,29 +279,29 @@ export function StackpickApp() {
         if (payload.error === "rate_limited") {
           setWaitlistNote("Too many attempts. Try again in a few minutes.");
         } else if (payload.error === "mail_quota") {
-          setWaitlistNote("Daily confirmation email quota reached. Try again tomorrow.");
+          setWaitlistNote("Daily sign-in email quota reached. Try again tomorrow.");
         } else if (payload.error === "mail_failed") {
           const mailHints = {
             auth: "Resend rejected the API key. Check RESEND_API_KEY in app secrets.",
             from: "Sender address is not verified in Resend. Set RESEND_FROM to onboarding@resend.dev or a verified domain.",
             test_recipient:
               "Resend test mode only delivers to your Resend account email until you verify a domain.",
-            provider: "Could not send confirmation email. Try again later.",
+            provider: "Could not send sign-in email. Try again later.",
           };
           setWaitlistNote(mailHints[payload.reason] || mailHints.provider);
         } else {
-          setWaitlistNote("Could not join waitlist. Check the email and retry.");
+          setWaitlistNote("Could not start email sign-in. Check the address and retry.");
         }
         return;
       }
 
       setWaitlistEmail("");
       if (payload.delivery === "cooldown") {
-        setWaitlistNote("Confirmation already sent recently. Check your inbox or wait an hour.");
+        setWaitlistNote("Sign-in email already sent recently. Check your inbox or wait an hour.");
         return;
       }
       if (payload.delivery === "email") {
-        setWaitlistNote(`Check ${email} for a confirmation link to unlock Pro.`);
+        setWaitlistNote(`Check ${email} for a sign-in link. New and returning accounts use the same flow.`);
         return;
       }
       if (payload.delivery === "sample" && payload.sampleConfirmToken) {
@@ -307,10 +309,10 @@ export function StackpickApp() {
         return;
       }
       setWaitlistNote(
-        "You're on the list. Add the RESEND_API_KEY app secret, then request confirmation again to unlock Pro.",
+        "Email sign-in needs RESEND_API_KEY. Or use Google/GitHub once those secrets are added.",
       );
     } catch {
-      setWaitlistNote("Network error joining waitlist.");
+      setWaitlistNote("Network error starting email sign-in.");
     } finally {
       setWaitlistBusy(false);
     }
@@ -382,7 +384,7 @@ export function StackpickApp() {
 
   function exportStack(format) {
     if (!isPro) {
-      setWaitlistNote("Export unlocks after you join the Pro waitlist.");
+      setWaitlistNote("Export unlocks after you sign in.");
       document.getElementById("pro")?.scrollIntoView({ behavior: "smooth" });
       setPanelOpen(false);
       return;
@@ -412,7 +414,7 @@ export function StackpickApp() {
 
   async function shareStack() {
     if (!isPro) {
-      setWaitlistNote("Share links unlock after you join the Pro waitlist.");
+      setWaitlistNote("Share links unlock after you sign in.");
       document.getElementById("pro")?.scrollIntoView({ behavior: "smooth" });
       return;
     }
@@ -439,7 +441,7 @@ export function StackpickApp() {
             : payload.error === "capacity"
               ? "Share capacity is full. Try again later."
               : payload.error === "pro_required"
-                ? "Pro token expired. Rejoin the waitlist to refresh access."
+                ? "Session expired. Sign in again to refresh access."
                 : "Could not create share link.",
         );
         return;
@@ -457,7 +459,7 @@ export function StackpickApp() {
 
   async function runHealth() {
     if (!isPro) {
-      setWaitlistNote("Health checks unlock after you join the Pro waitlist.");
+      setWaitlistNote("Health checks unlock after you sign in.");
       document.getElementById("pro")?.scrollIntoView({ behavior: "smooth" });
       return;
     }
@@ -486,7 +488,7 @@ export function StackpickApp() {
           payload.error === "rate_limited"
             ? "Health check rate limited. Try again shortly."
             : payload.error === "pro_required"
-              ? "Pro token expired. Rejoin the waitlist to refresh access."
+              ? "Session expired. Sign in again to refresh access."
               : "Health check failed.",
         );
         return;
@@ -540,7 +542,7 @@ export function StackpickApp() {
         <nav className="topnav">
           <a href="#catalog">Catalog</a>
           <a href="#partners">Partners</a>
-          <a href="#pro">Pro</a>
+          <a href="#pro">Sign in</a>
           {user ? (
             <>
               <span className="auth-user" title={user.email || ""}>
@@ -583,7 +585,7 @@ export function StackpickApp() {
               className="btn ghost"
               onClick={() => document.getElementById("pro")?.scrollIntoView({ behavior: "smooth" })}
             >
-              {isPro ? "Pro unlocked" : "Join Pro waitlist"}
+              {user || isPro ? "Account" : "Sign in"}
             </button>
           </div>
         </section>
@@ -744,11 +746,11 @@ export function StackpickApp() {
 
         <section className="pro" id="pro" aria-labelledby="pro-title">
           <div className="pro-panel">
-            <h2 id="pro-title">Stackpick Pro</h2>
+            <h2 id="pro-title">Sign in</h2>
             <p>
-              Export stacks as JSON / CSV, share synced shortlist links, and run lightweight health
-              checks. Sign in with Google or GitHub to unlock Pro (OAuth proves email ownership), or
-              join the email waitlist.
+              Create an account or sign back in. Google, GitHub, or email magic link — same flow for
+              new and returning users. Signing in unlocks Pro tools (export, share, health, larger
+              shortlist) while paid billing is prepared.
             </p>
             <ul className="pro-perks">
               <li>One-click stack export (JSON / CSV)</li>
@@ -763,7 +765,7 @@ export function StackpickApp() {
                 </a>
               ) : (
                 <button type="button" className="btn ghost" disabled title="Add GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET">
-                  Google (not configured)
+                  Google (add app secrets)
                 </button>
               )}
               {authProviders.github ? (
@@ -772,7 +774,7 @@ export function StackpickApp() {
                 </a>
               ) : (
                 <button type="button" className="btn ghost" disabled title="Add GITHUB_CLIENT_ID / GITHUB_CLIENT_SECRET">
-                  GitHub (not configured)
+                  GitHub (add app secrets)
                 </button>
               )}
               {authProviders.sampleLogin && (
@@ -786,7 +788,8 @@ export function StackpickApp() {
                 </button>
               )}
             </div>
-            <form className="waitlist" onSubmit={joinWaitlist}>
+            <p className="price-hint">Or sign in with email — we send a one-time link, no password.</p>
+            <form className="waitlist" onSubmit={signInWithEmail}>
               <label>
                 <span className="sr-only">Email</span>
                 <input
@@ -794,7 +797,7 @@ export function StackpickApp() {
                   name="email"
                   value={waitlistEmail}
                   onChange={(e) => setWaitlistEmail(e.target.value)}
-                  placeholder="or unlock by email confirm"
+                  placeholder="you@company.com"
                   required
                 />
               </label>
@@ -806,15 +809,15 @@ export function StackpickApp() {
                 autoComplete="off"
                 aria-hidden="true"
               />
-              <button type="submit" className="btn ghost" disabled={waitlistBusy}>
-                {isPro ? "Refresh email unlock" : "Email waitlist"}
+              <button type="submit" className="btn primary" disabled={waitlistBusy}>
+                {waitlistBusy ? "Sending link…" : "Email sign-in link"}
               </button>
             </form>
             <p className="waitlist-note" role="status" aria-live="polite">
               {waitlistNote}
             </p>
             <p className="price-hint">
-              Planned: $9 / month · cancel anytime · OAuth / waitlist unlocks Pro tools now
+              Planned: $9 / month · cancel anytime · signing in unlocks Pro tools now
             </p>
           </div>
         </section>
@@ -890,8 +893,8 @@ export function StackpickApp() {
             </p>
             {adminSummary?.stats && (
               <ul className="pro-perks">
-                <li>Waitlist: {adminSummary.stats.waitlist}</li>
-                <li>Confirmed: {adminSummary.stats.confirmed}</li>
+                <li>Accounts (email): {adminSummary.stats.accounts ?? adminSummary.stats.waitlist}</li>
+                <li>Confirmed sign-ins: {adminSummary.stats.confirmed}</li>
                 <li>Active shares: {adminSummary.stats.activeStacks}</li>
                 <li>New feedback: {adminSummary.stats.newFeedback}</li>
                 <li>Mail sent today: {adminSummary.stats.mailSentToday}</li>
