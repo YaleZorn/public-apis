@@ -4,16 +4,34 @@ import { mailConfigured, sendConfirmEmail } from "../../../server/mail.js";
 import { allowRequest, clientKey } from "../../../server/rateLimit.js";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const PUBLIC_ORIGIN_RE = /^https:\/\/[a-z0-9.-]+(?::\d+)?$/i;
 
+/**
+ * Build confirm links from a pinned public origin, never from visitor-controlled
+ * X-Forwarded-Host / X-Forwarded-Proto (open redirect / phishing risk).
+ */
 function originFrom(request) {
-  const proto = request.headers.get("x-forwarded-proto") || "https";
-  const host = request.headers.get("x-forwarded-host") || request.headers.get("host");
-  if (host) return `${proto}://${host}`;
-  return new URL(request.url).origin;
+  const pinned = process.env.APP_BASE_URL?.trim() || process.env.NEXT_PUBLIC_APP_URL?.trim();
+  if (pinned && PUBLIC_ORIGIN_RE.test(pinned.replace(/\/$/, ""))) {
+    return pinned.replace(/\/$/, "");
+  }
+  try {
+    const url = new URL(request.url);
+    if (url.protocol === "https:" || url.hostname === "localhost" || url.hostname === "127.0.0.1") {
+      return url.origin;
+    }
+  } catch {
+    // fall through
+  }
+  return "https://stackpick.apps.grok.bot";
 }
 
 export async function POST(request) {
-  if (!(await allowRequest(`waitlist:${clientKey(request)}`, { limit: 8, windowMs: 60_000 }))) {
+  const canMail = mailConfigured();
+  // Tighter bucket when each call can spend Resend quota.
+  const limit = canMail ? 3 : 8;
+  const windowMs = canMail ? 10 * 60_000 : 60_000;
+  if (!(await allowRequest(`waitlist:${clientKey(request)}`, { limit, windowMs }))) {
     return Response.json({ error: "rate_limited" }, { status: 429 });
   }
 
@@ -43,27 +61,27 @@ export async function POST(request) {
       "insert into waitlist (email, source, confirm_token) values ($1, $2, $3)",
       [email, String(body.source || "web").slice(0, 40), confirmToken],
     );
-  } else if (!existing[0].confirmed_at) {
-    await sql("update waitlist set confirm_token = $2 where email = $1", [email, confirmToken]);
   } else {
-    // Already confirmed: rotate confirm token unused; tell client to use confirm flow for new Pro token via email again.
     await sql("update waitlist set confirm_token = $2 where email = $1", [email, confirmToken]);
   }
 
   const confirmUrl = `${originFrom(request)}/?confirm=${confirmToken}`;
-  const sampleMode = !process.env.DATABASE_URL?.trim();
-  const canMail = mailConfigured();
+  // Sample confirm tokens only with an explicit local flag — never when Postgres is attached.
+  // (next start always sets NODE_ENV=production, so do not gate on NODE_ENV.)
+  const sampleMode =
+    !process.env.DATABASE_URL?.trim() && process.env.STACKPICK_ALLOW_SAMPLE_CONFIRM === "1";
 
   if (canMail) {
     const mailed = await sendConfirmEmail({ email, confirmUrl });
     if (!mailed.sent) {
-      return Response.json({ error: "mail_failed" }, { status: 502 });
+      return Response.json(
+        { error: "mail_failed", reason: mailed.reason || "provider" },
+        { status: 502 },
+      );
     }
     return Response.json({ ok: true, delivery: "email" });
   }
 
-  // Local/sample only: expose the confirm token so flows work without a mail secret.
-  // Production with Postgres never returns the token in the response body.
   if (sampleMode) {
     return Response.json({
       ok: true,

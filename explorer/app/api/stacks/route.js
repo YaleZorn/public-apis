@@ -4,11 +4,12 @@ import { sql } from "../../../server/db.js";
 import { allowRequest, clientKey } from "../../../server/rateLimit.js";
 
 const MAX_ITEMS = 40;
-const MAX_ACTIVE_STACKS = 2000;
+const MAX_ACTIVE_STACKS = 500;
 const TTL_DAYS = 7;
 
 export async function POST(request) {
-  if (!(await allowRequest(`stacks:${clientKey(request)}`, { limit: 8, windowMs: 60_000 }))) {
+  // Keep share creation cheap to exhaust: 3 / 10 min per IP edge hop.
+  if (!(await allowRequest(`stacks:${clientKey(request)}`, { limit: 3, windowMs: 10 * 60_000 }))) {
     return Response.json({ error: "rate_limited" }, { status: 429 });
   }
 

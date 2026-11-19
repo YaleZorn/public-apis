@@ -200,13 +200,20 @@ export function StackpickApp() {
       });
       const payload = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setWaitlistNote(
-          payload.error === "rate_limited"
-            ? "Too many attempts. Try again in a minute."
-            : payload.error === "mail_failed"
-              ? "Could not send confirmation email. Try again later."
-              : "Could not join waitlist. Check the email and retry.",
-        );
+        if (payload.error === "rate_limited") {
+          setWaitlistNote("Too many attempts. Try again in a few minutes.");
+        } else if (payload.error === "mail_failed") {
+          const mailHints = {
+            auth: "Resend rejected the API key. Check RESEND_API_KEY in app secrets.",
+            from: "Sender address is not verified in Resend. Set RESEND_FROM to onboarding@resend.dev or a verified domain.",
+            test_recipient:
+              "Resend test mode only delivers to your Resend account email until you verify a domain.",
+            provider: "Could not send confirmation email. Try again later.",
+          };
+          setWaitlistNote(mailHints[payload.reason] || mailHints.provider);
+        } else {
+          setWaitlistNote("Could not join waitlist. Check the email and retry.");
+        }
         return;
       }
 
