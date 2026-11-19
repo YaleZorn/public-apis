@@ -1,34 +1,42 @@
-const buckets = new Map();
+import { sql } from "./db.js";
 
-/** Simple in-memory rate limit. Returns true when the caller is allowed. */
-export function allowRequest(key, { limit = 20, windowMs = 60_000 } = {}) {
-  const now = Date.now();
-  const bucket = buckets.get(key) ?? [];
-  const fresh = bucket.filter((t) => now - t < windowMs);
-  if (fresh.length >= limit) {
-    buckets.set(key, fresh);
-    return false;
-  }
-  fresh.push(now);
-  buckets.set(key, fresh);
-  return true;
+/**
+ * Rate limit backed by Postgres/PGlite so limits hold across instances.
+ * Returns true when the caller is allowed.
+ */
+export async function allowRequest(key, { limit = 20, windowMs = 60_000 } = {}) {
+  const now = new Date();
+  const windowStart = now.toISOString();
+  const cutoff = new Date(now.getTime() - windowMs).toISOString();
+  const rows = await sql(
+    `insert into rate_limits (bucket_key, window_start, hit_count)
+     values ($1, $2, 1)
+     on conflict (bucket_key) do update
+     set
+       hit_count = case
+         when rate_limits.window_start < $3::timestamptz then 1
+         else rate_limits.hit_count + 1
+       end,
+       window_start = case
+         when rate_limits.window_start < $3::timestamptz then excluded.window_start
+         else rate_limits.window_start
+       end
+     returning hit_count`,
+    [key, windowStart, cutoff],
+  );
+  return Boolean(rows[0] && rows[0].hit_count <= limit);
 }
 
 /**
- * Prefer platform-provided identity. Never trust the leftmost
- * X-Forwarded-For value — clients can spoof that hop.
+ * Do not trust X-Real-IP or the leftmost X-Forwarded-For hop — clients can
+ * spoof those. Prefer the rightmost forwarded hop (added by the edge).
  */
 export function clientKey(request) {
-  const realIp = (request.headers.get("x-real-ip") || "").trim();
-  if (realIp) return realIp;
-
   const forwarded = request.headers.get("x-forwarded-for") || "";
   const hops = forwarded
     .split(",")
     .map((part) => part.trim())
     .filter(Boolean);
-  // Rightmost hop is typically appended by the trusted edge proxy.
   if (hops.length) return hops[hops.length - 1];
-
   return "local";
 }

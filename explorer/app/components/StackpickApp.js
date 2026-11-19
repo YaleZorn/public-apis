@@ -38,9 +38,28 @@ export function StackpickApp() {
   const [healthRows, setHealthRows] = useState([]);
   const [busy, setBusy] = useState("");
   const [sampleData, setSampleData] = useState(false);
+  const [mailConfigured, setMailConfigured] = useState(false);
 
   const isPro = Boolean(proEmail && proToken);
   const stackLimit = isPro ? PRO_STACK_LIMIT : FREE_STACK_LIMIT;
+
+  async function confirmWaitlistToken(confirmToken) {
+    const res = await fetch("/api/waitlist/confirm", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ token: confirmToken }),
+    });
+    const payload = await res.json().catch(() => ({}));
+    if (!res.ok || !payload.token || !payload.email) {
+      throw new Error(payload.error || "confirm_failed");
+    }
+    localStorage.setItem(STORAGE_PRO, payload.email);
+    localStorage.setItem(STORAGE_PRO_TOKEN, payload.token);
+    setProEmail(payload.email);
+    setProToken(payload.token);
+    setWaitlistNote(`Email confirmed for ${payload.email}. Pro tools are unlocked on this device.`);
+    return payload;
+  }
 
   useEffect(() => {
     const onKey = (e) => {
@@ -65,9 +84,13 @@ export function StackpickApp() {
 
     const params = new URLSearchParams(window.location.search);
     const code = params.get("stack");
+    const confirm = params.get("confirm");
     fetch("/api/status")
       .then((res) => res.json())
-      .then((status) => setSampleData(Boolean(status.sampleData)))
+      .then((status) => {
+        setSampleData(Boolean(status.sampleData));
+        setMailConfigured(Boolean(status.mailConfigured));
+      })
       .catch(() => setSampleData(true));
     fetch("/data/apis.json")
       .then((res) => {
@@ -76,6 +99,16 @@ export function StackpickApp() {
       })
       .then(async (catalog) => {
         setData(catalog);
+        if (confirm) {
+          try {
+            await confirmWaitlistToken(confirm);
+            const next = new URL(window.location.href);
+            next.searchParams.delete("confirm");
+            window.history.replaceState({}, "", next.pathname + next.search);
+          } catch {
+            setWaitlistNote("Confirmation link invalid or expired. Request a new waitlist email.");
+          }
+        }
         if (code) {
           try {
             const res = await fetch(`/api/stacks/${encodeURIComponent(code)}`);
@@ -170,20 +203,25 @@ export function StackpickApp() {
         setWaitlistNote(
           payload.error === "rate_limited"
             ? "Too many attempts. Try again in a minute."
-            : "Could not join waitlist. Check the email and retry.",
+            : payload.error === "mail_failed"
+              ? "Could not send confirmation email. Try again later."
+              : "Could not join waitlist. Check the email and retry.",
         );
         return;
       }
-      if (!payload.token) {
-        setWaitlistNote("Waitlist joined, but Pro token was missing. Try again.");
+
+      setWaitlistEmail("");
+      if (payload.delivery === "email") {
+        setWaitlistNote(`Check ${email} for a confirmation link to unlock Pro.`);
         return;
       }
-      localStorage.setItem(STORAGE_PRO, email);
-      localStorage.setItem(STORAGE_PRO_TOKEN, payload.token);
-      setProEmail(email);
-      setProToken(payload.token);
-      setWaitlistEmail("");
-      setWaitlistNote(`You're on the list as ${email}. Pro tools are unlocked on this device.`);
+      if (payload.delivery === "sample" && payload.sampleConfirmToken) {
+        await confirmWaitlistToken(payload.sampleConfirmToken);
+        return;
+      }
+      setWaitlistNote(
+        "You're on the list. Add the RESEND_API_KEY app secret, then request confirmation again to unlock Pro.",
+      );
     } catch {
       setWaitlistNote("Network error joining waitlist.");
     } finally {
@@ -534,8 +572,8 @@ export function StackpickApp() {
             <h2 id="pro-title">Stackpick Pro</h2>
             <p>
               Export stacks as JSON / CSV, share synced shortlist links, and run lightweight health
-              checks. Free browse stays free — joining the waitlist unlocks Pro tools on this device
-              while billing is prepared.
+              checks. Free browse stays free — confirm your email after joining the waitlist to unlock
+              Pro on this device while billing is prepared.
             </p>
             <ul className="pro-perks">
               <li>One-click stack export (JSON / CSV)</li>
@@ -676,6 +714,9 @@ export function StackpickApp() {
           community catalog. Partner links may earn referral credit.
           {sampleData && (
             <> Storage is running on sample in-memory data until Postgres is attached.</>
+          )}
+          {!mailConfigured && (
+            <> Confirmation email needs the RESEND_API_KEY app secret for production unlocks.</>
           )}
         </p>
       </footer>

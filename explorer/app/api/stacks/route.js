@@ -8,7 +8,7 @@ const MAX_ACTIVE_STACKS = 2000;
 const TTL_DAYS = 7;
 
 export async function POST(request) {
-  if (!allowRequest(`stacks:${clientKey(request)}`, { limit: 8, windowMs: 60_000 })) {
+  if (!(await allowRequest(`stacks:${clientKey(request)}`, { limit: 8, windowMs: 60_000 }))) {
     return Response.json({ error: "rate_limited" }, { status: 429 });
   }
 

@@ -2,7 +2,7 @@ import { sql } from "../../../../server/db.js";
 import { allowRequest, clientKey } from "../../../../server/rateLimit.js";
 
 export async function GET(request, { params }) {
-  if (!allowRequest(`stack-get:${clientKey(request)}`, { limit: 60, windowMs: 60_000 })) {
+  if (!(await allowRequest(`stack-get:${clientKey(request)}`, { limit: 60, windowMs: 60_000 }))) {
     return Response.json({ error: "rate_limited" }, { status: 429 });
   }
 

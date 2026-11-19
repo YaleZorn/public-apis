@@ -42,7 +42,7 @@ async function probe(url) {
 }
 
 export async function POST(request) {
-  if (!allowRequest(`health:${clientKey(request)}`, { limit: 12, windowMs: 60_000 })) {
+  if (!(await allowRequest(`health:${clientKey(request)}`, { limit: 12, windowMs: 60_000 }))) {
     return Response.json({ error: "rate_limited" }, { status: 429 });
   }
 
