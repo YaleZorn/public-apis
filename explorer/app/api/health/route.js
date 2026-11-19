@@ -1,4 +1,5 @@
 import { findApisByIds } from "../../../server/catalog.js";
+import { requireProToken } from "../../../server/proAuth.js";
 import { allowRequest, clientKey } from "../../../server/rateLimit.js";
 
 const MAX_IDS = 5;
@@ -15,7 +16,6 @@ async function probe(url) {
       signal: controller.signal,
       headers: { "user-agent": "StackpickHealth/1.0" },
     });
-    // Some hosts reject HEAD; fall back to GET without reading the body.
     if (res.status === 405 || res.status === 501) {
       res = await fetch(url, {
         method: "GET",
@@ -51,6 +51,11 @@ export async function POST(request) {
     body = await request.json();
   } catch {
     return Response.json({ error: "invalid_json" }, { status: 400 });
+  }
+
+  const auth = await requireProToken(request, body.token);
+  if (!auth.ok) {
+    return Response.json({ error: auth.error }, { status: auth.status });
   }
 
   const ids = Array.isArray(body.ids) ? body.ids.map(String).slice(0, MAX_IDS) : [];

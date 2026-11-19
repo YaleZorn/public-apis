@@ -17,6 +17,14 @@ export async function catalogUrlSet() {
 
 export async function findApisByIds(ids) {
   const data = await loadCatalog();
-  const wanted = new Set(ids);
-  return data.apis.filter((a) => wanted.has(a.id));
+  const byId = new Map();
+  for (const api of data.apis) {
+    if (!byId.has(api.id)) byId.set(api.id, api);
+  }
+  const found = [];
+  for (const id of ids) {
+    const api = byId.get(id);
+    if (api) found.push(api);
+  }
+  return found;
 }

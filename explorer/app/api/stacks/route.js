@@ -1,22 +1,14 @@
 import { randomBytes } from "node:crypto";
+import { findApisByIds } from "../../../server/catalog.js";
 import { sql } from "../../../server/db.js";
 import { allowRequest, clientKey } from "../../../server/rateLimit.js";
 
 const MAX_ITEMS = 40;
-
-function normalizeItems(items) {
-  if (!Array.isArray(items)) return null;
-  if (items.length === 0 || items.length > MAX_ITEMS) return null;
-  return items.map((item) => ({
-    id: String(item.id || "").slice(0, 120),
-    name: String(item.name || "").slice(0, 160),
-    url: String(item.url || "").slice(0, 500),
-    category: String(item.category || "").slice(0, 80),
-  }));
-}
+const MAX_ACTIVE_STACKS = 2000;
+const TTL_DAYS = 7;
 
 export async function POST(request) {
-  if (!allowRequest(`stacks:${clientKey(request)}`, { limit: 20, windowMs: 60_000 })) {
+  if (!allowRequest(`stacks:${clientKey(request)}`, { limit: 8, windowMs: 60_000 })) {
     return Response.json({ error: "rate_limited" }, { status: 429 });
   }
 
@@ -27,16 +19,41 @@ export async function POST(request) {
     return Response.json({ error: "invalid_json" }, { status: 400 });
   }
 
-  const items = normalizeItems(body.items);
-  if (!items) {
-    return Response.json({ error: "invalid_items" }, { status: 400 });
+  const ids = Array.isArray(body.ids)
+    ? [...new Set(body.ids.map(String))].slice(0, MAX_ITEMS)
+    : [];
+  if (!ids.length) {
+    return Response.json({ error: "invalid_ids" }, { status: 400 });
+  }
+
+  // Resolve names/URLs from the curated catalog only — never trust client text/URLs.
+  const apis = await findApisByIds(ids);
+  if (!apis.length || apis.length !== ids.length) {
+    return Response.json({ error: "unknown_ids" }, { status: 400 });
+  }
+
+  const items = apis.map((api) => ({
+    id: api.id,
+    name: api.name,
+    url: api.url,
+    category: api.category,
+  }));
+
+  await sql("delete from stacks where expires_at is not null and expires_at < now()");
+
+  const counts = await sql(
+    "select count(*)::int as count from stacks where expires_at is null or expires_at > now()",
+  );
+  if ((counts[0]?.count || 0) >= MAX_ACTIVE_STACKS) {
+    return Response.json({ error: "capacity" }, { status: 503 });
   }
 
   const code = randomBytes(6).toString("base64url");
-  await sql("insert into stacks (code, items) values ($1, $2)", [
-    code,
-    JSON.stringify(items),
-  ]);
+  await sql(
+    `insert into stacks (code, items, expires_at)
+     values ($1, $2, now() + interval '7 days')`,
+    [code, JSON.stringify(items)],
+  );
 
-  return Response.json({ ok: true, code });
+  return Response.json({ ok: true, code, expiresInDays: TTL_DAYS });
 }

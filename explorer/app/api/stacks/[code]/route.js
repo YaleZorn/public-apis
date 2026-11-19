@@ -11,7 +11,13 @@ export async function GET(request, { params }) {
     return Response.json({ error: "not_found" }, { status: 404 });
   }
 
-  const rows = await sql("select code, items, created_at from stacks where code = $1", [code]);
+  const rows = await sql(
+    `select code, items, created_at, expires_at
+     from stacks
+     where code = $1
+       and (expires_at is null or expires_at > now())`,
+    [code],
+  );
   if (!rows.length) {
     return Response.json({ error: "not_found" }, { status: 404 });
   }
@@ -22,6 +28,7 @@ export async function GET(request, { params }) {
       code: row.code,
       items: row.items,
       createdAt: row.created_at,
+      expiresAt: row.expires_at,
     },
     { headers: { "cache-control": "public, max-age=60" } },
   );

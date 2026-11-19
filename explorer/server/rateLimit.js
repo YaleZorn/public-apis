@@ -14,8 +14,21 @@ export function allowRequest(key, { limit = 20, windowMs = 60_000 } = {}) {
   return true;
 }
 
+/**
+ * Prefer platform-provided identity. Never trust the leftmost
+ * X-Forwarded-For value — clients can spoof that hop.
+ */
 export function clientKey(request) {
+  const realIp = (request.headers.get("x-real-ip") || "").trim();
+  if (realIp) return realIp;
+
   const forwarded = request.headers.get("x-forwarded-for") || "";
-  const ip = forwarded.split(",")[0]?.trim() || request.headers.get("x-real-ip") || "local";
-  return ip;
+  const hops = forwarded
+    .split(",")
+    .map((part) => part.trim())
+    .filter(Boolean);
+  // Rightmost hop is typically appended by the trusted edge proxy.
+  if (hops.length) return hops[hops.length - 1];
+
+  return "local";
 }

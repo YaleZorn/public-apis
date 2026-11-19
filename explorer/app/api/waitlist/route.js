@@ -1,4 +1,5 @@
 import { sql } from "../../../server/db.js";
+import { issueProToken } from "../../../server/proAuth.js";
 import { allowRequest, clientKey } from "../../../server/rateLimit.js";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -17,7 +18,7 @@ export async function POST(request) {
 
   // Honeypot: bots fill hidden fields; humans leave it empty.
   if (body.company) {
-    return Response.json({ ok: true, duplicate: false });
+    return Response.json({ ok: true });
   }
 
   const email = String(body.email || "")
@@ -28,14 +29,14 @@ export async function POST(request) {
   }
 
   const existing = await sql("select email from waitlist where email = $1", [email]);
-  if (existing.length) {
-    return Response.json({ ok: true, duplicate: true });
+  if (!existing.length) {
+    await sql("insert into waitlist (email, source) values ($1, $2)", [
+      email,
+      String(body.source || "web").slice(0, 40),
+    ]);
   }
 
-  await sql("insert into waitlist (email, source) values ($1, $2)", [
-    email,
-    String(body.source || "web").slice(0, 40),
-  ]);
-
-  return Response.json({ ok: true, duplicate: false });
+  const token = await issueProToken(email);
+  // Never reveal whether the email was already registered.
+  return Response.json({ ok: true, token });
 }

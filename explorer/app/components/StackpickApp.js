@@ -7,6 +7,7 @@ const FREE_STACK_LIMIT = 5;
 const PRO_STACK_LIMIT = 25;
 const STORAGE_STACK = "stackpick.stack.v1";
 const STORAGE_PRO = "stackpick.pro.v1";
+const STORAGE_PRO_TOKEN = "stackpick.pro.token.v1";
 
 function loadJson(key, fallback) {
   try {
@@ -27,6 +28,7 @@ export function StackpickApp() {
   const [visible, setVisible] = useState(PAGE_SIZE);
   const [stack, setStack] = useState([]);
   const [proEmail, setProEmail] = useState("");
+  const [proToken, setProToken] = useState("");
   const [panelOpen, setPanelOpen] = useState(false);
   const [waitlistEmail, setWaitlistEmail] = useState("");
   const [waitlistNote, setWaitlistNote] = useState("");
@@ -37,7 +39,7 @@ export function StackpickApp() {
   const [busy, setBusy] = useState("");
   const [sampleData, setSampleData] = useState(false);
 
-  const isPro = Boolean(proEmail);
+  const isPro = Boolean(proEmail && proToken);
   const stackLimit = isPro ? PRO_STACK_LIMIT : FREE_STACK_LIMIT;
 
   useEffect(() => {
@@ -51,9 +53,14 @@ export function StackpickApp() {
   useEffect(() => {
     setStack(loadJson(STORAGE_STACK, []));
     const savedPro = localStorage.getItem(STORAGE_PRO) || "";
-    if (savedPro) {
+    const savedToken = localStorage.getItem(STORAGE_PRO_TOKEN) || "";
+    if (savedPro && savedToken) {
       setProEmail(savedPro);
+      setProToken(savedToken);
       setWaitlistNote(`Pro unlocked for ${savedPro}.`);
+    } else if (savedPro && !savedToken) {
+      localStorage.removeItem(STORAGE_PRO);
+      setWaitlistNote("Please rejoin the waitlist to refresh Pro access.");
     }
 
     const params = new URLSearchParams(window.location.search);
@@ -167,14 +174,16 @@ export function StackpickApp() {
         );
         return;
       }
+      if (!payload.token) {
+        setWaitlistNote("Waitlist joined, but Pro token was missing. Try again.");
+        return;
+      }
       localStorage.setItem(STORAGE_PRO, email);
+      localStorage.setItem(STORAGE_PRO_TOKEN, payload.token);
       setProEmail(email);
+      setProToken(payload.token);
       setWaitlistEmail("");
-      setWaitlistNote(
-        payload.duplicate
-          ? `Welcome back — Pro tools unlocked for ${email}.`
-          : `You're on the list as ${email}. Pro tools are unlocked on this device.`,
-      );
+      setWaitlistNote(`You're on the list as ${email}. Pro tools are unlocked on this device.`);
     } catch {
       setWaitlistNote("Network error joining waitlist.");
     } finally {
@@ -223,14 +232,16 @@ export function StackpickApp() {
       const res = await fetch("/api/stacks", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ items: stack }),
+        body: JSON.stringify({ ids: stack.map((item) => item.id) }),
       });
       const payload = await res.json().catch(() => ({}));
       if (!res.ok) {
         setShareNote(
           payload.error === "rate_limited"
             ? "Too many shares. Try again shortly."
-            : "Could not create share link.",
+            : payload.error === "capacity"
+              ? "Share capacity is full. Try again later."
+              : "Could not create share link.",
         );
         return;
       }
@@ -261,15 +272,23 @@ export function StackpickApp() {
     try {
       const res = await fetch("/api/health", {
         method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ ids: stack.slice(0, 5).map((item) => item.id) }),
+        headers: {
+          "content-type": "application/json",
+          "x-stackpick-token": proToken,
+        },
+        body: JSON.stringify({
+          ids: stack.slice(0, 5).map((item) => item.id),
+          token: proToken,
+        }),
       });
       const payload = await res.json().catch(() => ({}));
       if (!res.ok) {
         setHealthNote(
           payload.error === "rate_limited"
             ? "Health check rate limited. Try again shortly."
-            : "Health check failed.",
+            : payload.error === "pro_required"
+              ? "Pro token expired. Rejoin the waitlist to refresh access."
+              : "Health check failed.",
         );
         return;
       }
