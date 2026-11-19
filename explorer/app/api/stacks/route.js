@@ -1,15 +1,17 @@
 import { randomBytes } from "node:crypto";
 import { findApisByIds } from "../../../server/catalog.js";
 import { sql } from "../../../server/db.js";
+import { requireProToken } from "../../../server/proAuth.js";
 import { allowRequest, clientKey } from "../../../server/rateLimit.js";
 
 const MAX_ITEMS = 40;
-const MAX_ACTIVE_STACKS = 500;
-const TTL_DAYS = 7;
+const MAX_ACTIVE_STACKS = 200;
+const MAX_PER_CREATOR = 8;
+const TTL_DAYS = 3;
 
 export async function POST(request) {
-  // Keep share creation cheap to exhaust: 3 / 10 min per IP edge hop.
-  if (!(await allowRequest(`stacks:${clientKey(request)}`, { limit: 3, windowMs: 10 * 60_000 }))) {
+  const ip = clientKey(request);
+  if (!(await allowRequest(`stacks:${ip}`, { limit: 2, windowMs: 15 * 60_000 }))) {
     return Response.json({ error: "rate_limited" }, { status: 429 });
   }
 
@@ -20,6 +22,11 @@ export async function POST(request) {
     return Response.json({ error: "invalid_json" }, { status: 400 });
   }
 
+  const auth = await requireProToken(request, body.token);
+  if (!auth.ok) {
+    return Response.json({ error: auth.error }, { status: auth.status });
+  }
+
   const ids = Array.isArray(body.ids)
     ? [...new Set(body.ids.map(String))].slice(0, MAX_ITEMS)
     : [];
@@ -27,7 +34,6 @@ export async function POST(request) {
     return Response.json({ error: "invalid_ids" }, { status: 400 });
   }
 
-  // Resolve names/URLs from the curated catalog only — never trust client text/URLs.
   const apis = await findApisByIds(ids);
   if (!apis.length || apis.length !== ids.length) {
     return Response.json({ error: "unknown_ids" }, { status: 400 });
@@ -49,11 +55,20 @@ export async function POST(request) {
     return Response.json({ error: "capacity" }, { status: 503 });
   }
 
+  const mine = await sql(
+    `select count(*)::int as count from stacks
+     where creator_key = $1 and (expires_at is null or expires_at > now())`,
+    [ip],
+  );
+  if ((mine[0]?.count || 0) >= MAX_PER_CREATOR) {
+    return Response.json({ error: "creator_cap" }, { status: 429 });
+  }
+
   const code = randomBytes(6).toString("base64url");
   await sql(
-    `insert into stacks (code, items, expires_at)
-     values ($1, $2, now() + interval '7 days')`,
-    [code, JSON.stringify(items)],
+    `insert into stacks (code, items, expires_at, creator_key)
+     values ($1, $2, now() + interval '3 days', $3)`,
+    [code, JSON.stringify(items), ip.slice(0, 64)],
   );
 
   return Response.json({ ok: true, code, expiresInDays: TTL_DAYS });

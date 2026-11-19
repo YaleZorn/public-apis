@@ -39,6 +39,13 @@ export function StackpickApp() {
   const [busy, setBusy] = useState("");
   const [sampleData, setSampleData] = useState(false);
   const [mailConfigured, setMailConfigured] = useState(false);
+  const [feedbackText, setFeedbackText] = useState("");
+  const [feedbackEmail, setFeedbackEmail] = useState("");
+  const [feedbackNote, setFeedbackNote] = useState("");
+  const [feedbackBusy, setFeedbackBusy] = useState(false);
+  const [adminToken, setAdminToken] = useState("");
+  const [adminSummary, setAdminSummary] = useState(null);
+  const [adminNote, setAdminNote] = useState("");
 
   const isPro = Boolean(proEmail && proToken);
   const stackLimit = isPro ? PRO_STACK_LIMIT : FREE_STACK_LIMIT;
@@ -202,6 +209,8 @@ export function StackpickApp() {
       if (!res.ok) {
         if (payload.error === "rate_limited") {
           setWaitlistNote("Too many attempts. Try again in a few minutes.");
+        } else if (payload.error === "mail_quota") {
+          setWaitlistNote("Daily confirmation email quota reached. Try again tomorrow.");
         } else if (payload.error === "mail_failed") {
           const mailHints = {
             auth: "Resend rejected the API key. Check RESEND_API_KEY in app secrets.",
@@ -218,6 +227,10 @@ export function StackpickApp() {
       }
 
       setWaitlistEmail("");
+      if (payload.delivery === "cooldown") {
+        setWaitlistNote("Confirmation already sent recently. Check your inbox or wait an hour.");
+        return;
+      }
       if (payload.delivery === "email") {
         setWaitlistNote(`Check ${email} for a confirmation link to unlock Pro.`);
         return;
@@ -233,6 +246,70 @@ export function StackpickApp() {
       setWaitlistNote("Network error joining waitlist.");
     } finally {
       setWaitlistBusy(false);
+    }
+  }
+
+  async function submitFeedback(event) {
+    event.preventDefault();
+    const message = feedbackText.trim();
+    if (message.length < 8) {
+      setFeedbackNote("Please write a bit more detail (8+ characters).");
+      return;
+    }
+    setFeedbackBusy(true);
+    setFeedbackNote("");
+    try {
+      const form = new FormData(event.currentTarget);
+      const res = await fetch("/api/feedback", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          message,
+          email: feedbackEmail.trim(),
+          category: "general",
+          company: form.get("company") || "",
+        }),
+      });
+      const payload = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setFeedbackNote(
+          payload.error === "rate_limited"
+            ? "Feedback rate limited. Try again later."
+            : "Could not send feedback.",
+        );
+        return;
+      }
+      setFeedbackText("");
+      setFeedbackNote("Thanks — feedback received.");
+    } catch {
+      setFeedbackNote("Network error sending feedback.");
+    } finally {
+      setFeedbackBusy(false);
+    }
+  }
+
+  async function loadAdminSummary(event) {
+    event?.preventDefault();
+    setAdminNote("");
+    setAdminSummary(null);
+    const token = adminToken.trim();
+    if (!token) {
+      setAdminNote("Paste the ADMIN_TOKEN app secret to load ops data.");
+      return;
+    }
+    try {
+      const res = await fetch("/api/admin/summary", {
+        headers: { "x-admin-token": token },
+      });
+      const payload = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setAdminNote("Admin access denied.");
+        return;
+      }
+      setAdminSummary(payload);
+      setAdminNote("Admin summary loaded.");
+    } catch {
+      setAdminNote("Network error loading admin summary.");
     }
   }
 
@@ -267,6 +344,11 @@ export function StackpickApp() {
   }
 
   async function shareStack() {
+    if (!isPro) {
+      setWaitlistNote("Share links unlock after you join the Pro waitlist.");
+      document.getElementById("pro")?.scrollIntoView({ behavior: "smooth" });
+      return;
+    }
     if (!stack.length) {
       setShareNote("Add APIs before sharing.");
       return;
@@ -276,17 +358,22 @@ export function StackpickApp() {
     try {
       const res = await fetch("/api/stacks", {
         method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ ids: stack.map((item) => item.id) }),
+        headers: {
+          "content-type": "application/json",
+          "x-stackpick-token": proToken,
+        },
+        body: JSON.stringify({ ids: stack.map((item) => item.id), token: proToken }),
       });
       const payload = await res.json().catch(() => ({}));
       if (!res.ok) {
         setShareNote(
-          payload.error === "rate_limited"
-            ? "Too many shares. Try again shortly."
+          payload.error === "rate_limited" || payload.error === "creator_cap"
+            ? "Too many shares from this network. Try again later."
             : payload.error === "capacity"
               ? "Share capacity is full. Try again later."
-              : "Could not create share link.",
+              : payload.error === "pro_required"
+                ? "Pro token expired. Rejoin the waitlist to refresh access."
+                : "Could not create share link.",
         );
         return;
       }
@@ -618,6 +705,99 @@ export function StackpickApp() {
             <p className="price-hint">
               Planned: $9 / month · cancel anytime · waitlist join is free and unlocks Pro tools now
             </p>
+          </div>
+        </section>
+
+        <section className="pro" id="feedback" aria-labelledby="feedback-title">
+          <div className="pro-panel">
+            <h2 id="feedback-title">Feedback</h2>
+            <p>Tell us what to improve — bugs, missing APIs, or monetization ideas.</p>
+            <form className="waitlist" onSubmit={submitFeedback}>
+              <label>
+                <span className="sr-only">Email (optional)</span>
+                <input
+                  type="email"
+                  value={feedbackEmail}
+                  onChange={(e) => setFeedbackEmail(e.target.value)}
+                  placeholder="email (optional)"
+                />
+              </label>
+              <label className="feedback-box">
+                <span className="sr-only">Message</span>
+                <textarea
+                  value={feedbackText}
+                  onChange={(e) => setFeedbackText(e.target.value)}
+                  placeholder="Your feedback…"
+                  rows={4}
+                  required
+                  minLength={8}
+                  maxLength={2000}
+                />
+              </label>
+              <input
+                className="hp"
+                type="text"
+                name="company"
+                tabIndex={-1}
+                autoComplete="off"
+                aria-hidden="true"
+              />
+              <button type="submit" className="btn primary" disabled={feedbackBusy}>
+                Send feedback
+              </button>
+            </form>
+            <p className="waitlist-note" role="status" aria-live="polite">
+              {feedbackNote}
+            </p>
+          </div>
+        </section>
+
+        <section className="pro" id="admin" aria-labelledby="admin-title">
+          <div className="pro-panel">
+            <h2 id="admin-title">Ops</h2>
+            <p>
+              Site ops for the owner/agent: waitlist counts, mail quota, and feedback. Requires the
+              ADMIN_TOKEN app secret (or Cursor team-admin identity on a private/team publish).
+            </p>
+            <form className="waitlist" onSubmit={loadAdminSummary}>
+              <label>
+                <span className="sr-only">Admin token</span>
+                <input
+                  type="password"
+                  value={adminToken}
+                  onChange={(e) => setAdminToken(e.target.value)}
+                  placeholder="ADMIN_TOKEN"
+                  autoComplete="off"
+                />
+              </label>
+              <button type="submit" className="btn ghost">
+                Load summary
+              </button>
+            </form>
+            <p className="waitlist-note" role="status">
+              {adminNote}
+            </p>
+            {adminSummary?.stats && (
+              <ul className="pro-perks">
+                <li>Waitlist: {adminSummary.stats.waitlist}</li>
+                <li>Confirmed: {adminSummary.stats.confirmed}</li>
+                <li>Active shares: {adminSummary.stats.activeStacks}</li>
+                <li>New feedback: {adminSummary.stats.newFeedback}</li>
+                <li>Mail sent today: {adminSummary.stats.mailSentToday}</li>
+              </ul>
+            )}
+            {!!adminSummary?.feedback?.length && (
+              <ul className="health-list">
+                {adminSummary.feedback.slice(0, 8).map((item) => (
+                  <li key={item.id}>
+                    <strong>{item.category}</strong>{" "}
+                    <span>
+                      {item.status} · {(item.message || "").slice(0, 120)}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
         </section>
       </main>

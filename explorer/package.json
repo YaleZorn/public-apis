@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "env -u DATABASE_URL STACKPICK_ALLOW_SAMPLE_CONFIRM=1 next dev -H 127.0.0.1 -p 3000",
     "build": "next build && node scripts/migrate.mjs",
-    "start": "env STACKPICK_ALLOW_SAMPLE_CONFIRM=1 next start -H 127.0.0.1 -p 3000",
+    "start": "next start -H 127.0.0.1 -p 3000",
     "start:sample": "env -u DATABASE_URL STACKPICK_ALLOW_SAMPLE_CONFIRM=1 next start -H 127.0.0.1 -p 3000",
     "parse": "python3 ../scripts/parse_apis.py"
   },

@@ -1,5 +1,7 @@
 import { sql } from "./db.js";
 
+let opsSinceCleanup = 0;
+
 /**
  * Rate limit backed by Postgres/PGlite so limits hold across instances.
  * Returns true when the caller is allowed.
@@ -24,6 +26,16 @@ export async function allowRequest(key, { limit = 20, windowMs = 60_000 } = {}) 
      returning hit_count`,
     [key, windowStart, cutoff],
   );
+
+  opsSinceCleanup += 1;
+  if (opsSinceCleanup >= 25) {
+    opsSinceCleanup = 0;
+    // Drop buckets idle for more than a day so distinct IPs cannot grow the table forever.
+    await sql("delete from rate_limits where window_start < now() - interval '1 day'").catch(
+      () => {},
+    );
+  }
+
   return Boolean(rows[0] && rows[0].hit_count <= limit);
 }
 

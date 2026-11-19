@@ -1,37 +1,20 @@
 import { randomBytes } from "node:crypto";
 import { sql } from "../../../server/db.js";
 import { mailConfigured, sendConfirmEmail } from "../../../server/mail.js";
+import { publicOrigin } from "../../../server/publicOrigin.js";
 import { allowRequest, clientKey } from "../../../server/rateLimit.js";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const PUBLIC_ORIGIN_RE = /^https:\/\/[a-z0-9.-]+(?::\d+)?$/i;
-
-/**
- * Build confirm links from a pinned public origin, never from visitor-controlled
- * X-Forwarded-Host / X-Forwarded-Proto (open redirect / phishing risk).
- */
-function originFrom(request) {
-  const pinned = process.env.APP_BASE_URL?.trim() || process.env.NEXT_PUBLIC_APP_URL?.trim();
-  if (pinned && PUBLIC_ORIGIN_RE.test(pinned.replace(/\/$/, ""))) {
-    return pinned.replace(/\/$/, "");
-  }
-  try {
-    const url = new URL(request.url);
-    if (url.protocol === "https:" || url.hostname === "localhost" || url.hostname === "127.0.0.1") {
-      return url.origin;
-    }
-  } catch {
-    // fall through
-  }
-  return "https://stackpick.apps.grok.bot";
-}
+const DAILY_MAIL_CAP = 80;
+const RESEND_COOLDOWN_MS = 60 * 60 * 1000;
 
 export async function POST(request) {
   const canMail = mailConfigured();
-  // Tighter bucket when each call can spend Resend quota.
-  const limit = canMail ? 3 : 8;
-  const windowMs = canMail ? 10 * 60_000 : 60_000;
-  if (!(await allowRequest(`waitlist:${clientKey(request)}`, { limit, windowMs }))) {
+  const ip = clientKey(request);
+  // Paid email path: 2 attempts / 15 min per IP edge hop.
+  const limit = canMail ? 2 : 8;
+  const windowMs = canMail ? 15 * 60_000 : 60_000;
+  if (!(await allowRequest(`waitlist:${ip}`, { limit, windowMs }))) {
     return Response.json({ error: "rate_limited" }, { status: 429 });
   }
 
@@ -53,25 +36,43 @@ export async function POST(request) {
     return Response.json({ error: "invalid_email" }, { status: 400 });
   }
 
-  const confirmToken = randomBytes(24).toString("base64url");
-  const existing = await sql("select email, confirmed_at from waitlist where email = $1", [email]);
+  const existing = await sql(
+    "select email, confirmed_at, confirm_sent_at from waitlist where email = $1",
+    [email],
+  );
 
-  if (!existing.length) {
-    await sql(
-      "insert into waitlist (email, source, confirm_token) values ($1, $2, $3)",
-      [email, String(body.source || "web").slice(0, 40), confirmToken],
-    );
-  } else {
-    await sql("update waitlist set confirm_token = $2 where email = $1", [email, confirmToken]);
+  if (existing[0]?.confirm_sent_at) {
+    const sentAt = new Date(existing[0].confirm_sent_at).getTime();
+    if (Number.isFinite(sentAt) && Date.now() - sentAt < RESEND_COOLDOWN_MS) {
+      return Response.json({ ok: true, delivery: "cooldown" });
+    }
   }
 
-  const confirmUrl = `${originFrom(request)}/?confirm=${confirmToken}`;
-  // Sample confirm tokens only with an explicit local flag — never when Postgres is attached.
-  // (next start always sets NODE_ENV=production, so do not gate on NODE_ENV.)
+  const confirmToken = randomBytes(24).toString("base64url");
+  if (!existing.length) {
+    await sql(
+      "insert into waitlist (email, source, confirm_token, last_confirm_ip) values ($1, $2, $3, $4)",
+      [email, String(body.source || "web").slice(0, 40), confirmToken, ip.slice(0, 64)],
+    );
+  } else {
+    await sql(
+      "update waitlist set confirm_token = $2, last_confirm_ip = $3 where email = $1",
+      [email, confirmToken, ip.slice(0, 64)],
+    );
+  }
+
+  const confirmUrl = `${publicOrigin(request)}/?confirm=${confirmToken}`;
   const sampleMode =
     !process.env.DATABASE_URL?.trim() && process.env.STACKPICK_ALLOW_SAMPLE_CONFIRM === "1";
 
   if (canMail) {
+    const day = new Date().toISOString().slice(0, 10);
+    const quota = await sql("select sent from mail_quota where day = $1::date", [day]);
+    const sent = quota[0]?.sent || 0;
+    if (sent >= DAILY_MAIL_CAP) {
+      return Response.json({ error: "mail_quota" }, { status: 503 });
+    }
+
     const mailed = await sendConfirmEmail({ email, confirmUrl });
     if (!mailed.sent) {
       return Response.json(
@@ -79,6 +80,13 @@ export async function POST(request) {
         { status: 502 },
       );
     }
+
+    await sql(
+      `insert into mail_quota (day, sent) values ($1::date, 1)
+       on conflict (day) do update set sent = mail_quota.sent + 1`,
+      [day],
+    );
+    await sql("update waitlist set confirm_sent_at = now() where email = $1", [email]);
     return Response.json({ ok: true, delivery: "email" });
   }
 

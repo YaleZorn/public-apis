@@ -312,6 +312,23 @@ main,
 
 .filters input,
 .filters select,
+.waitlist textarea {
+  width: 100%;
+  resize: vertical;
+  min-height: 6rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid color-mix(in oklab, var(--ink) 18%, transparent);
+  border-radius: 0;
+  background: color-mix(in oklab, var(--panel) 88%, transparent);
+  color: var(--ink);
+  font: inherit;
+}
+
+.waitlist textarea:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
 .waitlist input {
   width: 100%;
   border: 1px solid var(--line);
