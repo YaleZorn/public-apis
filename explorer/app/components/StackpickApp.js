@@ -46,9 +46,61 @@ export function StackpickApp() {
   const [adminToken, setAdminToken] = useState("");
   const [adminSummary, setAdminSummary] = useState(null);
   const [adminNote, setAdminNote] = useState("");
+  const [user, setUser] = useState(null);
+  const [authProviders, setAuthProviders] = useState({
+    google: false,
+    github: false,
+    sampleLogin: false,
+  });
 
   const isPro = Boolean(proEmail && proToken);
   const stackLimit = isPro ? PRO_STACK_LIMIT : FREE_STACK_LIMIT;
+
+  async function refreshAuthUser() {
+    try {
+      const res = await fetch("/api/auth/me", { credentials: "include" });
+      const payload = await res.json().catch(() => ({}));
+      if (payload.user) {
+        setUser(payload.user);
+        if (payload.user.email && payload.user.proToken) {
+          localStorage.setItem(STORAGE_PRO, payload.user.email);
+          localStorage.setItem(STORAGE_PRO_TOKEN, payload.user.proToken);
+          setProEmail(payload.user.email);
+          setProToken(payload.user.proToken);
+          setWaitlistNote(`Signed in as ${payload.user.email}. Pro tools unlocked.`);
+        }
+      } else {
+        setUser(null);
+      }
+    } catch {
+      setUser(null);
+    }
+  }
+
+  async function signOut() {
+    await fetch("/api/auth/logout", { method: "POST", credentials: "include" }).catch(() => {});
+    setUser(null);
+    setWaitlistNote("Signed out.");
+  }
+
+  async function sampleSignIn() {
+    const res = await fetch("/api/auth/sample", {
+      method: "POST",
+      credentials: "include",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ email: "sample.user@example.com", name: "Sample User" }),
+    });
+    const payload = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      setWaitlistNote("Sample sign-in unavailable.");
+      return;
+    }
+    localStorage.setItem(STORAGE_PRO, payload.email);
+    localStorage.setItem(STORAGE_PRO_TOKEN, payload.proToken);
+    setProEmail(payload.email);
+    setProToken(payload.proToken);
+    await refreshAuthUser();
+  }
 
   async function confirmWaitlistToken(confirmToken) {
     const res = await fetch("/api/waitlist/confirm", {
@@ -92,11 +144,26 @@ export function StackpickApp() {
     const params = new URLSearchParams(window.location.search);
     const code = params.get("stack");
     const confirm = params.get("confirm");
+    const authOk = params.get("auth");
+    const authError = params.get("auth_error");
+    if (authError) {
+      setWaitlistNote(`Sign-in failed (${authError}). Check OAuth app settings and try again.`);
+    } else if (authOk) {
+      setWaitlistNote(`Signed in with ${authOk}.`);
+    }
+    if (authOk || authError) {
+      const next = new URL(window.location.href);
+      next.searchParams.delete("auth");
+      next.searchParams.delete("auth_error");
+      window.history.replaceState({}, "", next.pathname + next.search);
+    }
+    refreshAuthUser();
     fetch("/api/status")
       .then((res) => res.json())
       .then((status) => {
         setSampleData(Boolean(status.sampleData));
         setMailConfigured(Boolean(status.mailConfigured));
+        if (status.auth) setAuthProviders(status.auth);
       })
       .catch(() => setSampleData(true));
     fetch("/data/apis.json")
@@ -474,6 +541,20 @@ export function StackpickApp() {
           <a href="#catalog">Catalog</a>
           <a href="#partners">Partners</a>
           <a href="#pro">Pro</a>
+          {user ? (
+            <>
+              <span className="auth-user" title={user.email || ""}>
+                {user.name || user.email}
+              </span>
+              <button type="button" className="stack-btn" onClick={signOut}>
+                Sign out
+              </button>
+            </>
+          ) : (
+            <a className="stack-btn" href="#pro">
+              Sign in
+            </a>
+          )}
           <button
             type="button"
             className="stack-btn"
@@ -666,8 +747,8 @@ export function StackpickApp() {
             <h2 id="pro-title">Stackpick Pro</h2>
             <p>
               Export stacks as JSON / CSV, share synced shortlist links, and run lightweight health
-              checks. Free browse stays free — confirm your email after joining the waitlist to unlock
-              Pro on this device while billing is prepared.
+              checks. Sign in with Google or GitHub to unlock Pro (OAuth proves email ownership), or
+              join the email waitlist.
             </p>
             <ul className="pro-perks">
               <li>One-click stack export (JSON / CSV)</li>
@@ -675,6 +756,36 @@ export function StackpickApp() {
               <li>Endpoint health snapshots (catalog URLs only)</li>
               <li>Larger shortlist cap ({PRO_STACK_LIMIT})</li>
             </ul>
+            <div className="auth-row">
+              {authProviders.google ? (
+                <a className="btn primary" href="/api/auth/google">
+                  Continue with Google
+                </a>
+              ) : (
+                <button type="button" className="btn ghost" disabled title="Add GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET">
+                  Google (not configured)
+                </button>
+              )}
+              {authProviders.github ? (
+                <a className="btn ghost" href="/api/auth/github">
+                  Continue with GitHub
+                </a>
+              ) : (
+                <button type="button" className="btn ghost" disabled title="Add GITHUB_CLIENT_ID / GITHUB_CLIENT_SECRET">
+                  GitHub (not configured)
+                </button>
+              )}
+              {authProviders.sampleLogin && (
+                <button type="button" className="btn ghost" onClick={sampleSignIn}>
+                  Sample sign-in
+                </button>
+              )}
+              {user && (
+                <button type="button" className="btn ghost" onClick={signOut}>
+                  Sign out
+                </button>
+              )}
+            </div>
             <form className="waitlist" onSubmit={joinWaitlist}>
               <label>
                 <span className="sr-only">Email</span>
@@ -683,7 +794,7 @@ export function StackpickApp() {
                   name="email"
                   value={waitlistEmail}
                   onChange={(e) => setWaitlistEmail(e.target.value)}
-                  placeholder="you@company.com"
+                  placeholder="or unlock by email confirm"
                   required
                 />
               </label>
@@ -695,15 +806,15 @@ export function StackpickApp() {
                 autoComplete="off"
                 aria-hidden="true"
               />
-              <button type="submit" className="btn primary" disabled={waitlistBusy}>
-                {isPro ? "Refresh Pro unlock" : "Join waitlist"}
+              <button type="submit" className="btn ghost" disabled={waitlistBusy}>
+                {isPro ? "Refresh email unlock" : "Email waitlist"}
               </button>
             </form>
             <p className="waitlist-note" role="status" aria-live="polite">
               {waitlistNote}
             </p>
             <p className="price-hint">
-              Planned: $9 / month · cancel anytime · waitlist join is free and unlocks Pro tools now
+              Planned: $9 / month · cancel anytime · OAuth / waitlist unlocks Pro tools now
             </p>
           </div>
         </section>

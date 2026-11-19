@@ -82,6 +82,22 @@ main,
   text-decoration: none;
 }
 
+.auth-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  margin: 1rem 0 1.25rem;
+}
+
+.auth-user {
+  color: var(--ink-dim);
+  font-size: 0.9rem;
+  max-width: 10rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .topnav {
   display: flex;
   align-items: center;
