@@ -1,5 +1,5 @@
-import { findApisByIds } from "../../../src/lib/catalog.js";
-import { allowRequest, clientKey } from "../../../src/lib/rateLimit.js";
+import { findApisByIds } from "../../../server/catalog.js";
+import { allowRequest, clientKey } from "../../../server/rateLimit.js";
 
 const MAX_IDS = 5;
 const TIMEOUT_MS = 4000;

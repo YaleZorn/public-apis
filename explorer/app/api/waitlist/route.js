@@ -1,5 +1,5 @@
-import { sql } from "../../../src/lib/db.js";
-import { allowRequest, clientKey } from "../../../src/lib/rateLimit.js";
+import { sql } from "../../../server/db.js";
+import { allowRequest, clientKey } from "../../../server/rateLimit.js";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 

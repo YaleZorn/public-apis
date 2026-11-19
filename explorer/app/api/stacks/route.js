@@ -1,6 +1,6 @@
 import { randomBytes } from "node:crypto";
-import { sql } from "../../../src/lib/db.js";
-import { allowRequest, clientKey } from "../../../src/lib/rateLimit.js";
+import { sql } from "../../../server/db.js";
+import { allowRequest, clientKey } from "../../../server/rateLimit.js";
 
 const MAX_ITEMS = 40;
 

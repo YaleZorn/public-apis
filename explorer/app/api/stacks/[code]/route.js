@@ -1,5 +1,5 @@
-import { sql } from "../../../../src/lib/db.js";
-import { allowRequest, clientKey } from "../../../../src/lib/rateLimit.js";
+import { sql } from "../../../../server/db.js";
+import { allowRequest, clientKey } from "../../../../server/rateLimit.js";
 
 export async function GET(request, { params }) {
   if (!allowRequest(`stack-get:${clientKey(request)}`, { limit: 60, windowMs: 60_000 })) {
