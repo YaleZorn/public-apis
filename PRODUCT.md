@@ -18,11 +18,11 @@ Primary: indie hackers and product engineers evaluating APIs for a new feature o
 
 Structured search over the public-apis README, plus a shortlist builder and partner placements that fund the product.
 
-## Monetization (planned)
+## Monetization
 
 1. Partner / sponsored slots with referral links (APILayer and similar).
-2. Freemium Pro: export stacks, sync shortlists, API health checks — waitlist in v1.
-3. Later: paid featured listings for API providers.
+2. Freemium Pro via waitlist unlock (planned $9/mo billing later): export, shareable stacks, health checks, larger shortlist.
+3. Later: paid featured listings for API providers + Stripe checkout.
 
 ## Platform
 
@@ -30,7 +30,7 @@ web
 
 ## Stack
 
-Delegated: Vite + vanilla HTML/CSS/JS static app under `explorer/`.
+Delegated: Next.js app under `explorer/` with Postgres (`cursor-app.json`) and PGlite local fallback.
 
 ## Constraints
 
@@ -42,5 +42,6 @@ Delegated: Vite + vanilla HTML/CSS/JS static app under `explorer/`.
 
 - English UI is acceptable for a global developer audience.
 - First surface is Operate (search + shortlist), with a light Persuade hero.
-- No payment processor in v1; Pro is waitlist-only.
+- No payment processor in v1; waitlist join unlocks Pro tools on-device and persists email server-side.
 - App lives in `explorer/` so the upstream README contribution workflow stays intact.
+- Health checks only probe curated catalog URLs (SSRF guard).

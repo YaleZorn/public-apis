@@ -557,7 +557,38 @@ main,
 
 .stack-actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 0.55rem;
+}
+
+.stack-actions .btn {
+  padding: 0.55rem 0.75rem;
+  font-size: 0.78rem;
+}
+
+.health-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.35rem;
+  font-size: 0.88rem;
+}
+
+.health-list .ok {
+  color: var(--cyan);
+}
+
+.health-list .bad {
+  color: var(--danger);
+}
+
+.hp {
+  position: absolute;
+  left: -10000px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
 }
 
 .stack-hint {
