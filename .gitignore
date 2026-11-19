@@ -2,6 +2,9 @@
 explorer/node_modules/
 explorer/dist/
 explorer/.next/
+# Next uses distDir=dist for publish host compatibility
+!explorer/vercel.json
+
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

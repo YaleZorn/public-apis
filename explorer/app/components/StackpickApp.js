@@ -90,9 +90,12 @@ export function StackpickApp() {
       .catch((err) => setError(err.message || "Failed to load catalog."));
   }, []);
 
-  const persistStack = useCallback((next) => {
-    setStack(next);
-    localStorage.setItem(STORAGE_STACK, JSON.stringify(next));
+  const persistStack = useCallback((updater) => {
+    setStack((prev) => {
+      const next = typeof updater === "function" ? updater(prev) : updater;
+      localStorage.setItem(STORAGE_STACK, JSON.stringify(next));
+      return next;
+    });
   }, []);
 
   const filtered = useMemo(() => {
@@ -112,12 +115,22 @@ export function StackpickApp() {
   const slice = filtered.slice(0, visible);
 
   function toggleStack(api) {
-    const idx = stack.findIndex((item) => item.id === api.id);
-    if (idx >= 0) {
-      persistStack(stack.filter((item) => item.id !== api.id));
-      return;
-    }
-    if (stack.length >= stackLimit) {
+    let blocked = false;
+    persistStack((prev) => {
+      const idx = prev.findIndex((item) => item.id === api.id);
+      if (idx >= 0) {
+        return prev.filter((item) => item.id !== api.id);
+      }
+      if (prev.length >= stackLimit) {
+        blocked = true;
+        return prev;
+      }
+      return [
+        ...prev,
+        { id: api.id, name: api.name, url: api.url, category: api.category },
+      ];
+    });
+    if (blocked) {
       setPanelOpen(true);
       setWaitlistNote(
         isPro
@@ -125,12 +138,7 @@ export function StackpickApp() {
           : "Free shortlist is limited to 5 APIs. Join Pro waitlist to raise the cap and unlock export/health.",
       );
       document.getElementById("pro")?.scrollIntoView({ behavior: "smooth" });
-      return;
     }
-    persistStack([
-      ...stack,
-      { id: api.id, name: api.name, url: api.url, category: api.category },
-    ]);
   }
 
   async function joinWaitlist(event) {
@@ -573,7 +581,7 @@ export function StackpickApp() {
               </div>
               <button
                 type="button"
-                onClick={() => persistStack(stack.filter((x) => x.id !== item.id))}
+                onClick={() => persistStack((prev) => prev.filter((x) => x.id !== item.id))}
               >
                 Remove
               </button>
