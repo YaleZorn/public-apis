@@ -1,5 +1,6 @@
 import { mailConfigured } from "../../../server/mail.js";
 import { authProvidersStatus } from "../../../server/oauth.js";
+import { stripeConfigured } from "../../../server/stripe.js";
 
 export async function GET() {
   const hasDb = Boolean(process.env.DATABASE_URL?.trim());
@@ -8,6 +9,7 @@ export async function GET() {
     storage: hasDb ? "postgres" : "memory",
     sampleData: !hasDb,
     mailConfigured: mailConfigured(),
+    billingConfigured: stripeConfigured(),
     auth: authProvidersStatus(),
   });
 }

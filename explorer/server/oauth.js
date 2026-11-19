@@ -1,7 +1,7 @@
 import { createHash, randomBytes } from "node:crypto";
 import { sql } from "./db.js";
 import { publicOrigin } from "./publicOrigin.js";
-import { issueProToken } from "./proAuth.js";
+import { emailHasProAccess, issueProToken } from "./proAuth.js";
 
 export function oauthConfigured(provider) {
   if (provider === "google") {
@@ -258,7 +258,8 @@ export async function finishOAuth(request, provider, { code, state }) {
       [profile.email],
     );
   }
-  const proToken = await issueProToken(profile.email);
+  const hasPro = await emailHasProAccess(profile.email);
+  const proToken = hasPro ? await issueProToken(profile.email) : null;
 
   return {
     userId,
@@ -266,5 +267,6 @@ export async function finishOAuth(request, provider, { code, state }) {
     name: profile.name,
     avatarUrl: profile.avatarUrl,
     proToken,
+    pro: hasPro,
   };
 }

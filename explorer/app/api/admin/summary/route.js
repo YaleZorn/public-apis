@@ -7,7 +7,7 @@ export async function GET(request) {
     return Response.json({ error: auth.error }, { status: auth.status });
   }
 
-  const [waitlist, confirmed, stacks, feedback, mail] = await Promise.all([
+  const [waitlist, confirmed, stacks, feedback, mail, users, subscribers] = await Promise.all([
     sql("select count(*)::int as count from waitlist"),
     sql("select count(*)::int as count from waitlist where confirmed_at is not null"),
     sql(
@@ -17,6 +17,11 @@ export async function GET(request) {
     sql(
       "select coalesce(sum(sent),0)::int as sent from mail_quota where day = current_date",
     ),
+    sql("select count(*)::int as count from users"),
+    sql(
+      `select count(*)::int as count from subscriptions
+       where status in ('active', 'trialing', 'past_due')`,
+    ).catch(() => [{ count: 0 }]),
   ]);
 
   const recentFeedback = await sql(
@@ -31,8 +36,9 @@ export async function GET(request) {
     via: auth.via,
     stats: {
       waitlist: waitlist[0]?.count || 0,
-      accounts: waitlist[0]?.count || 0,
+      accounts: users[0]?.count || waitlist[0]?.count || 0,
       confirmed: confirmed[0]?.count || 0,
+      subscribers: subscribers[0]?.count || 0,
       activeStacks: stacks[0]?.count || 0,
       newFeedback: feedback[0]?.count || 0,
       mailSentToday: mail[0]?.sent || 0,

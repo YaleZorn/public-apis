@@ -52,6 +52,14 @@ export function StackpickApp() {
     github: false,
     sampleLogin: false,
   });
+  const [billing, setBilling] = useState({
+    configured: false,
+    subscribed: false,
+    status: "inactive",
+    priceUsd: 9,
+    interval: "month",
+  });
+  const [billingBusy, setBillingBusy] = useState("");
 
   const isPro = Boolean(proEmail && proToken);
   const stackLimit = isPro ? PRO_STACK_LIMIT : FREE_STACK_LIMIT;
@@ -60,14 +68,19 @@ export function StackpickApp() {
     try {
       const res = await fetch("/api/auth/me", { credentials: "include" });
       const payload = await res.json().catch(() => ({}));
+      if (payload.billing) setBilling((prev) => ({ ...prev, ...payload.billing }));
       if (payload.user) {
         setUser(payload.user);
-        if (payload.user.email && payload.user.proToken) {
+        if (payload.user.pro && payload.user.email && payload.user.proToken) {
           localStorage.setItem(STORAGE_PRO, payload.user.email);
           localStorage.setItem(STORAGE_PRO_TOKEN, payload.user.proToken);
           setProEmail(payload.user.email);
           setProToken(payload.user.proToken);
-          setWaitlistNote(`Signed in as ${payload.user.email}. Pro tools unlocked.`);
+        } else {
+          localStorage.removeItem(STORAGE_PRO);
+          localStorage.removeItem(STORAGE_PRO_TOKEN);
+          setProEmail("");
+          setProToken("");
         }
       } else {
         setUser(null);
@@ -77,9 +90,92 @@ export function StackpickApp() {
     }
   }
 
+  async function refreshBilling({ refresh = false } = {}) {
+    try {
+      const res = await fetch(`/api/billing/status${refresh ? "?refresh=1" : ""}`, {
+        credentials: "include",
+      });
+      const payload = await res.json().catch(() => ({}));
+      if (payload.billing) setBilling((prev) => ({ ...prev, ...payload.billing }));
+      if (payload.billing?.subscribed) {
+        await refreshAuthUser();
+      } else if (payload.billing?.configured) {
+        localStorage.removeItem(STORAGE_PRO);
+        localStorage.removeItem(STORAGE_PRO_TOKEN);
+        setProEmail("");
+        setProToken("");
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  async function startCheckout() {
+    setBillingBusy("checkout");
+    setWaitlistNote("");
+    try {
+      const res = await fetch("/api/billing/checkout", {
+        method: "POST",
+        credentials: "include",
+      });
+      const payload = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setWaitlistNote(
+          payload.error === "sign_in_required"
+            ? "Sign in first, then subscribe to Pro."
+            : payload.error === "billing_not_configured"
+              ? "Billing is not configured yet on this environment."
+              : "Could not start checkout. Try again.",
+        );
+        return;
+      }
+      if (payload.url) {
+        window.location.href = payload.url;
+        return;
+      }
+      setWaitlistNote("Checkout session missing redirect URL.");
+    } catch {
+      setWaitlistNote("Network error starting checkout.");
+    } finally {
+      setBillingBusy("");
+    }
+  }
+
+  async function openBillingPortal() {
+    setBillingBusy("portal");
+    setWaitlistNote("");
+    try {
+      const res = await fetch("/api/billing/portal", {
+        method: "POST",
+        credentials: "include",
+      });
+      const payload = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setWaitlistNote(
+          payload.error === "no_customer"
+            ? "No Stripe customer yet — subscribe first."
+            : "Could not open billing portal.",
+        );
+        return;
+      }
+      if (payload.url) {
+        window.location.href = payload.url;
+        return;
+      }
+    } catch {
+      setWaitlistNote("Network error opening billing portal.");
+    } finally {
+      setBillingBusy("");
+    }
+  }
+
   async function signOut() {
     await fetch("/api/auth/logout", { method: "POST", credentials: "include" }).catch(() => {});
     setUser(null);
+    localStorage.removeItem(STORAGE_PRO);
+    localStorage.removeItem(STORAGE_PRO_TOKEN);
+    setProEmail("");
+    setProToken("");
     setWaitlistNote("Signed out.");
   }
 
@@ -110,14 +206,24 @@ export function StackpickApp() {
       body: JSON.stringify({ token: confirmToken }),
     });
     const payload = await res.json().catch(() => ({}));
-    if (!res.ok || !payload.token || !payload.email) {
+    if (!res.ok || !payload.email) {
       throw new Error(payload.error || "confirm_failed");
     }
-    localStorage.setItem(STORAGE_PRO, payload.email);
-    localStorage.setItem(STORAGE_PRO_TOKEN, payload.token);
-    setProEmail(payload.email);
-    setProToken(payload.token);
-    setWaitlistNote(`Signed in as ${payload.email}. Account ready — Pro tools unlocked.`);
+    if (payload.pro && payload.token) {
+      localStorage.setItem(STORAGE_PRO, payload.email);
+      localStorage.setItem(STORAGE_PRO_TOKEN, payload.token);
+      setProEmail(payload.email);
+      setProToken(payload.token);
+      setWaitlistNote(`Signed in as ${payload.email}. Pro tools unlocked.`);
+    } else {
+      localStorage.removeItem(STORAGE_PRO);
+      localStorage.removeItem(STORAGE_PRO_TOKEN);
+      setProEmail("");
+      setProToken("");
+      setWaitlistNote(
+        `Signed in as ${payload.email}. Subscribe to Pro to unlock export, share, and health checks.`,
+      );
+    }
     await refreshAuthUser();
     return payload;
   }
@@ -159,6 +265,21 @@ export function StackpickApp() {
       next.searchParams.delete("auth_error");
       window.history.replaceState({}, "", next.pathname + next.search);
     }
+    const billingParam = params.get("billing");
+    if (billingParam === "success") {
+      setWaitlistNote("Payment received — refreshing Pro access…");
+      refreshBilling({ refresh: true }).then(() => {
+        setWaitlistNote("Pro subscription active. Export, share, and health checks are unlocked.");
+      });
+      const next = new URL(window.location.href);
+      next.searchParams.delete("billing");
+      window.history.replaceState({}, "", next.pathname + next.search);
+    } else if (billingParam === "cancel") {
+      setWaitlistNote("Checkout canceled. You can subscribe anytime from your account.");
+      const next = new URL(window.location.href);
+      next.searchParams.delete("billing");
+      window.history.replaceState({}, "", next.pathname + next.search);
+    }
     refreshAuthUser();
     fetch("/api/status")
       .then((res) => res.json())
@@ -166,6 +287,9 @@ export function StackpickApp() {
         setSampleData(Boolean(status.sampleData));
         setMailConfigured(Boolean(status.mailConfigured));
         if (status.auth) setAuthProviders(status.auth);
+        if (typeof status.billingConfigured === "boolean") {
+          setBilling((prev) => ({ ...prev, configured: status.billingConfigured }));
+        }
       })
       .catch(() => setSampleData(true));
     fetch("/data/apis.json")
@@ -384,7 +508,7 @@ export function StackpickApp() {
 
   function exportStack(format) {
     if (!isPro) {
-      setWaitlistNote("Export unlocks after you sign in.");
+      setWaitlistNote(billing.configured ? "Export unlocks with a Pro subscription." : "Export unlocks after you sign in.");
       document.getElementById("pro")?.scrollIntoView({ behavior: "smooth" });
       setPanelOpen(false);
       return;
@@ -414,7 +538,7 @@ export function StackpickApp() {
 
   async function shareStack() {
     if (!isPro) {
-      setWaitlistNote("Share links unlock after you sign in.");
+      setWaitlistNote(billing.configured ? "Share links unlock with a Pro subscription." : "Share links unlock after you sign in.");
       document.getElementById("pro")?.scrollIntoView({ behavior: "smooth" });
       return;
     }
@@ -459,7 +583,7 @@ export function StackpickApp() {
 
   async function runHealth() {
     if (!isPro) {
-      setWaitlistNote("Health checks unlock after you sign in.");
+      setWaitlistNote(billing.configured ? "Health checks unlock with a Pro subscription." : "Health checks unlock after you sign in.");
       document.getElementById("pro")?.scrollIntoView({ behavior: "smooth" });
       return;
     }
@@ -580,7 +704,7 @@ export function StackpickApp() {
               className="btn ghost"
               onClick={() => document.getElementById("pro")?.scrollIntoView({ behavior: "smooth" })}
             >
-              {user || isPro ? "Your account" : "Sign in free"}
+              {isPro ? "Your Pro account" : user ? "Your account" : billing.configured ? "Sign in" : "Sign in free"}
             </button>
           </div>
           {(user || isPro) && (
@@ -767,14 +891,18 @@ export function StackpickApp() {
           <div className="pro-panel">
             {user || isPro ? (
               <>
-                <h2 id="pro-title">Welcome back</h2>
+                <h2 id="pro-title">{isPro ? "Pro active" : "Your account"}</h2>
                 <p>
                   You are signed in
-                  {user?.email || proEmail ? ` as ${(user && user.email) || proEmail}` : ""}. Export,
-                  share, and health checks are unlocked on this device.
+                  {user?.email || proEmail ? ` as ${(user && user.email) || proEmail}` : ""}.
+                  {isPro
+                    ? " Export, share, and health checks are unlocked on this device."
+                    : billing.configured
+                      ? ` Subscribe for $${billing.priceUsd}/${billing.interval} to unlock Pro tools.`
+                      : " Pro tools unlock after sign-in on this environment."}
                 </p>
                 <ul className="pro-perks">
-                  <li>Shortlist up to {PRO_STACK_LIMIT} APIs</li>
+                  <li>Shortlist up to {isPro ? PRO_STACK_LIMIT : FREE_STACK_LIMIT} APIs{isPro ? "" : ` (Pro: ${PRO_STACK_LIMIT})`}</li>
                   <li>Export JSON / CSV from the stack drawer</li>
                   <li>Share a link and run catalog health checks</li>
                 </ul>
@@ -786,18 +914,51 @@ export function StackpickApp() {
                   >
                     Open your stack
                   </button>
+                  {billing.configured && !isPro && (
+                    <button
+                      type="button"
+                      className="btn primary"
+                      onClick={startCheckout}
+                      disabled={billingBusy === "checkout"}
+                    >
+                      {billingBusy === "checkout" ? "Redirecting…" : `Subscribe · $${billing.priceUsd}/mo`}
+                    </button>
+                  )}
+                  {billing.configured && isPro && (
+                    <button
+                      type="button"
+                      className="btn ghost"
+                      onClick={openBillingPortal}
+                      disabled={billingBusy === "portal"}
+                    >
+                      {billingBusy === "portal" ? "Opening…" : "Manage billing"}
+                    </button>
+                  )}
                   <button type="button" className="btn ghost" onClick={signOut}>
                     Sign out
                   </button>
                 </div>
+                {billing.configured && billing.currentPeriodEnd && isPro && (
+                  <p className="price-hint">
+                    Renews or ends{" "}
+                    {new Date(billing.currentPeriodEnd).toLocaleDateString(undefined, {
+                      year: "numeric",
+                      month: "short",
+                      day: "numeric",
+                    })}
+                    {billing.cancelAtPeriodEnd ? " · cancellation scheduled" : ""}
+                  </p>
+                )}
               </>
             ) : (
               <>
-                <h2 id="pro-title">Sign in to unlock Pro</h2>
+                <h2 id="pro-title">
+                  {billing.configured ? "Sign in, then subscribe" : "Sign in to unlock Pro"}
+                </h2>
                 <p>
-                  Free while we prepare billing. One account for new and returning visitors — Google,
-                  GitHub, or a password-free email link — then export, share, and health-check your
-                  shortlist.
+                  {billing.configured
+                    ? `Create an account with Google, GitHub, or email, then subscribe for $${billing.priceUsd}/month. Cancel anytime from the billing portal.`
+                    : "One account for new and returning visitors — Google, GitHub, or a password-free email link. On this environment, signing in unlocks Pro tools."}
                 </p>
                 <ul className="pro-perks">
                   <li>Export stacks as JSON or CSV</li>
@@ -857,7 +1018,10 @@ export function StackpickApp() {
                   </button>
                 </form>
                 <p className="price-hint">
-                  We email a one-time link — no password to remember. Planned paid plan: $9/month.
+                  We email a one-time link — no password to remember.
+                  {billing.configured
+                    ? ` After sign-in, subscribe for $${billing.priceUsd}/month.`
+                    : " On this environment, signing in unlocks Pro."}
                 </p>
               </>
             )}
@@ -980,8 +1144,10 @@ export function StackpickApp() {
           </button>
         </div>
         <p className="stack-hint">
-          Free shortlist: {FREE_STACK_LIMIT} APIs. Sign in for export, share, health, and up to{" "}
-          {PRO_STACK_LIMIT}.
+          Free shortlist: {FREE_STACK_LIMIT} APIs.
+          {billing.configured
+            ? ` Subscribe ($${billing.priceUsd}/mo) for export, share, health, and up to ${PRO_STACK_LIMIT}.`
+            : ` Sign in for export, share, health, and up to ${PRO_STACK_LIMIT}.`}
         </p>
         {shareNote && (
           <p className="waitlist-note" role="status">
@@ -1053,6 +1219,7 @@ export function StackpickApp() {
             <ul className="ops-stats">
               <li>Accounts: {adminSummary.stats.accounts ?? adminSummary.stats.waitlist}</li>
               <li>Confirmed: {adminSummary.stats.confirmed}</li>
+              <li>Subscribers: {adminSummary.stats.subscribers ?? 0}</li>
               <li>Active shares: {adminSummary.stats.activeStacks}</li>
               <li>New feedback: {adminSummary.stats.newFeedback}</li>
               <li>Mail today: {adminSummary.stats.mailSentToday}</li>

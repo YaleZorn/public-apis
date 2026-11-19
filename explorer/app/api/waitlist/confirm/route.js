@@ -1,5 +1,5 @@
 import { sql } from "../../../../server/db.js";
-import { issueProToken } from "../../../../server/proAuth.js";
+import { emailHasProAccess, issueProToken } from "../../../../server/proAuth.js";
 import { allowRequest, clientKey } from "../../../../server/rateLimit.js";
 import { createSession, sessionCookie } from "../../../../server/session.js";
 
@@ -47,10 +47,11 @@ export async function POST(request) {
     userId = created[0].id;
   }
 
-  const proToken = await issueProToken(email);
+  const hasPro = await emailHasProAccess(email);
+  const proToken = hasPro ? await issueProToken(email) : null;
   const session = await createSession(userId);
   return Response.json(
-    { ok: true, email, token: proToken },
+    { ok: true, email, token: proToken, pro: hasPro },
     { headers: { "set-cookie": sessionCookie(session) } },
   );
 }
