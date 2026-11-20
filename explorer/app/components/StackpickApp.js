@@ -54,6 +54,7 @@ export function StackpickApp() {
   });
   const [billing, setBilling] = useState({
     configured: false,
+    public: false,
     subscribed: false,
     status: "inactive",
     priceUsd: 9,
@@ -123,8 +124,8 @@ export function StackpickApp() {
         setWaitlistNote(
           payload.error === "sign_in_required"
             ? "Sign in first, then subscribe to Pro."
-            : payload.error === "billing_not_configured"
-              ? "Billing is not configured yet on this environment."
+            : payload.error === "billing_not_configured" || payload.error === "billing_not_public"
+              ? "Paid Pro checkout is not open yet. Browse Partner APIs in the meantime."
               : "Could not start checkout. Try again.",
         );
         return;
@@ -221,7 +222,7 @@ export function StackpickApp() {
       setProEmail("");
       setProToken("");
       setWaitlistNote(
-        `Signed in as ${payload.email}. Subscribe to Pro to unlock export, share, and health checks.`,
+        `Signed in as ${payload.email}. Pro checkout is coming soon — try Partner APIs for production endpoints.`,
       );
     }
     await refreshAuthUser();
@@ -287,9 +288,11 @@ export function StackpickApp() {
         setSampleData(Boolean(status.sampleData));
         setMailConfigured(Boolean(status.mailConfigured));
         if (status.auth) setAuthProviders(status.auth);
-        if (typeof status.billingConfigured === "boolean") {
-          setBilling((prev) => ({ ...prev, configured: status.billingConfigured }));
-        }
+        setBilling((prev) => ({
+          ...prev,
+          configured: Boolean(status.billingConfigured),
+          public: Boolean(status.billingPublic),
+        }));
       })
       .catch(() => setSampleData(true));
     fetch("/data/apis.json")
@@ -508,7 +511,7 @@ export function StackpickApp() {
 
   function exportStack(format) {
     if (!isPro) {
-      setWaitlistNote(billing.configured ? "Export unlocks with a Pro subscription." : "Export unlocks after you sign in.");
+      setWaitlistNote(billing.public ? "Export unlocks with a Pro subscription." : "Export unlocks after you sign in.");
       document.getElementById("pro")?.scrollIntoView({ behavior: "smooth" });
       setPanelOpen(false);
       return;
@@ -538,7 +541,7 @@ export function StackpickApp() {
 
   async function shareStack() {
     if (!isPro) {
-      setWaitlistNote(billing.configured ? "Share links unlock with a Pro subscription." : "Share links unlock after you sign in.");
+      setWaitlistNote(billing.public ? "Share links unlock with a Pro subscription." : "Share links unlock after you sign in.");
       document.getElementById("pro")?.scrollIntoView({ behavior: "smooth" });
       return;
     }
@@ -583,7 +586,7 @@ export function StackpickApp() {
 
   async function runHealth() {
     if (!isPro) {
-      setWaitlistNote(billing.configured ? "Health checks unlock with a Pro subscription." : "Health checks unlock after you sign in.");
+      setWaitlistNote(billing.public ? "Health checks unlock with a Pro subscription." : "Health checks unlock after you sign in.");
       document.getElementById("pro")?.scrollIntoView({ behavior: "smooth" });
       return;
     }
@@ -699,18 +702,23 @@ export function StackpickApp() {
             <a className="btn primary" href="#catalog">
               Browse catalog
             </a>
+            <a className="btn ghost" href="#partners">
+              Partner APIs
+            </a>
             <button
               type="button"
               className="btn ghost"
               onClick={() => document.getElementById("pro")?.scrollIntoView({ behavior: "smooth" })}
             >
-              {isPro ? "Your Pro account" : user ? "Your account" : billing.configured ? "Sign in" : "Sign in free"}
+              {isPro ? "Your account" : user ? "Your account" : "Sign in"}
             </button>
           </div>
           {(user || isPro) && (
             <p className="hero-status" role="status">
-              Signed in{user?.email ? ` as ${user.email}` : proEmail ? ` as ${proEmail}` : ""}. Pro
-              tools are ready in your stack drawer.
+              Signed in{user?.email ? ` as ${user.email}` : proEmail ? ` as ${proEmail}` : ""}.
+              {isPro
+                ? " Pro tools are ready in your stack drawer."
+                : " Browse Partner APIs when you need production-grade endpoints."}
             </p>
           )}
         </section>
@@ -868,7 +876,10 @@ export function StackpickApp() {
         <section className="partners" id="partners" aria-labelledby="partners-title">
           <div className="section-head">
             <h2 id="partners-title">Partner APIs</h2>
-            <p>When a free endpoint is not enough — clearly labeled referrals.</p>
+            <p>
+              Production-ready APIs when free endpoints are not enough. Clearly labeled referrals —
+              this is how Stackpick stays free to browse while paid Pro checkout is still coming.
+            </p>
           </div>
           <div className="partner-track">
             {partners.map((p) => (
@@ -891,18 +902,16 @@ export function StackpickApp() {
           <div className="pro-panel">
             {user || isPro ? (
               <>
-                <h2 id="pro-title">{isPro ? "Pro active" : "Your account"}</h2>
+                <h2 id="pro-title">{isPro ? "Pro tools unlocked" : "Your account"}</h2>
                 <p>
                   You are signed in
                   {user?.email || proEmail ? ` as ${(user && user.email) || proEmail}` : ""}.
                   {isPro
                     ? " Export, share, and health checks are unlocked on this device."
-                    : billing.configured
-                      ? ` Subscribe for $${billing.priceUsd}/${billing.interval} to unlock Pro tools.`
-                      : " Pro tools unlock after sign-in on this environment."}
+                    : " Paid Pro checkout is coming soon — until then, explore Partner APIs for production needs."}
                 </p>
                 <ul className="pro-perks">
-                  <li>Shortlist up to {isPro ? PRO_STACK_LIMIT : FREE_STACK_LIMIT} APIs{isPro ? "" : ` (Pro: ${PRO_STACK_LIMIT})`}</li>
+                  <li>Shortlist up to {isPro ? PRO_STACK_LIMIT : FREE_STACK_LIMIT} APIs{isPro ? "" : ` (Pro soon: ${PRO_STACK_LIMIT})`}</li>
                   <li>Export JSON / CSV from the stack drawer</li>
                   <li>Share a link and run catalog health checks</li>
                 </ul>
@@ -914,17 +923,20 @@ export function StackpickApp() {
                   >
                     Open your stack
                   </button>
-                  {billing.configured && !isPro && (
+                  <a className="btn ghost" href="#partners">
+                    Browse partners
+                  </a>
+                  {billing.public && !isPro && (
                     <button
                       type="button"
-                      className="btn primary"
+                      className="btn ghost"
                       onClick={startCheckout}
                       disabled={billingBusy === "checkout"}
                     >
                       {billingBusy === "checkout" ? "Redirecting…" : `Subscribe · $${billing.priceUsd}/mo`}
                     </button>
                   )}
-                  {billing.configured && isPro && (
+                  {billing.public && isPro && (
                     <button
                       type="button"
                       className="btn ghost"
@@ -938,7 +950,13 @@ export function StackpickApp() {
                     Sign out
                   </button>
                 </div>
-                {billing.configured && billing.currentPeriodEnd && isPro && (
+                {!billing.public && (
+                  <p className="price-hint">
+                    Paid Pro (planned ${billing.priceUsd}/{billing.interval}) is not open for checkout yet.
+                    Partner referrals help keep the catalog free.
+                  </p>
+                )}
+                {billing.public && billing.currentPeriodEnd && isPro && (
                   <p className="price-hint">
                     Renews or ends{" "}
                     {new Date(billing.currentPeriodEnd).toLocaleDateString(undefined, {
@@ -953,12 +971,12 @@ export function StackpickApp() {
             ) : (
               <>
                 <h2 id="pro-title">
-                  {billing.configured ? "Sign in, then subscribe" : "Sign in to unlock Pro"}
+                  {billing.public ? "Sign in, then subscribe" : "Sign in"}
                 </h2>
                 <p>
-                  {billing.configured
-                    ? `Create an account with Google, GitHub, or email, then subscribe for $${billing.priceUsd}/month. Cancel anytime from the billing portal.`
-                    : "One account for new and returning visitors — Google, GitHub, or a password-free email link. On this environment, signing in unlocks Pro tools."}
+                  {billing.public
+                    ? `Create an account with Google, GitHub, or email, then subscribe for $${billing.priceUsd}/month.`
+                    : "Google, GitHub, or a password-free email link. Signing in unlocks Pro tools for now; paid checkout is coming later. Prefer production APIs? See Partner APIs."}
                 </p>
                 <ul className="pro-perks">
                   <li>Export stacks as JSON or CSV</li>
@@ -1019,9 +1037,9 @@ export function StackpickApp() {
                 </form>
                 <p className="price-hint">
                   We email a one-time link — no password to remember.
-                  {billing.configured
+                  {billing.public
                     ? ` After sign-in, subscribe for $${billing.priceUsd}/month.`
-                    : " On this environment, signing in unlocks Pro."}
+                    : " Signing in unlocks Pro for now. Paid checkout is coming soon."}
                 </p>
               </>
             )}
@@ -1097,7 +1115,10 @@ export function StackpickApp() {
           {!stack.length && (
             <li className="empty-state compact">
               <p className="empty-title">Your stack is empty</p>
-              <p className="empty">Add APIs from the catalog — they stay on this device until you clear them.</p>
+              <p className="empty">
+                Add APIs from the catalog — or open{" "}
+                <a href="#partners">Partner APIs</a> when you need production-grade endpoints.
+              </p>
             </li>
           )}
           {stack.map((item) => (
@@ -1145,9 +1166,9 @@ export function StackpickApp() {
         </div>
         <p className="stack-hint">
           Free shortlist: {FREE_STACK_LIMIT} APIs.
-          {billing.configured
+          {billing.public
             ? ` Subscribe ($${billing.priceUsd}/mo) for export, share, health, and up to ${PRO_STACK_LIMIT}.`
-            : ` Sign in for export, share, health, and up to ${PRO_STACK_LIMIT}.`}
+            : ` Sign in for export, share, health, and up to ${PRO_STACK_LIMIT}. Paid Pro coming soon — see Partners.`}
         </p>
         {shareNote && (
           <p className="waitlist-note" role="status">
@@ -1184,7 +1205,8 @@ export function StackpickApp() {
           <a href="https://github.com/public-apis/public-apis" rel="noopener noreferrer" target="_blank">
             public-apis
           </a>{" "}
-          community catalog. Partner links may earn referral credit.
+          community catalog. Partner links are labeled referrals and may earn credit — the main way
+          Stackpick stays free while paid Pro checkout is prepared.
           {sampleData && <> Running on sample in-memory storage until Postgres is attached.</>}
           {!mailConfigured && !authProviders.google && !authProviders.github && (
             <> Email sign-in needs RESEND_API_KEY when you leave sample mode.</>

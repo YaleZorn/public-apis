@@ -1,6 +1,12 @@
 import { sql } from "./db.js";
 import { emailHasProAccess, issueProToken, revokeProToken } from "./proAuth.js";
-import { getStripe, isPaidStatus, stripeConfigured, stripePriceId } from "./stripe.js";
+import {
+  billingPublic,
+  getStripe,
+  isPaidStatus,
+  stripeConfigured,
+  stripePriceId,
+} from "./stripe.js";
 
 export { emailHasProAccess };
 
@@ -155,11 +161,15 @@ export async function refreshSubscriptionForUser(user) {
   return getSubscriptionByUserId(user.id);
 }
 
-export function billingPublicStatus(row, { configured = stripeConfigured() } = {}) {
+export function billingPublicStatus(
+  row,
+  { configured = stripeConfigured(), publicCheckout = billingPublic() } = {},
+) {
   return {
     configured,
+    public: publicCheckout,
     subscribed: Boolean(row && isPaidStatus(row.status)),
-    status: row?.status || (configured ? "inactive" : "legacy_free_pro"),
+    status: row?.status || (publicCheckout ? "inactive" : "legacy_free_pro"),
     cancelAtPeriodEnd: Boolean(row?.cancel_at_period_end),
     currentPeriodEnd: row?.current_period_end || null,
     priceUsd: 9,

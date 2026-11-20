@@ -6,6 +6,15 @@ export function stripeConfigured() {
   );
 }
 
+/**
+ * Public Checkout / Portal are opt-in.
+ * Default off so Partner referrals stay the primary monetization path until
+ * the operator explicitly enables STACKPICK_BILLING_PUBLIC=1.
+ */
+export function billingPublic() {
+  return stripeConfigured() && process.env.STACKPICK_BILLING_PUBLIC?.trim() === "1";
+}
+
 export function stripePriceId() {
   return process.env.STRIPE_PRICE_ID?.trim() || "";
 }

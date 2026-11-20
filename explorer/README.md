@@ -37,22 +37,25 @@ npm start
 | Health | `POST /api/health` (catalog URLs only, Pro) |
 | Partners | labeled referral links |
 
-## Billing model
+## Monetization model (partner-first)
 
 - **Free:** browse + shortlist up to 5 APIs.
-- **Signed in:** account session (required before checkout).
-- **Pro ($9/mo via Stripe):** export, share sync, health checks, shortlist up to 25.
+- **Signed in:** unlocks Pro tools while paid checkout is closed (default).
+- **Partner referrals:** labeled links — primary revenue path without requiring a merchant entity.
+- **Paid Pro (optional later):** Stripe Checkout at $9/mo, only when explicitly enabled.
 
-When `STRIPE_SECRET_KEY` + `STRIPE_PRICE_ID` are unset (local sample), confirmed sign-in still unlocks Pro so demos keep working.
+Public Subscribe / Portal stay **off** unless:
 
-### Stripe secrets
+1. `STRIPE_SECRET_KEY` + `STRIPE_PRICE_ID` are set, and  
+2. `STACKPICK_BILLING_PUBLIC=1`
 
-| Secret | Purpose |
+### Stripe secrets (optional)
+
+| Secret / env | Purpose |
 | --- | --- |
 | `STRIPE_SECRET_KEY` | Server SDK (`sk_test_…` / `sk_live_…`) |
 | `STRIPE_PRICE_ID` | Recurring Price id for $9/month (`price_…`) |
 | `STRIPE_WEBHOOK_SECRET` | Signing secret for `/api/billing/webhook` (`whsec_…`) |
+| `STACKPICK_BILLING_PUBLIC=1` | Opt-in to show Checkout / Portal in the UI |
 
-Webhook events to enable: `checkout.session.completed`, `customer.subscription.created|updated|deleted`, `invoice.payment_failed`.
-
-Endpoint URL: `https://stackpick.apps.grok.bot/api/billing/webhook`
+Webhook endpoint (when enabled): `https://stackpick.apps.grok.bot/api/billing/webhook`

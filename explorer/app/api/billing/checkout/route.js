@@ -5,15 +5,15 @@ import {
 import { publicOrigin } from "../../../../server/publicOrigin.js";
 import { allowRequest, clientKey } from "../../../../server/rateLimit.js";
 import { getSessionUser } from "../../../../server/session.js";
-import { getStripe, stripeConfigured, stripePriceId } from "../../../../server/stripe.js";
+import { billingPublic, getStripe, stripePriceId } from "../../../../server/stripe.js";
 
 export async function POST(request) {
   if (!(await allowRequest(`billing-checkout:${clientKey(request)}`, { limit: 10, windowMs: 60_000 }))) {
     return Response.json({ error: "rate_limited" }, { status: 429 });
   }
 
-  if (!stripeConfigured()) {
-    return Response.json({ error: "billing_not_configured" }, { status: 503 });
+  if (!billingPublic()) {
+    return Response.json({ error: "billing_not_public" }, { status: 503 });
   }
 
   const user = await getSessionUser(request);

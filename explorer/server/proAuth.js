@@ -1,7 +1,7 @@
 import { randomBytes } from "node:crypto";
 import { sql } from "./db.js";
 import { getSessionUser } from "./session.js";
-import { isPaidStatus, stripeConfigured } from "./stripe.js";
+import { billingPublic, isPaidStatus } from "./stripe.js";
 
 export async function issueProToken(email) {
   const token = randomBytes(24).toString("base64url");
@@ -26,7 +26,9 @@ function tokenFromRequest(request, bodyToken) {
 
 export async function emailHasProAccess(email) {
   if (!email) return false;
-  if (!stripeConfigured()) {
+  // Paid gating only when public Checkout is enabled; otherwise sign-in unlocks Pro
+  // while Partner referrals remain the primary monetization path.
+  if (!billingPublic()) {
     const confirmed = await sql(
       "select email from waitlist where email = $1 and confirmed_at is not null",
       [email],
