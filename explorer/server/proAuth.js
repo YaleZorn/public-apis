@@ -3,16 +3,28 @@ import { sql } from "./db.js";
 import { getSessionUser } from "./session.js";
 import { billingPublic, isPaidStatus } from "./stripe.js";
 
+const PRO_TOKEN_TTL_DAYS = 7;
+
 export async function issueProToken(email) {
   const token = randomBytes(24).toString("base64url");
   await sql("delete from pro_tokens where email = $1", [email]);
-  await sql("insert into pro_tokens (token, email) values ($1, $2)", [token, email]);
+  await sql(
+    `insert into pro_tokens (token, email, expires_at)
+     values ($1, $2, now() + make_interval(days => $3))`,
+    [token, email, PRO_TOKEN_TTL_DAYS],
+  );
   return token;
 }
 
 export async function revokeProToken(email) {
   if (!email) return;
   await sql("delete from pro_tokens where email = $1", [email]);
+}
+
+export async function revokeExpiredProTokens() {
+  await sql("delete from pro_tokens where expires_at is not null and expires_at < now()").catch(
+    () => {},
+  );
 }
 
 function tokenFromRequest(request, bodyToken) {
@@ -43,8 +55,11 @@ export async function emailHasProAccess(email) {
 }
 
 async function ensureProToken(email) {
+  await revokeExpiredProTokens();
   const tokens = await sql(
-    "select token from pro_tokens where email = $1 order by created_at desc limit 1",
+    `select token from pro_tokens
+     where email = $1 and (expires_at is null or expires_at > now())
+     order by created_at desc limit 1`,
     [email],
   );
   if (tokens[0]?.token) return tokens[0].token;
@@ -60,12 +75,14 @@ async function proFromSession(request) {
 }
 
 export async function requireProToken(request, bodyToken) {
+  await revokeExpiredProTokens();
   const token = tokenFromRequest(request, bodyToken);
   if (token && token.length <= 128) {
     const rows = await sql(
       `select t.email
        from pro_tokens t
-       where t.token = $1`,
+       where t.token = $1
+         and (t.expires_at is null or t.expires_at > now())`,
       [token],
     );
     if (rows.length && (await emailHasProAccess(rows[0].email))) {

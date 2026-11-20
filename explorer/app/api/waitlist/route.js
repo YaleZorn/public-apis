@@ -1,20 +1,21 @@
 import { randomBytes } from "node:crypto";
 import { sql } from "../../../server/db.js";
+import { verifyMailChallenge } from "../../../server/mailChallenge.js";
 import { mailConfigured, sendConfirmEmail } from "../../../server/mail.js";
 import { publicOrigin } from "../../../server/publicOrigin.js";
 import { allowRequest, clientKey } from "../../../server/rateLimit.js";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const DAILY_MAIL_CAP = 40;
+const DAILY_MAIL_CAP = 30;
 const RESEND_COOLDOWN_MS = 60 * 60 * 1000;
 const CONFIRM_TTL_MINUTES = 30;
 
 export async function POST(request) {
   const canMail = mailConfigured();
   const ip = clientKey(request);
-  // Paid email path: 1 attempt / 15 min per IP edge hop.
+  // Paid email path: 1 attempt / 20 min per IP edge hop.
   const limit = canMail ? 1 : 6;
-  const windowMs = canMail ? 15 * 60_000 : 60_000;
+  const windowMs = canMail ? 20 * 60_000 : 60_000;
   if (!(await allowRequest(`waitlist:${ip}`, { limit, windowMs }))) {
     return Response.json({ error: "rate_limited" }, { status: 429 });
   }
@@ -28,6 +29,11 @@ export async function POST(request) {
 
   if (body.company) {
     return Response.json({ ok: true });
+  }
+
+  const challenge = verifyMailChallenge(body.challenge);
+  if (!challenge.ok) {
+    return Response.json({ error: challenge.error }, { status: 400 });
   }
 
   const email = String(body.email || "")

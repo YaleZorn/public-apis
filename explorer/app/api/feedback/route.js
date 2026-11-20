@@ -1,8 +1,8 @@
 import { sql } from "../../../server/db.js";
 import { allowRequest, clientKey } from "../../../server/rateLimit.js";
 
-const MAX_LEN = 2000;
-const DAILY_FEEDBACK_CAP = 200;
+const MAX_LEN = 1000;
+const DAILY_FEEDBACK_CAP = 40;
 
 export async function POST(request) {
   const ip = clientKey(request);

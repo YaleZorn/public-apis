@@ -11,8 +11,8 @@ export async function POST(request) {
   const ip = clientKey(request);
   const paidMode = billingPublic();
   // When paid checkout is closed, keep share capacity tight even for signed-in Pro.
-  const maxActive = paidMode ? 200 : 30;
-  const maxPerCreator = paidMode ? 8 : 2;
+  const maxActive = paidMode ? 100 : 15;
+  const maxPerCreator = paidMode ? 5 : 1;
   const ttlDays = paidMode ? 3 : 1;
   const ipLimit = paidMode ? 2 : 1;
   const ipWindow = paidMode ? 15 * 60_000 : 60 * 60_000;

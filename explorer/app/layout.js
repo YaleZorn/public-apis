@@ -1,3 +1,4 @@
+import { headers } from "next/headers";
 import "./globals.css";
 
 export const metadata = {
@@ -6,7 +7,8 @@ export const metadata = {
     "Search 1600+ curated public APIs, shortlist a stack, export, share, and check endpoint health.",
 };
 
-export default function RootLayout({ children }) {
+export default async function RootLayout({ children }) {
+  const nonce = (await headers()).get("x-nonce") || undefined;
   return (
     <html lang="en">
       <head>
@@ -17,6 +19,7 @@ export default function RootLayout({ children }) {
           href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Source+Sans+3:wght@400;600;700&display=swap"
           rel="stylesheet"
         />
+        {nonce ? <meta property="csp-nonce" content={nonce} /> : null}
       </head>
       <body>{children}</body>
     </html>

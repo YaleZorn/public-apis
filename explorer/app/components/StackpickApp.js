@@ -396,6 +396,18 @@ export function StackpickApp() {
     setWaitlistNote("");
     try {
       const form = new FormData(event.currentTarget);
+      const challengeRes = await fetch("/api/waitlist/challenge");
+      const challengePayload = await challengeRes.json().catch(() => ({}));
+      if (!challengeRes.ok || !challengePayload.challenge) {
+        setWaitlistNote(
+          challengePayload.error === "rate_limited"
+            ? "Too many attempts. Try again in a few minutes."
+            : "Could not start email sign-in. Retry in a moment.",
+        );
+        return;
+      }
+      // Human-paced delay pairs with server-side challenge min-age check.
+      await new Promise((resolve) => setTimeout(resolve, 2100));
       const res = await fetch("/api/waitlist", {
         method: "POST",
         headers: { "content-type": "application/json" },
@@ -403,12 +415,19 @@ export function StackpickApp() {
           email,
           source: "email-signin",
           company: form.get("company") || "",
+          challenge: challengePayload.challenge,
         }),
       });
       const payload = await res.json().catch(() => ({}));
       if (!res.ok) {
         if (payload.error === "rate_limited") {
           setWaitlistNote("Too many attempts. Try again in a few minutes.");
+        } else if (
+          payload.error === "invalid_challenge" ||
+          payload.error === "challenge_expired" ||
+          payload.error === "challenge_too_fast"
+        ) {
+          setWaitlistNote("Sign-in check expired. Click send again.");
         } else if (payload.error === "mail_quota") {
           setWaitlistNote("Daily sign-in email quota reached. Try again tomorrow.");
         } else if (payload.error === "mail_failed") {
