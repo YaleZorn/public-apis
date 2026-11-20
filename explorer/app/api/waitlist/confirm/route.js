@@ -4,7 +4,7 @@ import { allowRequest, clientKey } from "../../../../server/rateLimit.js";
 import { createSession, sessionCookie } from "../../../../server/session.js";
 
 export async function POST(request) {
-  if (!(await allowRequest(`waitlist-confirm:${clientKey(request)}`, { limit: 20, windowMs: 60_000 }))) {
+  if (!(await allowRequest(`waitlist-confirm:${clientKey(request)}`, { limit: 10, windowMs: 60_000 }))) {
     return Response.json({ error: "rate_limited" }, { status: 429 });
   }
 
@@ -21,16 +21,33 @@ export async function POST(request) {
   }
 
   const rows = await sql(
-    "select email from waitlist where confirm_token = $1",
+    `select email, confirm_expires_at
+     from waitlist
+     where confirm_token = $1`,
     [token],
   );
   if (!rows.length) {
     return Response.json({ error: "invalid_token" }, { status: 400 });
   }
 
+  const expiresAt = rows[0].confirm_expires_at
+    ? new Date(rows[0].confirm_expires_at).getTime()
+    : 0;
+  if (!Number.isFinite(expiresAt) || expiresAt < Date.now()) {
+    await sql(
+      "update waitlist set confirm_token = null, confirm_expires_at = null where email = $1",
+      [rows[0].email],
+    );
+    return Response.json({ error: "expired_token" }, { status: 400 });
+  }
+
   const email = rows[0].email;
   await sql(
-    "update waitlist set confirmed_at = coalesce(confirmed_at, now()), confirm_token = null where email = $1",
+    `update waitlist
+     set confirmed_at = coalesce(confirmed_at, now()),
+         confirm_token = null,
+         confirm_expires_at = null
+     where email = $1`,
     [email],
   );
 

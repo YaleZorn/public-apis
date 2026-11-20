@@ -5,14 +5,15 @@ import { publicOrigin } from "../../../server/publicOrigin.js";
 import { allowRequest, clientKey } from "../../../server/rateLimit.js";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const DAILY_MAIL_CAP = 80;
+const DAILY_MAIL_CAP = 40;
 const RESEND_COOLDOWN_MS = 60 * 60 * 1000;
+const CONFIRM_TTL_MINUTES = 30;
 
 export async function POST(request) {
   const canMail = mailConfigured();
   const ip = clientKey(request);
-  // Paid email path: 2 attempts / 15 min per IP edge hop.
-  const limit = canMail ? 2 : 8;
+  // Paid email path: 1 attempt / 15 min per IP edge hop.
+  const limit = canMail ? 1 : 6;
   const windowMs = canMail ? 15 * 60_000 : 60_000;
   if (!(await allowRequest(`waitlist:${ip}`, { limit, windowMs }))) {
     return Response.json({ error: "rate_limited" }, { status: 429 });
@@ -36,6 +37,10 @@ export async function POST(request) {
     return Response.json({ error: "invalid_email" }, { status: 400 });
   }
 
+  if (!(await allowRequest(`waitlist-email:${email}`, { limit: 1, windowMs: 60 * 60_000 }))) {
+    return Response.json({ ok: true, delivery: "cooldown" });
+  }
+
   const existing = await sql(
     "select email, confirmed_at, confirm_sent_at from waitlist where email = $1",
     [email],
@@ -51,13 +56,24 @@ export async function POST(request) {
   const confirmToken = randomBytes(24).toString("base64url");
   if (!existing.length) {
     await sql(
-      "insert into waitlist (email, source, confirm_token, last_confirm_ip) values ($1, $2, $3, $4)",
-      [email, String(body.source || "web").slice(0, 40), confirmToken, ip.slice(0, 64)],
+      `insert into waitlist (email, source, confirm_token, last_confirm_ip, confirm_expires_at)
+       values ($1, $2, $3, $4, now() + make_interval(mins => $5))`,
+      [
+        email,
+        String(body.source || "web").slice(0, 40),
+        confirmToken,
+        ip.slice(0, 64),
+        CONFIRM_TTL_MINUTES,
+      ],
     );
   } else {
     await sql(
-      "update waitlist set confirm_token = $2, last_confirm_ip = $3 where email = $1",
-      [email, confirmToken, ip.slice(0, 64)],
+      `update waitlist
+       set confirm_token = $2,
+           last_confirm_ip = $3,
+           confirm_expires_at = now() + make_interval(mins => $4)
+       where email = $1`,
+      [email, confirmToken, ip.slice(0, 64), CONFIRM_TTL_MINUTES],
     );
   }
 

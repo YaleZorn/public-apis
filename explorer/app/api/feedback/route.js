@@ -2,10 +2,11 @@ import { sql } from "../../../server/db.js";
 import { allowRequest, clientKey } from "../../../server/rateLimit.js";
 
 const MAX_LEN = 2000;
+const DAILY_FEEDBACK_CAP = 200;
 
 export async function POST(request) {
   const ip = clientKey(request);
-  if (!(await allowRequest(`feedback:${ip}`, { limit: 3, windowMs: 60 * 60_000 }))) {
+  if (!(await allowRequest(`feedback:${ip}`, { limit: 2, windowMs: 60 * 60_000 }))) {
     return Response.json({ error: "rate_limited" }, { status: 429 });
   }
 
@@ -23,6 +24,11 @@ export async function POST(request) {
   const message = String(body.message || "").trim();
   if (message.length < 8 || message.length > MAX_LEN) {
     return Response.json({ error: "invalid_message" }, { status: 400 });
+  }
+
+  const day = new Date().toISOString().slice(0, 10);
+  if (!(await allowRequest(`feedback-day:${day}`, { limit: DAILY_FEEDBACK_CAP, windowMs: 24 * 60 * 60_000 }))) {
+    return Response.json({ error: "capacity" }, { status: 503 });
   }
 
   const email = String(body.email || "")

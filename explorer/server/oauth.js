@@ -1,5 +1,6 @@
 import { createHash, randomBytes } from "node:crypto";
 import { sql } from "./db.js";
+import { oauthStateMatchesCookie } from "./oauthStateCookie.js";
 import { publicOrigin } from "./publicOrigin.js";
 import { emailHasProAccess, issueProToken } from "./proAuth.js";
 
@@ -61,7 +62,7 @@ export async function beginOAuth(request, provider) {
     url.searchParams.set("code_challenge", challenge);
     url.searchParams.set("code_challenge_method", "S256");
     url.searchParams.set("prompt", "select_account");
-    return { url: url.toString() };
+    return { url: url.toString(), state };
   }
 
   const url = new URL("https://github.com/login/oauth/authorize");
@@ -69,7 +70,7 @@ export async function beginOAuth(request, provider) {
   url.searchParams.set("redirect_uri", redirectUri);
   url.searchParams.set("scope", "read:user user:email");
   url.searchParams.set("state", state);
-  return { url: url.toString() };
+  return { url: url.toString(), state };
 }
 
 async function exchangeGoogle(code, redirectUri, verifier) {
@@ -101,6 +102,7 @@ async function exchangeGoogle(code, redirectUri, verifier) {
     email: String(profile.email || "")
       .trim()
       .toLowerCase(),
+    emailVerified: profile.email_verified === true || profile.email_verified === "true",
     name: String(profile.name || profile.email || "Google user"),
     avatarUrl: String(profile.picture || ""),
   };
@@ -140,31 +142,30 @@ async function exchangeGithub(code, redirectUri) {
   }
   const user = await userRes.json();
 
-  let email = String(user.email || "")
-    .trim()
-    .toLowerCase();
-  if (!email) {
-    const emailsRes = await fetch("https://api.github.com/user/emails", {
-      headers: {
-        authorization: `Bearer ${tokens.access_token}`,
-        accept: "application/vnd.github+json",
-        "user-agent": "StackpickAuth/1.0",
-      },
-    });
-    if (emailsRes.ok) {
-      const emails = await emailsRes.json();
-      const primary = (emails || []).find((e) => e.primary && e.verified) ||
-        (emails || []).find((e) => e.verified) ||
-        (emails || [])[0];
-      email = String(primary?.email || "")
-        .trim()
-        .toLowerCase();
+  let email = "";
+  let emailVerified = false;
+  const emailsRes = await fetch("https://api.github.com/user/emails", {
+    headers: {
+      authorization: `Bearer ${tokens.access_token}`,
+      accept: "application/vnd.github+json",
+      "user-agent": "StackpickAuth/1.0",
+    },
+  });
+  if (emailsRes.ok) {
+    const emails = await emailsRes.json();
+    const primary =
+      (emails || []).find((e) => e.primary && e.verified) ||
+      (emails || []).find((e) => e.verified);
+    if (primary?.email) {
+      email = String(primary.email).trim().toLowerCase();
+      emailVerified = true;
     }
   }
 
   return {
     providerUserId: String(user.id || ""),
     email,
+    emailVerified,
     name: String(user.name || user.login || "GitHub user"),
     avatarUrl: String(user.avatar_url || ""),
   };
@@ -175,6 +176,9 @@ export async function finishOAuth(request, provider, { code, state }) {
     return { error: "not_configured", status: 503 };
   }
   if (!code || !state || state.length > 128) {
+    return { error: "invalid_state", status: 400 };
+  }
+  if (!oauthStateMatchesCookie(request, state)) {
     return { error: "invalid_state", status: 400 };
   }
 
@@ -200,6 +204,9 @@ export async function finishOAuth(request, provider, { code, state }) {
   if (!profile.email) {
     return { error: "email_required", status: 400 };
   }
+  if (!profile.emailVerified) {
+    return { error: "email_unverified", status: 400 };
+  }
 
   const existingAccount = await sql(
     "select user_id from oauth_accounts where provider = $1 and provider_user_id = $2",
@@ -219,6 +226,8 @@ export async function finishOAuth(request, provider, { code, state }) {
       [userId, profile.email, profile.name.slice(0, 120), profile.avatarUrl.slice(0, 500)],
     );
   } else {
+    // Only attach to an existing account when the provider verified the email.
+    // Never trust an unverified address to take over another user's session.
     const byEmail = await sql("select id from users where email = $1", [profile.email]);
     if (byEmail.length) {
       userId = byEmail[0].id;

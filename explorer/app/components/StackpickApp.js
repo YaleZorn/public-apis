@@ -308,8 +308,12 @@ export function StackpickApp() {
             const next = new URL(window.location.href);
             next.searchParams.delete("confirm");
             window.history.replaceState({}, "", next.pathname + next.search);
-          } catch {
-            setWaitlistNote("Sign-in link invalid or expired. Request a new email link.");
+          } catch (err) {
+            setWaitlistNote(
+              String(err?.message || "").includes("expired")
+                ? "That sign-in link expired (30 minutes). Request a new email link."
+                : "Sign-in link invalid or expired. Request a new email link.",
+            );
           }
         }
         if (code) {
@@ -695,30 +699,20 @@ export function StackpickApp() {
         <section className="hero">
           <h1>Stackpick</h1>
           <p className="lede">
-            Find the right public API in seconds. Shortlist a stack, then export, share, or
-            spot-check health — without scrolling a giant README.
+            Search 1,600+ public APIs, shortlist a stack, and jump to production-ready Partner
+            options when free endpoints are not enough.
           </p>
           <div className="cta-row">
             <a className="btn primary" href="#catalog">
               Browse catalog
             </a>
             <a className="btn ghost" href="#partners">
-              Partner APIs
+              See partners
             </a>
-            <button
-              type="button"
-              className="btn ghost"
-              onClick={() => document.getElementById("pro")?.scrollIntoView({ behavior: "smooth" })}
-            >
-              {isPro ? "Your account" : user ? "Your account" : "Sign in"}
-            </button>
           </div>
-          {(user || isPro) && (
+          {user && (
             <p className="hero-status" role="status">
-              Signed in{user?.email ? ` as ${user.email}` : proEmail ? ` as ${proEmail}` : ""}.
-              {isPro
-                ? " Pro tools are ready in your stack drawer."
-                : " Browse Partner APIs when you need production-grade endpoints."}
+              Signed in as {user.email || user.name}. Open your stack anytime from the top bar.
             </p>
           )}
         </section>
@@ -877,8 +871,8 @@ export function StackpickApp() {
           <div className="section-head">
             <h2 id="partners-title">Partner APIs</h2>
             <p>
-              Production-ready APIs when free endpoints are not enough. Clearly labeled referrals —
-              this is how Stackpick stays free to browse while paid Pro checkout is still coming.
+              Production-ready options with clear Partner labels. Referrals keep Stackpick free to
+              browse — no card required.
             </p>
           </div>
           <div className="partner-track">
@@ -976,7 +970,7 @@ export function StackpickApp() {
                 <p>
                   {billing.public
                     ? `Create an account with Google, GitHub, or email, then subscribe for $${billing.priceUsd}/month.`
-                    : "Google, GitHub, or a password-free email link. Signing in unlocks Pro tools for now; paid checkout is coming later. Prefer production APIs? See Partner APIs."}
+                    : "Google, GitHub, or a one-time email link. Signing in unlocks export, share, and health checks for now. Need production APIs? Use Partner links — no signup wall."}
                 </p>
                 <ul className="pro-perks">
                   <li>Export stacks as JSON or CSV</li>
@@ -1053,8 +1047,8 @@ export function StackpickApp() {
 
         <section className="feedback-section" id="feedback" aria-labelledby="feedback-title">
           <div className="feedback-panel">
-            <h2 id="feedback-title">How are we doing?</h2>
-            <p>Bugs, missing APIs, or ideas for monetization — we read every note.</p>
+            <h2 id="feedback-title">Send a note</h2>
+            <p>Bugs, missing APIs, or Partner ideas — short notes help most.</p>
             <form className="waitlist feedback-form" onSubmit={submitFeedback}>
               <label className="feedback-box">
                 <span className="sr-only">Message</span>
@@ -1215,7 +1209,7 @@ export function StackpickApp() {
         <details className="ops-details">
           <summary>Owner ops</summary>
           <p className="price-hint">
-            Load account and feedback counts with the ADMIN_TOKEN app secret.
+            Requires a long ADMIN_TOKEN app secret (24+ chars). Leave blank if you are not the owner.
           </p>
           <form className="waitlist" onSubmit={loadAdminSummary}>
             <label>

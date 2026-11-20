@@ -1,11 +1,20 @@
 import { finishOAuth } from "../../../../../server/oauth.js";
+import { clearOauthStateCookie } from "../../../../../server/oauthStateCookie.js";
 import { publicOrigin } from "../../../../../server/publicOrigin.js";
-import { createSession, sessionCookie } from "../../../../../server/session.js";
 import { allowRequest, clientKey } from "../../../../../server/rateLimit.js";
+import { createSession, sessionCookie } from "../../../../../server/session.js";
+
+function redirectWithCookies(location, cookies) {
+  const headers = new Headers({ location });
+  for (const cookie of cookies) headers.append("set-cookie", cookie);
+  return new Response(null, { status: 302, headers });
+}
 
 export async function GET(request) {
-  if (!(await allowRequest(`oauth-cb:${clientKey(request)}`, { limit: 30, windowMs: 60_000 }))) {
-    return Response.redirect(`${publicOrigin(request)}/?auth=rate_limited`, 302);
+  if (!(await allowRequest(`oauth-cb:${clientKey(request)}`, { limit: 20, windowMs: 60_000 }))) {
+    return redirectWithCookies(`${publicOrigin(request)}/?auth=rate_limited`, [
+      clearOauthStateCookie(),
+    ]);
   }
 
   const url = new URL(request.url);
@@ -13,18 +22,15 @@ export async function GET(request) {
   const state = url.searchParams.get("state") || "";
   const finished = await finishOAuth(request, "google", { code, state });
   if (finished.error) {
-    return Response.redirect(
+    return redirectWithCookies(
       `${publicOrigin(request)}/?auth_error=${encodeURIComponent(finished.error)}`,
-      302,
+      [clearOauthStateCookie()],
     );
   }
 
   const token = await createSession(finished.userId);
-  return new Response(null, {
-    status: 302,
-    headers: {
-      location: `${publicOrigin(request)}/?auth=google`,
-      "set-cookie": sessionCookie(token),
-    },
-  });
+  return redirectWithCookies(`${publicOrigin(request)}/?auth=google`, [
+    sessionCookie(token),
+    clearOauthStateCookie(),
+  ]);
 }
